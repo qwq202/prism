@@ -10,13 +10,18 @@ import (
 
 type ModelTag []string
 type MarketModel struct {
-	Id          string   `json:"id" mapstructure:"id" required:"true"`
-	Name        string   `json:"name" mapstructure:"name" required:"true"`
-	Description string   `json:"description" mapstructure:"description"`
-	Default     bool     `json:"default" mapstructure:"default"`
-	HighContext bool     `json:"high_context" mapstructure:"highcontext"`
-	Avatar      string   `json:"avatar" mapstructure:"avatar"`
-	Tag         ModelTag `json:"tag" mapstructure:"tag"`
+	Id              string   `json:"id" mapstructure:"id" required:"true"`
+	Name            string   `json:"name" mapstructure:"name" required:"true"`
+	Description     string   `json:"description" mapstructure:"description"`
+	Default         bool     `json:"default" mapstructure:"default"`
+	HighContext     bool     `json:"high_context" mapstructure:"highcontext"`
+	FunctionCalling bool     `json:"function_calling" mapstructure:"functioncalling"`
+	VisionModel     bool     `json:"vision_model" mapstructure:"visionmodel"`
+	OCRModel        bool     `json:"ocr_model" mapstructure:"ocrmodel"`
+	ReverseModel    bool     `json:"reverse_model" mapstructure:"reversemodel"`
+	ThinkingModel   bool     `json:"thinking_model" mapstructure:"thinkingmodel"`
+	Avatar          string   `json:"avatar" mapstructure:"avatar"`
+	Tag             ModelTag `json:"tag" mapstructure:"tag"`
 }
 type MarketModelList []MarketModel
 

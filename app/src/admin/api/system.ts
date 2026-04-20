@@ -43,14 +43,16 @@ export type MailState = {
 };
 
 export type SearchState = {
-  endpoint: string;
+  api_key: string;
   crop: boolean;
   crop_len: number;
-  engines: string[];
-  image_proxy: boolean;
-  safe_search: number;
-  llm_extract: boolean;
-  llm_model: string;
+  max_results: number;
+  topic: string;
+  depth: string;
+};
+
+export type TaskState = {
+  model: string;
 };
 
 export type SecurityState = {
@@ -158,6 +160,7 @@ export type SystemProps = {
   site: SiteState;
   mail: MailState;
   search: SearchState;
+  task: TaskState;
   common: CommonState;
   payment: PaymentState;
   security: SecurityState;
@@ -216,14 +219,15 @@ export const initialSystemState: SystemProps = {
     },
   },
   search: {
-    endpoint: "",
+    api_key: "",
     crop: false,
     crop_len: 1000,
-    engines: [],
-    image_proxy: false,
-    safe_search: 0,
-    llm_extract: false,
-    llm_model: "",
+    max_results: 5,
+    topic: "general",
+    depth: "basic",
+  },
+  task: {
+    model: "",
   },
   common: {
     article: [],
@@ -298,6 +302,18 @@ export async function getConfig(): Promise<SystemResponse> {
         data.data.search.crop_len && data.data.search.crop_len > 0
           ? data.data.search.crop_len
           : 1000;
+      data.data.search.topic =
+        data.data.search.topic &&
+        ["general", "news", "finance"].includes(data.data.search.topic)
+          ? data.data.search.topic
+          : "general";
+      data.data.search.depth =
+        data.data.search.depth &&
+        ["basic", "advanced", "fast", "ultra-fast"].includes(
+          data.data.search.depth,
+        )
+          ? data.data.search.depth
+          : "basic";
 
       data.data.site.currency = data.data.site.currency || "cny";
 

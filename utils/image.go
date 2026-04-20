@@ -13,7 +13,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/chai2010/webp"
+	"golang.org/x/image/webp"
 )
 
 type Image struct {
@@ -60,11 +60,11 @@ func NewImage(url string) (*Image, error) {
 		if img, err = jpeg.Decode(res.Body); err != nil {
 			return nil, err
 		}
-	case "webp":
+	case ".webp":
 		if img, err = webp.Decode(res.Body); err != nil {
 			return nil, err
 		}
-	case "gif":
+	case ".gif":
 		ticks, err := gif.DecodeAll(res.Body)
 		if err != nil {
 			return nil, err
@@ -205,7 +205,7 @@ func DownloadImage(url string, path string) error {
 	defer func(Body io.ReadCloser) {
 		err := Body.Close()
 		if err != nil {
-			globals.Debug("[utils] close file error: %s (path: %s)", err.Error(), path)
+			globals.Debug(fmt.Sprintf("[utils] close file error: %s (path: %s)", err.Error(), path))
 		}
 	}(res.Body)
 
@@ -217,7 +217,7 @@ func DownloadImage(url string, path string) error {
 	defer func(file *os.File) {
 		err := file.Close()
 		if err != nil {
-			globals.Debug("[utils] close file error: %s (path: %s)", err.Error(), path)
+			globals.Debug(fmt.Sprintf("[utils] close file error: %s (path: %s)", err.Error(), path))
 		}
 	}(file)
 

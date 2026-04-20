@@ -33,15 +33,17 @@ import EditorProvider from "@/components/EditorProvider.tsx";
 import Avatar from "@/components/Avatar.tsx";
 import { useSelector } from "react-redux";
 import { selectUsername } from "@/store/auth.ts";
-import { appLogo } from "@/conf/env.ts";
 import { motion } from "framer-motion";
 import { ThinkContent } from "@/components/ThinkContent";
+import ModelAvatar from "@/components/ModelAvatar.tsx";
+import { selectModel, selectSupportModels } from "@/store/chat.ts";
 
 type MessageProps = {
   index: number;
   message: Message;
   end?: boolean;
   username?: string;
+  model?: string;
   onEvent?: (event: string, index?: number, message?: string) => void;
   ref?: Ref<HTMLElement>;
   sharing?: boolean;
@@ -249,15 +251,27 @@ function MessageContent({
   onEvent,
   selected,
   username,
+  model,
 }: MessageProps) {
   const isUser = message.role === "user";
   const hasContent = message.content.length > 0;
   const isAssistant = message.role === "assistant";
   const isOutput = message.end === false;
   const user = useSelector(selectUsername);
+  const currentModel = useSelector(selectModel);
+  const supportModels = useSelector(selectSupportModels);
 
   const [open, setOpen] = useState(false);
   const [editedMessage, setEditedMessage] = useState<string | undefined>("");
+
+  const modelId = model || currentModel;
+  const messageModel =
+    supportModels.find((item) => item.id === modelId) || {
+      id: modelId || "assistant",
+      name: modelId || "assistant",
+      avatar: "",
+    };
+  const useModelAvatar = !isUser && !selected;
 
   // parse think content
   const parseThinkContent = (content: string) => {
@@ -294,7 +308,12 @@ function MessageContent({
         value={editedMessage ?? ""}
         onChange={setEditedMessage}
       />
-      <div className={`message-avatar-wrapper`}>
+      <div
+        className={cn(
+          "message-avatar-wrapper",
+          useModelAvatar && "message-avatar-wrapper-round",
+        )}
+      >
         {!selected ? (
           isUser ? (
             <Avatar
@@ -302,9 +321,9 @@ function MessageContent({
               username={username ?? user}
             />
           ) : (
-            <img
-              src={appLogo}
-              alt={``}
+            <ModelAvatar
+              model={messageModel}
+              size={36}
               className={`message-avatar animate-fade-in`}
             />
           )
@@ -341,7 +360,7 @@ function MessageContent({
                 {parsedContent.restContent && (
                   <Markdown
                     loading={message.end === false}
-                    children={message.content}
+                    children={parsedContent.restContent}
                     acceptHtml={false}
                   />
                 )}

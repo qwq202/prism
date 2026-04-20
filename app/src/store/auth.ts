@@ -94,8 +94,14 @@ export function validateToken(
         hook && hook();
       })
       .catch((err) => {
-        // keep state
         console.debug(err);
+        dispatch(
+          updateData({
+            authenticated: false,
+            username: "",
+            admin: false,
+          }),
+        );
       });
 }
 

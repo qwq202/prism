@@ -26,25 +26,38 @@ type PalmChatResponse struct {
 
 // GeminiChatBody is the native http request body for gemini
 type GeminiChatBody struct {
-	Contents         []GeminiContent `json:"contents"`
-	GenerationConfig GeminiConfig    `json:"generationConfig"`
+	SystemInstruction *GeminiContent    `json:"systemInstruction,omitempty"`
+	Contents          []GeminiContent   `json:"contents"`
+	Tools             []GeminiTool      `json:"tools,omitempty"`
+	ToolConfig        *GeminiToolConfig `json:"toolConfig,omitempty"`
+	GenerationConfig  GeminiConfig      `json:"generationConfig"`
 }
 
 type GeminiConfig struct {
-	Temperature     *float32 `json:"temperature,omitempty"`
-	MaxOutputTokens *int     `json:"maxOutputTokens,omitempty"`
-	TopP            *float32 `json:"topP,omitempty"`
-	TopK            *int     `json:"topK,omitempty"`
+	Temperature     *float32              `json:"temperature,omitempty"`
+	MaxOutputTokens *int                  `json:"maxOutputTokens,omitempty"`
+	TopP            *float32              `json:"topP,omitempty"`
+	TopK            *int                  `json:"topK,omitempty"`
+	ThinkingConfig  *GeminiThinkingConfig `json:"thinkingConfig,omitempty"`
+}
+
+type GeminiThinkingConfig struct {
+	ThinkingBudget  *int  `json:"thinkingBudget,omitempty"`
+	IncludeThoughts *bool `json:"includeThoughts,omitempty"`
 }
 
 type GeminiContent struct {
-	Role  string           `json:"role"`
+	Role  string           `json:"role,omitempty"`
 	Parts []GeminiChatPart `json:"parts"`
 }
 
 type GeminiChatPart struct {
-	Text       *string           `json:"text,omitempty"`
-	InlineData *GeminiInlineData `json:"inline_data,omitempty"`
+	Text             *string                 `json:"text,omitempty"`
+	InlineData       *GeminiInlineData       `json:"inline_data,omitempty"`
+	FunctionCall     *GeminiFunctionCall     `json:"functionCall,omitempty"`
+	FunctionResponse *GeminiFunctionResponse `json:"functionResponse,omitempty"`
+	Thought          bool                    `json:"thought,omitempty"`
+	ThoughtSignature *string                 `json:"thoughtSignature,omitempty"`
 }
 
 type GeminiInlineData struct {
@@ -52,15 +65,47 @@ type GeminiInlineData struct {
 	Data     string `json:"data"`
 }
 
+type GeminiTool struct {
+	FunctionDeclarations []GeminiFunctionDeclaration `json:"functionDeclarations,omitempty"`
+	URLContext           *GeminiURLContext           `json:"url_context,omitempty"`
+	GoogleSearch         *GeminiGoogleSearch         `json:"google_search,omitempty"`
+}
+
+type GeminiURLContext struct{}
+
+type GeminiGoogleSearch struct{}
+
+type GeminiFunctionDeclaration struct {
+	Name        string      `json:"name"`
+	Description string      `json:"description,omitempty"`
+	Parameters  interface{} `json:"parameters,omitempty"`
+}
+
+type GeminiToolConfig struct {
+	FunctionCallingConfig *GeminiFunctionCallingConfig `json:"functionCallingConfig,omitempty"`
+}
+
+type GeminiFunctionCallingConfig struct {
+	Mode                 string   `json:"mode,omitempty"`
+	AllowedFunctionNames []string `json:"allowedFunctionNames,omitempty"`
+}
+
+type GeminiFunctionCall struct {
+	Name string      `json:"name"`
+	Args interface{} `json:"args,omitempty"`
+}
+
+type GeminiFunctionResponse struct {
+	Name     string                 `json:"name"`
+	Response map[string]interface{} `json:"response"`
+}
+
+type GeminiCandidate struct {
+	Content GeminiContent `json:"content"`
+}
+
 type GeminiChatResponse struct {
-	Candidates []struct {
-		Content struct {
-			Parts []struct {
-				Text string `json:"text"`
-			} `json:"parts"`
-			Role string `json:"role"`
-		} `json:"content"`
-	} `json:"candidates"`
+	Candidates []GeminiCandidate `json:"candidates"`
 }
 
 type GeminiChatErrorResponse struct {
@@ -72,14 +117,7 @@ type GeminiChatErrorResponse struct {
 }
 
 type GeminiStreamResponse struct {
-	Candidates []struct {
-		Content struct {
-			Parts []struct {
-				Text string `json:"text"`
-			} `json:"parts"`
-			Role string `json:"role"`
-		} `json:"content"`
-	} `json:"candidates"`
+	Candidates []GeminiCandidate `json:"candidates"`
 }
 
 // ImageRequest is the native http request body for imagen

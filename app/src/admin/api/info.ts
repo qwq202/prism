@@ -27,6 +27,7 @@ export type SiteInfo = {
   article: string[];
   generation: string[];
   relay_plan: boolean;
+  web_search?: boolean;
   payment: string[];
   payment_aggregation: boolean;
   ga_tracking_id?: string;
@@ -56,6 +57,7 @@ export async function getSiteInfo(): Promise<SiteInfo> {
       article: [],
       generation: [],
       relay_plan: false,
+      web_search: false,
       payment: [],
       payment_aggregation: false,
 

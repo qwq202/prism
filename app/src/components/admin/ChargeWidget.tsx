@@ -406,6 +406,8 @@ type ChargeEditorProps = {
   onRefresh: () => void;
   usedModels: string[];
   allModels: string[];
+  unitM: boolean;
+  setUnitM: (v: boolean | ((prev: boolean) => boolean)) => void;
 };
 
 function ChargeEditor({
@@ -414,10 +416,13 @@ function ChargeEditor({
   onRefresh,
   usedModels,
   allModels,
+  unitM,
+  setUnitM,
 }: ChargeEditorProps) {
   const { t } = useTranslation();
 
   const [model, setModel] = useState("");
+  const multiplier = unitM ? 1000 : 1;
 
   const channelModels = useMemo(
     () => getUniqueList([...allModels, ...defaultChannelModels]),
@@ -591,34 +596,46 @@ function ChargeEditor({
             <UploadCloud className={`w-4 h-4 mr-2`} />
             <Label className={`grow`}>
               {t("admin.charge.input-count")}
-              <span className={`token`}> / 1k tokens</span>
+              <span
+                className={`token cursor-pointer select-none hover:text-foreground transition-colors ml-0.5`}
+                onClick={() => setUnitM((v) => !v)}
+                title={unitM ? "切换到 1k tokens" : "切换到 1M tokens"}
+              >
+                {" / "}{unitM ? "1M" : "1k"}{" tokens ↕"}
+              </span>
             </Label>
             <NumberInput
-              value={form.input}
+              value={parseFloat((form.input * multiplier).toPrecision(10))}
               onValueChange={(value) =>
-                dispatch({ type: "set-input", payload: value })
+                dispatch({ type: "set-input", payload: value / multiplier })
               }
               acceptNegative={false}
               className={`w-20`}
               min={0}
-              max={99999}
+              max={99999999}
             />
           </div>
           <div className={`flex flex-row w-full h-max items-center`}>
             <DownloadCloud className={`w-4 h-4 mr-2`} />
             <Label className={`grow`}>
               {t("admin.charge.output-count")}
-              <span className={`token`}> / 1k tokens</span>
+              <span
+                className={`token cursor-pointer select-none hover:text-foreground transition-colors ml-0.5`}
+                onClick={() => setUnitM((v) => !v)}
+                title={unitM ? "切换到 1k tokens" : "切换到 1M tokens"}
+              >
+                {" / "}{unitM ? "1M" : "1k"}{" tokens ↕"}
+              </span>
             </Label>
             <NumberInput
-              value={form.output}
+              value={parseFloat((form.output * multiplier).toPrecision(10))}
               onValueChange={(value) =>
-                dispatch({ type: "set-output", payload: value })
+                dispatch({ type: "set-output", payload: value / multiplier })
               }
               acceptNegative={false}
               className={`w-20`}
               min={0}
-              max={99999}
+              max={99999999}
             />
           </div>
         </div>
@@ -672,11 +689,14 @@ type ChargeTableProps = {
   data: ChargeProps[];
   dispatch: (action: any) => void;
   onRefresh: () => void;
+  unitM: boolean;
+  setUnitM: (v: boolean | ((prev: boolean) => boolean)) => void;
 };
 
-function ChargeTable({ data, dispatch, onRefresh }: ChargeTableProps) {
+function ChargeTable({ data, dispatch, onRefresh, unitM, setUnitM }: ChargeTableProps) {
   const { t } = useTranslation();
   const copy = useClipboard();
+  const multiplier = unitM ? 1000 : 1;
 
   return (
     <div className={`charge-table`}>
@@ -686,8 +706,26 @@ function ChargeTable({ data, dispatch, onRefresh }: ChargeTableProps) {
             <TableCell>{t("admin.charge.id")}</TableCell>
             <TableCell>{t("admin.charge.type")}</TableCell>
             <TableCell>{t("admin.charge.model")}</TableCell>
-            <TableCell>{t("admin.charge.input")}</TableCell>
-            <TableCell>{t("admin.charge.output")}</TableCell>
+            <TableCell>
+              {t("admin.charge.input")}
+              <span
+                className={`ml-1 text-xs text-muted-foreground cursor-pointer hover:text-foreground transition-colors`}
+                onClick={() => setUnitM((v) => !v)}
+                title={unitM ? "切换到 1k tokens" : "切换到 1M tokens"}
+              >
+                /{unitM ? "M" : "k"}↕
+              </span>
+            </TableCell>
+            <TableCell>
+              {t("admin.charge.output")}
+              <span
+                className={`ml-1 text-xs text-muted-foreground cursor-pointer hover:text-foreground transition-colors`}
+                onClick={() => setUnitM((v) => !v)}
+                title={unitM ? "切换到 1k tokens" : "切换到 1M tokens"}
+              >
+                /{unitM ? "M" : "k"}↕
+              </span>
+            </TableCell>
             <TableCell>{t("admin.charge.support-anonymous")}</TableCell>
             <TableCell>{t("admin.charge.action")}</TableCell>
           </TableRow>
@@ -714,10 +752,10 @@ function ChargeTable({ data, dispatch, onRefresh }: ChargeTableProps) {
                 ))}
               </TableCell>
               <TableCell>
-                {formatDecimal(charge.input)}
+                {formatDecimal(parseFloat((charge.input * multiplier).toPrecision(10)))}
               </TableCell>
               <TableCell>
-                {formatDecimal(charge.output)}
+                {formatDecimal(parseFloat((charge.output * multiplier).toPrecision(10)))}
               </TableCell>
               <TableCell>{t(String(charge.anonymous))}</TableCell>
               <TableCell>
@@ -764,6 +802,7 @@ function ChargeWidget() {
   const [data, setData] = useState<ChargeProps[]>([]);
   const [form, dispatch] = useReducer(reducer, initialState);
   const [loading, setLoading] = useState(false);
+  const [unitM, setUnitM] = useState(false);
 
   const { allModels, update } = useAllModels();
 
@@ -811,8 +850,10 @@ function ChargeWidget() {
         dispatch={dispatch}
         allModels={allModels}
         usedModels={usedModels}
+        unitM={unitM}
+        setUnitM={setUnitM}
       />
-      <ChargeTable data={data} dispatch={dispatch} onRefresh={refresh} />
+      <ChargeTable data={data} dispatch={dispatch} onRefresh={refresh} unitM={unitM} setUnitM={setUnitM} />
     </div>
   );
 }

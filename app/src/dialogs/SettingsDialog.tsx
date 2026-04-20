@@ -52,6 +52,7 @@ function SettingsDialog() {
   const align = useSelector(settings.alignSelector);
   const hideToolbar = useSelector(settings.hideToolbarSelector);
   const hideToolbarText = useSelector(settings.hideToolbarTextSelector);
+  const collapseThinking = useSelector(settings.collapseThinkingSelector);
   const context = useSelector(settings.contextSelector);
   const sender = useSelector(settings.senderSelector);
   const history = useSelector(settings.historySelector);
@@ -193,6 +194,19 @@ function SettingsDialog() {
                       }}
                     />
                   </div>
+                  <div className={`item`}>
+                    <div className={`name`}>
+                      {t("settings.collapse-thinking")}
+                    </div>
+                    <div className={`grow`} />
+                    <Checkbox
+                      className={`value`}
+                      checked={collapseThinking}
+                      onCheckedChange={(state: boolean) => {
+                        dispatch(settings.setCollapseThinking(state));
+                      }}
+                    />
+                  </div>
                 </div>
                 <div className={`settings-segment`}>
                   <div className={`item`}>
@@ -235,7 +249,7 @@ function SettingsDialog() {
                       className={`value large-value`}
                       value={maxTokens}
                       acceptNaN={false}
-                      min={1}
+                      min={0}
                       max={100000}
                       onValueChange={(value: number) => {
                         dispatch(settings.setMaxTokens(value));

@@ -2,6 +2,7 @@ package globals
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/natefinch/lumberjack"
@@ -33,6 +34,10 @@ func (l *AppLogger) Format(entry *logrus.Entry) ([]byte, error) {
 }
 
 func init() {
+	if err := os.MkdirAll("logs", os.ModePerm); err != nil {
+		fmt.Printf("[WARN] - [logger] - failed to create logs directory: %s\n", err.Error())
+	}
+
 	Logger = logrus.New()
 	Logger.SetFormatter(&AppLogger{
 		Logger: Logger,

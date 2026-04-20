@@ -4,7 +4,6 @@ go 1.20
 
 require (
 	github.com/bincooo/claude-api v1.0.2
-	github.com/chai2010/webp v1.1.1
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/gin-contrib/static v0.0.1
 	github.com/gin-gonic/gin v1.9.1
@@ -23,8 +22,9 @@ require (
 	github.com/spf13/viper v1.16.0
 	github.com/volcengine/volc-sdk-golang v1.0.127
 	github.com/volcengine/volcengine-go-sdk v1.0.180
+	golang.org/x/image v0.0.0-20211028202545-6944b10bf410
 	golang.org/x/net v0.15.0
-	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
+	gopkg.in/mail.v2 v2.3.1
 )
 
 require (
@@ -75,7 +75,6 @@ require (
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
-	gopkg.in/mail.v2 v2.3.1 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

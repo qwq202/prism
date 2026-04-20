@@ -1,4 +1,4 @@
-package openai
+package openairesponses
 
 import (
 	factory "chat/adapter/common"
@@ -7,10 +7,8 @@ import (
 )
 
 type ChatInstance struct {
-	Endpoint         string
-	ApiKey           string
-	isFirstReasoning bool
-	isReasonOver     bool
+	Endpoint string
+	ApiKey   string
 }
 
 func (c *ChatInstance) GetEndpoint() string {
@@ -30,9 +28,8 @@ func (c *ChatInstance) GetHeader() map[string]string {
 
 func NewChatInstance(endpoint, apiKey string) *ChatInstance {
 	return &ChatInstance{
-		Endpoint:         endpoint,
-		ApiKey:           apiKey,
-		isFirstReasoning: true,
+		Endpoint: endpoint,
+		ApiKey:   apiKey,
 	}
 }
 

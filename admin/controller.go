@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -502,5 +503,79 @@ func ConsoleLoggerAPI(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status":  true,
 		"content": content,
+	})
+}
+
+func PaymentOrderListAPI(c *gin.Context) {
+	db := utils.GetDBFromContext(c)
+	page, _ := strconv.ParseInt(c.Query("page"), 10, 64)
+	search := strings.TrimSpace(c.Query("search"))
+	c.JSON(http.StatusOK, getPaymentOrdersForm(db, page, search))
+}
+
+func PaymentOrderRecheckAPI(c *gin.Context) {
+	db := utils.GetDBFromContext(c)
+	orderId := c.Query("order")
+	if orderId == "" {
+		c.JSON(http.StatusOK, gin.H{"status": false, "message": "order id is required"})
+		return
+	}
+
+	ok, state, err := recheckPaymentOrder(db, orderId)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{"status": false, "message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":       ok,
+		"order_state":  state,
+		"is_changed":   false,
+	})
+}
+
+type WarmupForm struct {
+	Urls []string `json:"urls" binding:"required"`
+}
+
+type WarmupResult struct {
+	Url    string `json:"url"`
+	Status int    `json:"status"`
+	Error  string `json:"error,omitempty"`
+}
+
+func warmupUrl(target string) WarmupResult {
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Get(target)
+	if err != nil {
+		return WarmupResult{Url: target, Status: 0, Error: err.Error()}
+	}
+	defer resp.Body.Close()
+	return WarmupResult{Url: target, Status: resp.StatusCode}
+}
+
+func WarmupAPI(c *gin.Context) {
+	var form WarmupForm
+	if err := c.ShouldBindJSON(&form); err != nil || len(form.Urls) == 0 {
+		c.JSON(http.StatusOK, gin.H{"status": false, "message": "urls are required"})
+		return
+	}
+
+	results := make([]WarmupResult, len(form.Urls))
+	var wg sync.WaitGroup
+
+	for i, url := range form.Urls {
+		wg.Add(1)
+		go func(idx int, target string) {
+			defer wg.Done()
+			results[idx] = warmupUrl(target)
+		}(i, url)
+	}
+
+	wg.Wait()
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  true,
+		"results": results,
 	})
 }

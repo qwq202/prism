@@ -961,14 +961,16 @@ function MarketAlert({
     models.length > 0 && (
       <div className={`market-alert`}>
         <div
-          className={`flex flex-row items-center mb-2 whitespace-nowrap select-none`}
+          className={`flex w-full flex-row items-center justify-between gap-3 mb-2 select-none`}
         >
-          <AlertCircle className={`h-4 w-4 mr-2 translate-y-[1px]`} />
-          <span>{t("admin.market.not-use")}</span>
+          <div className={`flex flex-row items-center whitespace-nowrap`}>
+            <AlertCircle className={`h-4 w-4 mr-2 translate-y-[1px]`} />
+            <span>{t("admin.market.not-use")}</span>
+          </div>
           <Button
             variant={`outline`}
             size={`sm`}
-            className={`ml-auto`}
+            className={`whitespace-nowrap`}
             onClick={onImportAll}
           >
             <Import className={`h-4 w-4 mr-2`} />

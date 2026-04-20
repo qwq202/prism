@@ -5,7 +5,6 @@ import {
   BookCopy,
   CalendarRange,
   CloudCog,
-  CopyrightIcon,
   CreditCard,
   FileClock,
   Gauge,
@@ -92,10 +91,10 @@ function MenuBar() {
         path={"/subscription"}
       />
       <MenuItem
+        pro
         title={t("admin.payment")}
         icon={<CreditCard />}
         path={"/pay"}
-        pro
       />
       <MenuItem
         pro
@@ -119,12 +118,6 @@ function MenuBar() {
         title={t("admin.cdn.warmup")}
         icon={<ServerCrash />}
         path={"/warmup"}
-      />
-      <MenuItem
-        pro
-        title={t("admin.license.title")}
-        icon={<CopyrightIcon />}
-        path={"/license"}
       />
     </div>
   );

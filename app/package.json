@@ -16,7 +16,7 @@
     "@fontsource-variable/jetbrains-mono": "^5.1.1",
     "@headlessui/react": "^1.7.18",
     "@headlessui/tailwindcss": "^0.2.0",
-    "@lobehub/icons": "1.49.0",
+    "@lobehub/icons": "1.97.2",
     "@radix-ui/react-accordion": "^1.1.2",
     "@radix-ui/react-alert-dialog": "^1.0.4",
     "@radix-ui/react-checkbox": "^1.0.4",
@@ -96,7 +96,7 @@
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
     "@vitejs/plugin-react-swc": "^3.3.2",
-    "autoprefixer": "^10.4.15",
+    "autoprefixer": "^10.5.0",
     "cross-env": "^7.0.3",
     "eslint": "^8.45.0",
     "eslint-plugin-react-hooks": "^4.6.0",
@@ -109,5 +109,10 @@
     "typescript": "^5.0.2",
     "vite": "^4.4.5",
     "vite-plugin-html": "^3.2.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "@lobehub/icons": "1.97.2"
+    }
   }
 }

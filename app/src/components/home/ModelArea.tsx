@@ -138,8 +138,13 @@ export default function ModelFinder(props: ModelSelectorProps) {
 
   const models = useMemo(() => {
     const raw = list.length
-      ? supportModels.filter((model) => list.includes(model.id))
-      : supportModels.filter((model) => model.default);
+      ? supportModels.filter((item) => list.includes(item.id))
+      : supportModels.filter((item) => item.default);
+    const selection = supportModels.find((item) => item.id === model);
+
+    if (selection && !raw.some((item) => item.id === selection.id)) {
+      raw.push(selection);
+    }
 
     if (raw.length === 0)
       raw.push({

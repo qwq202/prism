@@ -33,6 +33,7 @@ export type RecordStats = {
 
 export type RecordQuery = {
   user_id?: number;
+  username?: string;
   start_time?: string;
   end_time?: string;
   token_name?: string;

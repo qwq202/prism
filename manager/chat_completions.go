@@ -5,6 +5,7 @@ import (
 	"chat/addition/web"
 	"chat/admin"
 	"chat/auth"
+	"chat/billing"
 	"chat/channel"
 	"chat/globals"
 	"chat/utils"
@@ -64,16 +65,20 @@ func ChatRelayAPI(c *gin.Context) {
 	user := &auth.User{
 		Username: username,
 	}
+	group := auth.GetGroup(db, user)
 	id := utils.Md5Encrypt(username + form.Model + time.Now().String())
 	created := time.Now().Unix()
 
 	messages := transform(form.Messages)
+	enableWeb := form.WebSearch || form.URLContext
 	if strings.HasPrefix(form.Model, "web-") {
 		suffix := strings.TrimPrefix(form.Model, "web-")
 
 		form.Model = suffix
-		messages = web.ToSearched(true, messages)
+		enableWeb = true
 	}
+
+	messages = web.ToSearched(enableWeb, form.Model, messages, group, cache)
 
 	if strings.HasSuffix(form.Model, "-official") {
 		form.Model = strings.TrimSuffix(form.Model, "-official")
@@ -87,34 +92,41 @@ func ChatRelayAPI(c *gin.Context) {
 	}
 
 	if form.Stream {
-		sendStreamTranshipmentResponse(c, form, messages, id, created, user, plan)
+		sendStreamTranshipmentResponse(c, form, messages, id, created, user, plan, enableWeb)
 	} else {
-		sendTranshipmentResponse(c, form, messages, id, created, user, plan)
+		sendTranshipmentResponse(c, form, messages, id, created, user, plan, enableWeb)
 	}
 }
 
-func getChatProps(form RelayForm, messages []globals.Message, buffer *utils.Buffer) *adaptercommon.ChatProps {
+func getChatProps(form RelayForm, messages []globals.Message, buffer *utils.Buffer, enableWeb bool) *adaptercommon.ChatProps {
+	webSearch := utils.Multi(enableWeb && !form.WebSearch && !form.URLContext, true, form.WebSearch)
+	urlContext := utils.Multi(enableWeb && !form.WebSearch && !form.URLContext, true, form.URLContext)
+
 	return adaptercommon.CreateChatProps(&adaptercommon.ChatProps{
-		Model:             form.Model,
-		Message:           messages,
-		MaxTokens:         form.MaxTokens,
-		PresencePenalty:   form.PresencePenalty,
-		FrequencyPenalty:  form.FrequencyPenalty,
-		RepetitionPenalty: form.RepetitionPenalty,
-		Temperature:       form.Temperature,
-		TopP:              form.TopP,
-		TopK:              form.TopK,
-		Tools:             form.Tools,
-		ToolChoice:        form.ToolChoice,
+		Model:                form.Model,
+		Message:              messages,
+		EnableWeb:            enableWeb,
+		EnableWebSearch:      webSearch,
+		EnableURLContext:     urlContext,
+		GeminiThinkingBudget: &form.GeminiThinkingBudget,
+		MaxTokens:            form.MaxTokens,
+		PresencePenalty:      form.PresencePenalty,
+		FrequencyPenalty:     form.FrequencyPenalty,
+		RepetitionPenalty:    form.RepetitionPenalty,
+		Temperature:          form.Temperature,
+		TopP:                 form.TopP,
+		TopK:                 form.TopK,
+		Tools:                form.Tools,
+		ToolChoice:           form.ToolChoice,
 	}, buffer)
 }
 
-func sendTranshipmentResponse(c *gin.Context, form RelayForm, messages []globals.Message, id string, created int64, user *auth.User, plan bool) {
+func sendTranshipmentResponse(c *gin.Context, form RelayForm, messages []globals.Message, id string, created int64, user *auth.User, plan bool, enableWeb bool) {
 	db := utils.GetDBFromContext(c)
 	cache := utils.GetCacheFromContext(c)
 
 	buffer := utils.NewBuffer(form.Model, messages, channel.ChargeInstance.GetCharge(form.Model))
-	hit, err := channel.NewChatRequestWithCache(cache, buffer, auth.GetGroup(db, user), getChatProps(form, messages, buffer), func(data *globals.Chunk) error {
+	hit, err := channel.NewChatRequestWithCache(cache, buffer, auth.GetGroup(db, user), getChatProps(form, messages, buffer, enableWeb), func(data *globals.Chunk) error {
 		buffer.WriteChunk(data)
 		return nil
 	})
@@ -130,6 +142,18 @@ func sendTranshipmentResponse(c *gin.Context, form RelayForm, messages []globals
 
 	if !hit {
 		CollectQuota(c, user, buffer, plan, err)
+	}
+
+	if err == nil && user != nil && !buffer.IsEmpty() {
+		userId := auth.GetId(db, user)
+		billing.CreateRecord(
+			db, userId, user.Username, "consume",
+			buffer.GetTokenName(), form.Model,
+			int64(buffer.CountInputToken()), int64(buffer.CountOutputToken(false)),
+			float64(buffer.GetRecordQuota()), buffer.GetDuration(),
+			"", buffer.GetRecordPrompts(), buffer.GetRecordResponsePrompts(),
+			buffer.GetChannelId(), buffer.GetChannelName(),
+		)
 	}
 
 	tools := buffer.GetToolCalls()
@@ -212,18 +236,18 @@ func getStreamTranshipmentForm(id string, created int64, form RelayForm, data *g
 	}
 }
 
-func sendStreamTranshipmentResponse(c *gin.Context, form RelayForm, messages []globals.Message, id string, created int64, user *auth.User, plan bool) {
+func sendStreamTranshipmentResponse(c *gin.Context, form RelayForm, messages []globals.Message, id string, created int64, user *auth.User, plan bool, enableWeb bool) {
 	partial := make(chan RelayStreamResponse)
 	db := utils.GetDBFromContext(c)
 	cache := utils.GetCacheFromContext(c)
-
 	group := auth.GetGroup(db, user)
+
 	charge := channel.ChargeInstance.GetCharge(form.Model)
 
 	go func() {
 		buffer := utils.NewBuffer(form.Model, messages, charge)
 		hit, err := channel.NewChatRequestWithCache(
-			cache, buffer, group, getChatProps(form, messages, buffer),
+			cache, buffer, group, getChatProps(form, messages, buffer, enableWeb),
 			func(data *globals.Chunk) error {
 				buffer.WriteChunk(data)
 
@@ -247,6 +271,18 @@ func sendStreamTranshipmentResponse(c *gin.Context, form RelayForm, messages []g
 
 		if !hit {
 			CollectQuota(c, user, buffer, plan, err)
+		}
+
+		if user != nil && !buffer.IsEmpty() {
+			userId := auth.GetId(db, user)
+			billing.CreateRecord(
+				db, userId, user.Username, "consume",
+				buffer.GetTokenName(), form.Model,
+				int64(buffer.CountInputToken()), int64(buffer.CountOutputToken(false)),
+				float64(buffer.GetRecordQuota()), buffer.GetDuration(),
+				"", buffer.GetRecordPrompts(), buffer.GetRecordResponsePrompts(),
+				buffer.GetChannelId(), buffer.GetChannelName(),
+			)
 		}
 
 		close(partial)

@@ -52,6 +52,9 @@ export type ChatProps = {
   message: string;
   model: string;
   web?: boolean;
+  web_search?: boolean;
+  url_context?: boolean;
+  gemini_thinking_budget?: number;
   web_search_mode?: "quick" | "detailed";
   web_page_summary?: boolean;
   think?: boolean;

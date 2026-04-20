@@ -24,10 +24,10 @@ func NativeChatHandler(c *gin.Context, user *auth.User, model string, message []
 		}
 	}()
 
-	segment := web.ToSearched(enableWeb, message)
-
 	db := utils.GetDBFromContext(c)
 	cache := utils.GetCacheFromContext(c)
+	group := auth.GetGroup(db, user)
+	segment := web.ToSearched(enableWeb, model, message, group, cache)
 	check, plan := auth.CanEnableModelWithSubscription(db, cache, user, model, segment)
 
 	if check != nil {
@@ -37,10 +37,13 @@ func NativeChatHandler(c *gin.Context, user *auth.User, model string, message []
 	buffer := utils.NewBuffer(model, segment, channel.ChargeInstance.GetCharge(model))
 	hit, err := channel.NewChatRequestWithCache(
 		cache, buffer,
-		auth.GetGroup(db, user),
+		group,
 		adaptercommon.CreateChatProps(&adaptercommon.ChatProps{
-			Model:   model,
-			Message: segment,
+			Model:            model,
+			Message:          segment,
+			EnableWeb:        enableWeb,
+			EnableWebSearch:  enableWeb,
+			EnableURLContext: enableWeb,
 		}, buffer),
 		func(resp *globals.Chunk) error {
 			buffer.WriteChunk(resp)

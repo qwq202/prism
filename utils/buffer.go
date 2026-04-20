@@ -33,6 +33,8 @@ type Buffer struct {
 	StartTime       *time.Time            `json:"-"`
 	Prompts         string                `json:"prompts"`
 	TokenName       string                `json:"-"`
+	ChannelId       int                   `json:"-"`
+	ChannelName     string                `json:"-"`
 	Charge          Charge                `json:"-"`
 	VisionRecall    bool                  `json:"-"`
 }
@@ -324,6 +326,19 @@ func (b *Buffer) GetTokenName() string {
 
 func (b *Buffer) SetTokenName(tokenName string) {
 	b.TokenName = tokenName
+}
+
+func (b *Buffer) SetChannel(id int, name string) {
+	b.ChannelId = id
+	b.ChannelName = name
+}
+
+func (b *Buffer) GetChannelId() int {
+	return b.ChannelId
+}
+
+func (b *Buffer) GetChannelName() string {
+	return b.ChannelName
 }
 
 func (b *Buffer) GetRecordPrompts() string {

@@ -123,6 +123,7 @@ function SharingForm({ data }: SharingFormProps) {
                   key={i}
                   index={i}
                   username={data.username}
+                  model={data.model}
                 />
               ))}
             </div>
@@ -165,6 +166,7 @@ function SharingForm({ data }: SharingFormProps) {
                 key={i}
                 index={i}
                 username={data.username}
+                model={data.model}
               />
             ))}
           </div>

@@ -1,10 +1,20 @@
 import {
+  isGeminiModelId,
+  selectGeminiThinkingBudget,
+  selectGeminiGoogleSearch,
+  selectGeminiURLContext,
+  selectModel,
   selectWeb,
+  setGeminiThinkingBudget,
+  setGeminiGoogleSearch,
+  setGeminiURLContext,
+  supportsGeminiThinkingBudgetControl,
   toggleWeb,
   useConversationActions,
   useMessages,
 } from "@/store/chat.ts";
-import { Globe, Info, MessageSquarePlus, Wifi, WifiOff } from "lucide-react";
+import { infoWebSearchSelector } from "@/store/info.ts";
+import { Brain, Globe, Info, MessageSquarePlus, Wifi, WifiOff } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { useTranslation } from "react-i18next";
 import React from "react";
@@ -27,6 +37,14 @@ import {
 } from "@/components/ui/popover.tsx";
 import { Switch } from "@/components/ui/switch.tsx";
 import { Label } from "@/components/ui/label.tsx";
+import { Slider } from "@/components/ui/slider.tsx";
+
+const geminiThinkingPresets = [
+  { label: "off", budget: 0 },
+  { label: "low", budget: 1024 },
+  { label: "medium", budget: 4096 },
+  { label: "high", budget: 8192 },
+];
 
 type ChatActionProps = {
   style?: React.CSSProperties;
@@ -88,16 +106,33 @@ export function WebAction() {
   const { t } = useTranslation();
   const dispatch = useDispatch();
   const web = useSelector(selectWeb);
+  const model = useSelector(selectModel);
+  const geminiGoogleSearch = useSelector(selectGeminiGoogleSearch);
+  const geminiURLContext = useSelector(selectGeminiURLContext);
+  const webSearchEnabled = useSelector(infoWebSearchSelector);
+
+  const isGeminiModel = isGeminiModelId(model);
+
+  const geminiWebEnabled = geminiGoogleSearch || geminiURLContext;
+
+  if (!webSearchEnabled && !isGeminiModel) {
+    return null;
+  }
 
   return (
     <Popover>
       <PopoverTrigger asChild>
         <div>
           <ChatAction
-            active={web}
-            text={t("chat.web")}
+            active={isGeminiModel ? geminiWebEnabled : web}
+            text={isGeminiModel ? t("chat.gemini-web") : t("chat.web")}
           >
-            <Globe className={cn("h-4 w-4 web", web && "enable")} />
+            <Globe
+              className={cn(
+                "h-4 w-4 web",
+                (isGeminiModel ? geminiWebEnabled : web) && "enable",
+              )}
+            />
           </ChatAction>
         </div>
       </PopoverTrigger>
@@ -107,47 +142,173 @@ export function WebAction() {
         align="start"
       >
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="web-search-toggle" className="text-sm">{t("chat.web-search")}</Label>
-            <Switch
-              id="web-search-toggle"
-              checked={web}
-              onCheckedChange={() => {
-                toast(t("chat.web-search"), {
-                  description: (
-                    <div className={`flex flex-col`}>
-                      <div className={`flex flex-row items-center flex-wrap`}>
-                        <Icon
-                          icon={!web ? <Wifi /> : <WifiOff />}
-                          className={`h-4 w-4 mr-1 shrink-0`}
-                        />
-                        {!web
-                          ? t("chat.web-enable-toast")
-                          : t("chat.web-disable-toast")}
-                      </div>
-                      <div
-                        className={`mt-1.5 flex flex-row items-center rounded-md border scale-80 py-1 px-2`}
-                      >
-                        <Icon icon={<Info />} className={`h-3 w-3 mr-1 shrink-0`} />
-                        {t("chat.web-enable-tip")}
-                      </div>
-                    </div>
-                  ),
-                });
+          {isGeminiModel ? (
+            <>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="gemini-google-search-toggle" className="text-sm">
+                  {t("chat.gemini-google-search")}
+                </Label>
+                <Switch
+                  id="gemini-google-search-toggle"
+                  checked={geminiGoogleSearch}
+                  onCheckedChange={(state) => {
+                    dispatch(setGeminiGoogleSearch(state));
+                  }}
+                />
+              </div>
 
-                dispatch(toggleWeb());
+              <div className="flex items-center justify-between">
+                <Label htmlFor="gemini-url-context-toggle" className="text-sm">
+                  {t("chat.gemini-url-context")}
+                </Label>
+                <Switch
+                  id="gemini-url-context-toggle"
+                  checked={geminiURLContext}
+                  onCheckedChange={(state) => {
+                    dispatch(setGeminiURLContext(state));
+                  }}
+                />
+              </div>
+
+              <div className="rounded-md bg-muted p-2 text-xs">
+                <div className="flex items-start">
+                  <Icon icon={<Info />} className="h-3 w-3 mr-1 mt-0.5 shrink-0" />
+                  {t("chat.gemini-web-enable-tip")}
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="web-search-toggle" className="text-sm">{t("chat.web-search")}</Label>
+                <Switch
+                  id="web-search-toggle"
+                  checked={web}
+                  onCheckedChange={() => {
+                    toast(t("chat.web-search"), {
+                      description: (
+                        <div className={`flex flex-col`}>
+                          <div className={`flex flex-row items-center flex-wrap`}>
+                            <Icon
+                              icon={!web ? <Wifi /> : <WifiOff />}
+                              className={`h-4 w-4 mr-1 shrink-0`}
+                            />
+                            {!web
+                              ? t("chat.web-enable-toast")
+                              : t("chat.web-disable-toast")}
+                          </div>
+                          <div
+                            className={`mt-1.5 flex flex-row items-center rounded-md border scale-80 py-1 px-2`}
+                          >
+                            <Icon icon={<Info />} className={`h-3 w-3 mr-1 shrink-0`} />
+                            {t("chat.web-enable-tip")}
+                          </div>
+                        </div>
+                      ),
+                    });
+
+                    dispatch(toggleWeb());
+                  }}
+                />
+              </div>
+
+              <div className="rounded-md bg-muted p-2 text-xs">
+                <div className="flex items-center">
+                  <Icon icon={<Info />} className="h-3 w-3 mr-1 shrink-0" />
+                  {t("chat.web-enable-tip")}
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+export function GeminiThinkingAction() {
+  const { t } = useTranslation();
+  const dispatch = useDispatch();
+  const model = useSelector(selectModel);
+  const geminiThinkingBudget = useSelector(selectGeminiThinkingBudget);
+
+  if (!supportsGeminiThinkingBudgetControl(model)) {
+    return null;
+  }
+
+  const enabled = geminiThinkingBudget > 0;
+  const levelIndex = Math.max(
+    1,
+    geminiThinkingPresets.findIndex(
+      (item) => item.budget === geminiThinkingBudget,
+    ),
+  );
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <div>
+          <ChatAction
+            active={enabled}
+            text={t("chat.gemini-thinking")}
+          >
+            <Brain className={cn("h-4 w-4", enabled && "enable")} />
+          </ChatAction>
+        </div>
+      </PopoverTrigger>
+      <PopoverContent className="w-72 p-3" side="top" align="start">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <Label
+              htmlFor="gemini-thinking-toggle"
+              className="text-sm"
+            >
+              {t("chat.gemini-thinking-enable")}
+            </Label>
+            <Switch
+              id="gemini-thinking-toggle"
+              checked={enabled}
+              onCheckedChange={(state) => {
+                dispatch(
+                  setGeminiThinkingBudget(state ? geminiThinkingPresets[2].budget : 0),
+                );
               }}
             />
           </div>
 
-          {web && (
-            <></>
-          )}
-          
+          <div className={cn("space-y-2", !enabled && "opacity-50")}>
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>{t("chat.gemini-thinking-depth")}</span>
+              <span>
+                {enabled
+                  ? t(`chat.gemini-thinking-level-${geminiThinkingPresets[levelIndex].label}`)
+                  : t("chat.gemini-thinking-level-off")}
+              </span>
+            </div>
+
+            <Slider
+              disabled={!enabled}
+              value={[levelIndex]}
+              min={1}
+              max={3}
+              step={1}
+              onValueChange={(value) => {
+                const next = geminiThinkingPresets[value[0]];
+                next && dispatch(setGeminiThinkingBudget(next.budget));
+              }}
+            />
+
+            <div className="flex justify-between text-[11px] text-muted-foreground">
+              <span>{t("chat.gemini-thinking-level-low")}</span>
+              <span>{t("chat.gemini-thinking-level-medium")}</span>
+              <span>{t("chat.gemini-thinking-level-high")}</span>
+            </div>
+          </div>
+
           <div className="rounded-md bg-muted p-2 text-xs">
-            <div className="flex items-center">
-              <Icon icon={<Info />} className="h-3 w-3 mr-1 shrink-0" />
-              {t("chat.web-enable-tip")}
+            <div className="flex items-start">
+              <Icon icon={<Info />} className="h-3 w-3 mr-1 mt-0.5 shrink-0" />
+              {t("chat.gemini-thinking-tip")}
             </div>
           </div>
         </div>

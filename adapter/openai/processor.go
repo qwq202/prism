@@ -73,15 +73,67 @@ func processChatErrorResponse(data string) *ChatStreamErrorResponse {
 	return utils.UnmarshalForm[ChatStreamErrorResponse](data)
 }
 
-func getChoices(form *ChatStreamResponse) *globals.Chunk {
+func getReasoningText(message ResponseMessage) *string {
+	if message.ReasoningContent != nil && *message.ReasoningContent != "" {
+		return message.ReasoningContent
+	}
+
+	if message.Reasoning != nil && *message.Reasoning != "" {
+		return message.Reasoning
+	}
+
+	return nil
+}
+
+func formatReasoningContent(reasoning *string, content string) string {
+	if reasoning == nil || *reasoning == "" {
+		return content
+	}
+
+	if content == "" {
+		return fmt.Sprintf("<think>\n%s\n</think>", *reasoning)
+	}
+
+	return fmt.Sprintf("<think>\n%s\n</think>\n\n%s", *reasoning, content)
+}
+
+func (c *ChatInstance) getChoices(form *ChatStreamResponse) *globals.Chunk {
 	if len(form.Choices) == 0 {
 		return &globals.Chunk{Content: ""}
 	}
 
 	choice := form.Choices[0].Delta
+	reasoning := getReasoningText(choice)
+
+	if c.isFirstReasoning == false && !c.isReasonOver && reasoning == nil {
+		c.isReasonOver = true
+		if choice.Content != "" {
+			return &globals.Chunk{
+				Content:      fmt.Sprintf("\n</think>\n\n%s", choice.Content),
+				ToolCall:     choice.ToolCalls,
+				FunctionCall: choice.FunctionCall,
+			}
+		}
+
+		return &globals.Chunk{
+			Content:      "\n</think>\n\n",
+			ToolCall:     choice.ToolCalls,
+			FunctionCall: choice.FunctionCall,
+		}
+	}
+
+	content := choice.Content
+	if reasoning != nil {
+		if c.isFirstReasoning {
+			c.isFirstReasoning = false
+			content = fmt.Sprintf("<think>\n%s", *reasoning)
+		} else {
+			content = *reasoning
+		}
+	}
 
 	return &globals.Chunk{
-		Content:      choice.Content,
+		Content:      content,
 		ToolCall:     choice.ToolCalls,
 		FunctionCall: choice.FunctionCall,
 	}
@@ -124,7 +176,7 @@ func (c *ChatInstance) ProcessLine(data string, isCompletionType bool) (*globals
 	}
 
 	if form := processChatResponse(data); form != nil {
-		return getChoices(form), nil
+		return c.getChoices(form), nil
 	}
 
 	if form := processChatErrorResponse(data); form != nil {

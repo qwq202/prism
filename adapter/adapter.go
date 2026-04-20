@@ -13,6 +13,7 @@ import (
 	"chat/adapter/hunyuan"
 	"chat/adapter/midjourney"
 	"chat/adapter/openai"
+	"chat/adapter/openairesponses"
 	"chat/adapter/palm2"
 	"chat/adapter/skylark"
 	"chat/adapter/slack"
@@ -24,23 +25,24 @@ import (
 )
 
 var channelFactories = map[string]adaptercommon.FactoryCreator{
-	globals.OpenAIChannelType:      openai.NewChatInstanceFromConfig,
-	globals.AzureOpenAIChannelType: azure.NewChatInstanceFromConfig,
-	globals.ClaudeChannelType:      claude.NewChatInstanceFromConfig,
-	globals.SlackChannelType:       slack.NewChatInstanceFromConfig,
-	globals.BingChannelType:        bing.NewChatInstanceFromConfig,
-	globals.PalmChannelType:        palm2.NewChatInstanceFromConfig,
-	globals.SparkdeskChannelType:   sparkdesk.NewChatInstanceFromConfig,
-	globals.ChatGLMChannelType:     zhipuai.NewChatInstanceFromConfig,
-	globals.QwenChannelType:        dashscope.NewChatInstanceFromConfig,
-	globals.HunyuanChannelType:     hunyuan.NewChatInstanceFromConfig,
-	globals.BaichuanChannelType:    baichuan.NewChatInstanceFromConfig,
-	globals.SkylarkChannelType:     skylark.NewChatInstanceFromConfig,
-	globals.ZhinaoChannelType:      zhinao.NewChatInstanceFromConfig,
-	globals.MidjourneyChannelType:  midjourney.NewChatInstanceFromConfig,
-	globals.DeepseekChannelType:    deepseek.NewChatInstanceFromConfig,
-	globals.DifyChannelType:        dify.NewChatInstanceFromConfig,
-	globals.CozeChannelType:        coze.NewChatInstanceFromConfig,
+	globals.OpenAIChannelType:          openai.NewChatInstanceFromConfig,
+	globals.OpenAIResponsesChannelType: openairesponses.NewChatInstanceFromConfig,
+	globals.AzureOpenAIChannelType:     azure.NewChatInstanceFromConfig,
+	globals.ClaudeChannelType:          claude.NewChatInstanceFromConfig,
+	globals.SlackChannelType:           slack.NewChatInstanceFromConfig,
+	globals.BingChannelType:            bing.NewChatInstanceFromConfig,
+	globals.PalmChannelType:            palm2.NewChatInstanceFromConfig,
+	globals.SparkdeskChannelType:       sparkdesk.NewChatInstanceFromConfig,
+	globals.ChatGLMChannelType:         zhipuai.NewChatInstanceFromConfig,
+	globals.QwenChannelType:            dashscope.NewChatInstanceFromConfig,
+	globals.HunyuanChannelType:         hunyuan.NewChatInstanceFromConfig,
+	globals.BaichuanChannelType:        baichuan.NewChatInstanceFromConfig,
+	globals.SkylarkChannelType:         skylark.NewChatInstanceFromConfig,
+	globals.ZhinaoChannelType:          zhinao.NewChatInstanceFromConfig,
+	globals.MidjourneyChannelType:      midjourney.NewChatInstanceFromConfig,
+	globals.DeepseekChannelType:        deepseek.NewChatInstanceFromConfig,
+	globals.DifyChannelType:            dify.NewChatInstanceFromConfig,
+	globals.CozeChannelType:            coze.NewChatInstanceFromConfig,
 
 	globals.MoonshotChannelType: openai.NewChatInstanceFromConfig, // openai format
 	globals.GroqChannelType:     openai.NewChatInstanceFromConfig, // openai format
@@ -51,6 +53,7 @@ func createChatRequest(conf globals.ChannelConfig, props *adaptercommon.ChatProp
 	props.Proxy = conf.GetProxy()
 
 	factoryType := conf.GetType()
+	props.ChannelType = factoryType
 	if factory, ok := channelFactories[factoryType]; ok {
 		return factory(conf).CreateStreamChatRequest(props, hook)
 	}

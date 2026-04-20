@@ -15,7 +15,6 @@ import { lazyFactor } from "@/utils/loader.tsx";
 import { useSelector } from "react-redux";
 import { selectAdmin, selectAuthenticated, selectInit } from "@/store/auth.ts";
 import Index from "@/routes/Index.tsx";
-import License from "@/routes/admin/License.tsx";
 
 const Model = lazyFactor(() => import("@/routes/Model.tsx"));
 const Wallet = lazyFactor(() => import("@/routes/Wallet.tsx"));
@@ -30,7 +29,6 @@ const AdminDashboard = lazyFactor(() => import("@/routes/admin/DashBoard.tsx"));
 const AdminMarket = lazyFactor(() => import("@/routes/admin/Market.tsx"));
 const AdminChannel = lazyFactor(() => import("@/routes/admin/Channel.tsx"));
 const AdminSystem = lazyFactor(() => import("@/routes/admin/System.tsx"));
-const AdminLicense = lazyFactor(() => import("@/routes/admin/License.tsx"));
 const AdminCharge = lazyFactor(() => import("@/routes/admin/Charge.tsx"));
 const AdminUsers = lazyFactor(() => import("@/routes/admin/Users.tsx"));
 const AdminBroadcast = lazyFactor(() => import("@/routes/admin/Broadcast.tsx"));
@@ -38,6 +36,9 @@ const AdminSubscription = lazyFactor(
   () => import("@/routes/admin/Subscription.tsx"),
 );
 const AdminLogger = lazyFactor(() => import("@/routes/admin/Logger.tsx"));
+const AdminRecord = lazyFactor(() => import("@/routes/admin/Record.tsx"));
+const AdminPayment = lazyFactor(() => import("@/routes/admin/Payment.tsx"));
+const AdminWarmup = lazyFactor(() => import("@/routes/admin/Warmup.tsx"));
 
 const router = createBrowserRouter([
   {
@@ -181,16 +182,7 @@ const router = createBrowserRouter([
             path: "warmup",
             element: (
               <Suspense>
-                <License />
-              </Suspense>
-            ),
-          },
-          {
-            id: "admin-license",
-            path: "license",
-            element: (
-              <Suspense>
-                <AdminLicense />
+                <AdminWarmup />
               </Suspense>
             ),
           },
@@ -226,7 +218,7 @@ const router = createBrowserRouter([
             path: "record",
             element: (
               <Suspense>
-                <License />
+                <AdminRecord />
               </Suspense>
             ),
           },
@@ -235,7 +227,7 @@ const router = createBrowserRouter([
             path: "pay",
             element: (
               <Suspense>
-                <License />
+                <AdminPayment />
               </Suspense>
             ),
           },

@@ -6,6 +6,7 @@ import (
 	"chat/addition/web"
 	"chat/admin"
 	"chat/auth"
+	"chat/billing"
 	"chat/channel"
 	"chat/globals"
 	"chat/manager/conversation"
@@ -166,15 +167,19 @@ func createChatTask(
 			cache, buffer,
 			auth.GetGroup(db, user),
 			adaptercommon.CreateChatProps(&adaptercommon.ChatProps{
-				Model:             model,
-				Message:           segment,
-				MaxTokens:         instance.GetMaxTokens(),
-				Temperature:       instance.GetTemperature(),
-				TopP:              instance.GetTopP(),
-				TopK:              instance.GetTopK(),
-				PresencePenalty:   instance.GetPresencePenalty(),
-				FrequencyPenalty:  instance.GetFrequencyPenalty(),
-				RepetitionPenalty: instance.GetRepetitionPenalty(),
+				Model:                model,
+				Message:              segment,
+				EnableWeb:            instance.IsEnableWeb(),
+				EnableWebSearch:      instance.IsEnableWebSearch(),
+				EnableURLContext:     instance.IsEnableURLContext(),
+				GeminiThinkingBudget: instance.GetGeminiThinkingBudget(),
+				MaxTokens:            instance.GetMaxTokens(),
+				Temperature:          instance.GetTemperature(),
+				TopP:                 instance.GetTopP(),
+				TopK:                 instance.GetTopK(),
+				PresencePenalty:      instance.GetPresencePenalty(),
+				FrequencyPenalty:     instance.GetFrequencyPenalty(),
+				RepetitionPenalty:    instance.GetRepetitionPenalty(),
 			}, buffer),
 
 			// the function to handle the chunk data
@@ -261,7 +266,8 @@ func ChatHandler(conn *Connection, user *auth.User, instance *conversation.Conve
 	cache := conn.GetCache()
 
 	model := instance.GetModel()
-	segment := adapter.ClearMessages(model, web.ToChatSearched(instance, restart))
+	group := auth.GetGroup(db, user)
+	segment := adapter.ClearMessages(model, web.ToChatSearched(instance, restart, group, cache))
 
 	check, plan := auth.CanEnableModelWithSubscription(db, cache, user, model, segment)
 	conn.Send(globals.ChatSegmentResponse{
@@ -295,6 +301,18 @@ func ChatHandler(conn *Connection, user *auth.User, instance *conversation.Conve
 
 	if !hit {
 		CollectQuota(conn.GetCtx(), user, buffer, plan, err)
+	}
+
+	if !adapter.IsAvailableError(err) && user != nil && !buffer.IsEmpty() {
+		userId := auth.GetId(db, user)
+		billing.CreateRecord(
+			db, userId, user.Username, "consume",
+			buffer.GetTokenName(), model,
+			int64(buffer.CountInputToken()), int64(buffer.CountOutputToken(false)),
+			float64(buffer.GetRecordQuota()), buffer.GetDuration(),
+			"", buffer.GetRecordPrompts(), buffer.GetRecordResponsePrompts(),
+			buffer.GetChannelId(), buffer.GetChannelName(),
+		)
 	}
 
 	if buffer.IsEmpty() {

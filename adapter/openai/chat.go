@@ -100,7 +100,13 @@ func (c *ChatInstance) CreateChatRequest(props *adaptercommon.ChatProps) (string
 	} else if data.Error.Message != "" {
 		return "", fmt.Errorf("openai error: %s", data.Error.Message)
 	}
-	return data.Choices[0].Message.Content, nil
+	if len(data.Choices) == 0 {
+		return "", fmt.Errorf("openai error: no choices")
+	}
+	return formatReasoningContent(
+		getReasoningText(data.Choices[0].Message),
+		data.Choices[0].Message.Content,
+	), nil
 }
 
 func hideRequestId(message string) string {
@@ -123,6 +129,8 @@ func (c *ChatInstance) CreateStreamChatRequest(props *adaptercommon.ChatProps, c
 	}
 
 	isCompletionType := props.Model == globals.GPT3TurboInstruct
+	c.isFirstReasoning = true
+	c.isReasonOver = false
 
 	ticks := 0
 	err := utils.EventScanner(&utils.EventScannerProps{

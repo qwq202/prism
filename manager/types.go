@@ -29,19 +29,22 @@ type MessageContent struct {
 type MessageContents []MessageContent
 
 type RelayForm struct {
-	Model             string    `json:"model" binding:"required"`
-	Messages          []Message `json:"messages" binding:"required"`
-	Stream            bool      `json:"stream"`
-	MaxTokens         *int      `json:"max_tokens"`
-	PresencePenalty   *float32  `json:"presence_penalty"`
-	FrequencyPenalty  *float32  `json:"frequency_penalty"`
-	RepetitionPenalty *float32  `json:"repetition_penalty"`
-	Temperature       *float32  `json:"temperature"`
-	TopP              *float32  `json:"top_p"`
-	TopK              *int      `json:"top_k"`
-	Tools             *globals.FunctionTools
-	ToolChoice        *interface{}
-	Official          bool `json:"official"`
+	Model                string    `json:"model" binding:"required"`
+	Messages             []Message `json:"messages" binding:"required"`
+	Stream               bool      `json:"stream"`
+	MaxTokens            *int      `json:"max_tokens"`
+	PresencePenalty      *float32  `json:"presence_penalty"`
+	FrequencyPenalty     *float32  `json:"frequency_penalty"`
+	RepetitionPenalty    *float32  `json:"repetition_penalty"`
+	Temperature          *float32  `json:"temperature"`
+	TopP                 *float32  `json:"top_p"`
+	TopK                 *int      `json:"top_k"`
+	Tools                *globals.FunctionTools
+	ToolChoice           *interface{}
+	WebSearch            bool `json:"web_search"`
+	URLContext           bool `json:"url_context"`
+	GeminiThinkingBudget int  `json:"gemini_thinking_budget"`
+	Official             bool `json:"official"`
 }
 
 type Choice struct {

@@ -28,5 +28,11 @@ system:
     password: ""
     from: ""
   search:
-    endpoint: https://duckduckgo-api.vercel.app
-    query: 5
+    api_key: ""
+    max_results: 5
+    topic: general
+    depth: basic
+    crop: false
+    crop_len: 1000
+  task:
+    model: ""

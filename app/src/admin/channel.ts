@@ -53,6 +53,7 @@ export type ChannelInfo = {
 
 export const ChannelTypes: Record<string, string> = {
   openai: "OpenAI",
+  "openai-responses": "OpenAI Responses",
   azure: "Azure OpenAI",
   claude: "Anthropic Claude",
   palm: "Google Gemini",
@@ -75,6 +76,7 @@ export const ChannelTypes: Record<string, string> = {
 
 export const ShortChannelTypes: Record<string, string> = {
   openai: "OpenAI",
+  "openai-responses": "OpenAI Responses",
   azure: "Azure",
   claude: "Claude",
   palm: "Gemini",
@@ -130,6 +132,24 @@ export const ChannelInfos: Record<string, ChannelInfo> = {
       "dalle",
       "dall-e-2",
       "dall-e-3",
+    ],
+  },
+  "openai-responses": {
+    endpoint: "https://api.openai.com",
+    format: "<api-key>",
+    models: [
+      "gpt-4o",
+      "gpt-4o-mini",
+      "gpt-4.1",
+      "gpt-4.1-mini",
+      "gpt-4.1-nano",
+      "gpt-5",
+      "gpt-5-mini",
+      "gpt-5-nano",
+      "o1",
+      "o1-mini",
+      "o3",
+      "o4-mini",
     ],
   },
   azure: {
@@ -257,15 +277,25 @@ export const ChannelInfos: Record<string, ChannelInfo> = {
     format: "<api-key>",
     models: [
       "chat-bison-001",
-      "gemini-pro",
-      "gemini-pro-vision",
+      "gemini-1.5-pro-002",
+      "gemini-1.5-flash-002",
+      "gemini-2.0-flash",
+      "gemini-2.0-flash-001",
+      "gemini-2.0-flash-lite",
+      "gemini-2.5-flash",
+      "gemini-2.5-pro",
+      "gemini-2.5-flash-lite-preview-06-17",
+      "gemini-3-flash",
+      "gemini-3-pro-preview",
+      "gemini-3-pro-image-preview",
       "gemini-1.5-pro-latest",
       "gemini-1.5-flash-latest",
     ],
     description:
-      "> Google Gemini / PaLM2 密钥格式为 **api-key**，接入点填写 *https://generativelanguage.googleapis.com* 或其反代地址 \n" +
-      "> Google 对请求 IP 地域有限制，可能出现 **User Location Is Not Supported** 的错误，可以看运气通过反代解决。 \n" +
-      "> Gemini Pro 的返回结果一次性而非流式（即使 `streamGenerateContent` 接口也为假流式），系统内部做了平滑伪流式处理，但仍然无法从根本解决 Gemini Pro 自身假流式的特性。\n",
+      "> Google Gemini 密钥格式为 **api-key**，接入点填写 *https://generativelanguage.googleapis.com* 或其反代地址。 \n" +
+      "> 系统已适配当前官方 `generateContent` / `streamGenerateContent` 请求结构，并支持 `system_instruction` 与 function calling。 \n" +
+      "> 为兼容官方稳定版与预览版模型，系统会自动在 `v1` 与 `v1beta` 之间选择合适的 Gemini API 版本。 \n" +
+      "> Google 对请求 IP 地域有限制，可能出现 **User Location Is Not Supported** 的错误，可通过可用地区 IP 或反代接入解决。\n",
   },
   midjourney: {
     endpoint: "https://your.midjourney.proxy",

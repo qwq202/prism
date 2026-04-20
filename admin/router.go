@@ -44,4 +44,9 @@ func Register(app *gin.RouterGroup) {
 	app.GET("/admin/logger/download", DownloadLoggerAPI)
 	app.GET("/admin/logger/console", ConsoleLoggerAPI)
 	app.POST("/admin/logger/delete", DeleteLoggerAPI)
+
+	app.GET("/admin/payment/view", PaymentOrderListAPI)
+	app.GET("/admin/payment/recheck", PaymentOrderRecheckAPI)
+
+	app.POST("/admin/warmup", WarmupAPI)
 }

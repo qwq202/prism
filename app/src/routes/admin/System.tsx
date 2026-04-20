@@ -32,6 +32,7 @@ import {
   initialSystemState,
   MailState,
   SearchState,
+  TaskState,
   setConfig,
   SiteState,
   SystemProps,
@@ -58,7 +59,7 @@ import { cn } from "@/components/ui/lib/utils.ts";
 import { Switch } from "@/components/ui/switch.tsx";
 import { MultiCombobox } from "@/components/ui/multi-combobox.tsx";
 import { allGroups } from "@/utils/groups.ts";
-import { useChannelModels } from "@/admin/hook.tsx";
+import { useAllModels, useChannelModels } from "@/admin/hook.tsx";
 import { useSelector } from "react-redux";
 import { selectSupportModels } from "@/store/chat.ts";
 import { JSONEditorProvider } from "@/components/EditorProvider.tsx";
@@ -848,84 +849,51 @@ function Search({ data, dispatch, onChange }: CompProps<SearchState>) {
         {t("admin.system.searchTip")}
       </ParagraphDescription>
       <ParagraphItem>
-        <Label>{t("admin.system.searchEndpoint")}</Label>
+        <Label>{t("admin.system.searchApiKey")}</Label>
         <Input
-          value={data.endpoint}
+          value={data.api_key}
           onChange={(e) =>
             dispatch({
-              type: "update:search.endpoint",
+              type: "update:search.api_key",
               value: e.target.value,
             })
           }
-          placeholder={t("admin.system.searchPlaceholder")}
+          placeholder={t("admin.system.searchApiKeyPlaceholder")}
         />
       </ParagraphItem>
       <ParagraphItem>
-        <Label>{t("admin.system.searchEngines")}</Label>
-        <MultiCombobox
-          value={data.engines}
+        <Label>{t("admin.system.searchTopic")}</Label>
+        <Combobox
+          value={data.topic}
           onChange={(value) => {
-            dispatch({ type: "update:search.engines", value });
+            dispatch({ type: "update:search.topic", value });
           }}
-          list={[
-            "google",
-            "bing",
-            "duckduckgo",
-            "qwant",
-            "brave",
-            "mojeek",
-            "arxiv",
-            "crossref",
-            "youtube",
-            "bilibili",
-            "presearch",
-            "yahoo",
-            "wiby",
-            "seznam",
-            "goo",
-            "naver",
-            "wikidata",
-            "wikipedia",
-            "wikimini",
-            "wikibooks",
-            "wikiquote",
-            "wikisource",
-            "wikispecies",
-            "wikiversity",
-            "wikivoyage",
-            "ask",
-            "currency",
-            "yep",
-            "yacy",
-            "genius",
-            "github",
-            "gitlab",
-            "gitea.com",
-            "bitbucket",
-            "codeberg",
-            "mdn",
-          ]}
-          placeholder={t("admin.system.searchEnginesPlaceholder", {
-            length: (data.engines || []).length,
-          })}
-          searchPlaceholder={t("admin.system.searchEnginesSearchPlaceholder")}
+          list={["general", "news", "finance"]}
+          listTranslated={`admin.system.searchTopics`}
+          hideSearchBar
         />
       </ParagraphItem>
-      {data.engines.length === 0 && (
-        <ParagraphDescription border>
-          {t("admin.system.searchEnginesEmptyTip")}
-        </ParagraphDescription>
-      )}
       <ParagraphItem>
-        <Label className={`flex flex-row items-center`}>
-          {t("admin.system.searchImageProxy")}
-          <Tips content={t("admin.system.searchImageProxyTip")} />
-        </Label>
-        <Switch
-          checked={data.image_proxy}
-          onCheckedChange={(value) => {
-            dispatch({ type: "update:search.image_proxy", value });
+        <Label>{t("admin.system.searchDepth")}</Label>
+        <Combobox
+          value={data.depth}
+          onChange={(value) => {
+            dispatch({ type: "update:search.depth", value });
           }}
+          list={["basic", "advanced", "fast", "ultra-fast"]}
+          listTranslated={`admin.system.searchDepthModes`}
+          hideSearchBar
+        />
+      </ParagraphItem>
+      <ParagraphItem>
+        <Label>{t("admin.system.searchMaxResults")}</Label>
+        <NumberInput
+          value={data.max_results}
+          onValueChange={(value) =>
+            dispatch({ type: "update:search.max_results", value })
+          }
+          min={1}
+          max={20}
         />
       </ParagraphItem>
       <ParagraphItem>
@@ -949,21 +917,6 @@ function Search({ data, dispatch, onChange }: CompProps<SearchState>) {
           }
           min={1}
           disabled={!data.crop}
-        />
-      </ParagraphItem>
-      <ParagraphItem>
-        <Label>{t("admin.system.searchSafeSearch")}</Label>
-        <Combobox
-          value={["none", "moderation", "strict"][data.safe_search] || "none"}
-          onChange={(value) => {
-            dispatch({
-              type: "update:search.safe_search",
-              value: ["none", "moderation", "strict"].indexOf(value),
-            });
-          }}
-          list={["none", "moderation", "strict"]}
-          listTranslated={`admin.system.searchSafeSearchModes`}
-          hideSearchBar
         />
       </ParagraphItem>
       <ParagraphFooter>
@@ -990,7 +943,7 @@ function Search({ data, dispatch, onChange }: CompProps<SearchState>) {
                     <Loader2 className={`h-4 w-4 animate-spin`} />
                   ) : (
                     <>
-                      <p className={`text-sm mb-1`}>SearXNG Result</p>
+                      <p className={`text-sm mb-1`}>Tavily Result</p>
                       <Textarea value={searchResult} rows={5} readOnly />
                     </>
                   )}
@@ -1027,6 +980,55 @@ function Search({ data, dispatch, onChange }: CompProps<SearchState>) {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        <Button
+          size={`sm`}
+          loading={true}
+          onClick={async () => await onChange()}
+        >
+          {t("admin.system.save")}
+        </Button>
+      </ParagraphFooter>
+    </Paragraph>
+  );
+}
+
+function Task({ data, dispatch, onChange }: CompProps<TaskState>) {
+  const { t } = useTranslation();
+  const { allModels } = useAllModels();
+
+  return (
+    <Paragraph
+      title={t("admin.system.task")}
+      configParagraph={true}
+      isCollapsed={true}
+    >
+      <ParagraphDescription border>
+        {t("admin.system.taskTip")}
+      </ParagraphDescription>
+      <ParagraphItem>
+        <Label className={`flex flex-row items-center`}>
+          {t("admin.system.taskModel")}
+          <Tips content={t("admin.system.taskModelTip")} />
+        </Label>
+        <div className={`flex flex-row gap-2 items-center`}>
+          <Combobox
+            value={data.model}
+            onChange={(value) =>
+              dispatch({ type: "update:task.model", value: value || "" })
+            }
+            list={allModels}
+            placeholder={t("admin.system.taskModelPlaceholder")}
+          />
+          <Button
+            variant={`outline`}
+            onClick={() => dispatch({ type: "update:task.model", value: "" })}
+          >
+            {t("admin.system.taskModelClear")}
+          </Button>
+        </div>
+      </ParagraphItem>
+      <ParagraphFooter>
+        <div className={`grow`} />
         <Button
           size={`sm`}
           loading={true}
@@ -1113,6 +1115,12 @@ function System() {
           <Search
             form={data}
             data={data.search}
+            dispatch={setData}
+            onChange={doSaving}
+          />
+          <Task
+            form={data}
+            data={data.task}
             dispatch={setData}
             onChange={doSaving}
           />

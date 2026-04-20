@@ -19,6 +19,7 @@ import { forgetMemory, popMemory } from "@/utils/memory.ts";
 import { alignSelector } from "@/store/settings.ts";
 import { FileArray } from "@/api/file.ts";
 import {
+  GeminiThinkingAction,
   NewConversationAction,
   WebAction,
 } from "@/components/home/assemblies/ChatAction.tsx";
@@ -190,13 +191,21 @@ function ChatWrapper() {
                 exit={{ opacity: 0, scale: 0.8 }}
                 transition={{ duration: 0.3, delay: 0.2 }}
               >
-                <FileAction files={files} dispatch={fileDispatch} />
+                <GeminiThinkingAction />
               </motion.div>
               <motion.div
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.8 }}
                 transition={{ duration: 0.3, delay: 0.3 }}
+              >
+                <FileAction files={files} dispatch={fileDispatch} />
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                transition={{ duration: 0.3, delay: 0.4 }}
               >
                 <VoiceAction />
               </motion.div>

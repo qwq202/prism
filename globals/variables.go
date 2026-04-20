@@ -27,12 +27,13 @@ var AcceptPromptStore bool
 var CloseRegistration bool
 var CloseRelay bool
 
-var SearchEndpoint string
+var SearchApiKey string
 var SearchCrop bool
 var SearchCropLength int
-var SearchEngines string    // e.g. "google,bing"
-var SearchImageProxy string // e.g. "True", "False"
-var SearchSafeSearch int    // e.g. 0: None, 1: Moderation, 2: Strict
+var SearchMaxResults int
+var SearchTopic string
+var SearchDepth string
+var TaskModel string
 
 func OriginIsAllowed(uri string) bool {
 	if len(AllowedOrigins) == 0 {
@@ -109,8 +110,11 @@ const (
 	ChatBison001                 = "chat-bison-001"
 	GeminiPro                    = "gemini-pro"
 	GeminiProVision              = "gemini-pro-vision"
+	Gemini15Pro002               = "gemini-1.5-pro-002"
+	Gemini15Flash002             = "gemini-1.5-flash-002"
 	Gemini15ProLatest            = "gemini-1.5-pro-latest"
 	Gemini15FlashLatest          = "gemini-1.5-flash-latest"
+	Gemini20FlashLite            = "gemini-2.0-flash-lite"
 	Gemini20ProExp               = "gemini-2.0-pro-exp-02-05"
 	Gemini20Flash                = "gemini-2.0-flash"
 	Gemini20FlashExp             = "gemini-2.0-flash-exp"
@@ -118,6 +122,12 @@ const (
 	Gemini20FlashThinkingExp     = "gemini-2.0-flash-thinking-exp-01-21"
 	Gemini20FlashLitePreview     = "gemini-2.0-flash-lite-preview-02-05"
 	Gemini20FlashThinkingExp1219 = "gemini-2.0-flash-thinking-exp-1219"
+	Gemini25Flash                = "gemini-2.5-flash"
+	Gemini25Pro                  = "gemini-2.5-pro"
+	Gemini25FlashLitePreview     = "gemini-2.5-flash-lite-preview-06-17"
+	Gemini3Flash                 = "gemini-3-flash"
+	Gemini3ProPreview            = "gemini-3-pro-preview"
+	Gemini3ProImagePreview       = "gemini-3-pro-image-preview"
 	GeminiExp1206                = "gemini-exp-1206"
 	GoogleImagen002              = "imagen-3.0-generate-002"
 	BingCreative                 = "bing-creative"
@@ -158,7 +168,10 @@ var GoogleImagenModels = []string{
 
 var VisionModels = []string{
 	GPT4VisionPreview, GPT41106VisionPreview, GPT4Turbo, GPT4Turbo20240409, GPT4O, GPT4O20240513, // openai
-	GeminiProVision, Gemini15ProLatest, Gemini15FlashLatest, // gemini
+	GeminiProVision, Gemini15Pro002, Gemini15Flash002, Gemini15ProLatest, Gemini15FlashLatest,
+	Gemini20Flash, Gemini20Flash001, Gemini20FlashLite,
+	Gemini25Flash, Gemini25Pro, Gemini25FlashLitePreview,
+	Gemini3Flash, Gemini3ProPreview, Gemini3ProImagePreview, // gemini
 	Claude3,             // anthropic
 	ZhiPuChatGLM4Vision, // chatglm
 }
@@ -183,6 +196,17 @@ func in(value string, slice []string) bool {
 func IsOpenAIDalleModel(model string) bool {
 	// using image generation api if model is in dalle models
 	return in(model, OpenAIDalleModels) && !strings.Contains(model, "gpt-4-dalle")
+}
+
+func IsGeminiModel(model string) bool {
+	return model == GeminiPro ||
+		model == GeminiProVision ||
+		strings.HasPrefix(model, "gemini-")
+}
+
+func SupportGeminiThinkingBudget(model string) bool {
+	return model == "gemini-3.1-flash-lite-preview" ||
+		strings.HasPrefix(model, "gemini-3.1-flash-lite-preview-")
 }
 
 func IsGoogleImagenModel(model string) bool {

@@ -23,6 +23,7 @@ type ApiInfo struct {
 	Article      []string `json:"article"`
 	Generation   []string `json:"generation"`
 	RelayPlan    bool     `json:"relay_plan"`
+	WebSearch    bool     `json:"web_search"`
 }
 
 type generalState struct {
@@ -64,12 +65,16 @@ type mailState struct {
 }
 
 type SearchState struct {
-	Endpoint   string   `json:"endpoint" mapstructure:"endpoint"`
-	Crop       bool     `json:"crop" mapstructure:"crop"`
-	CropLen    int      `json:"crop_len" mapstructure:"croplen"`
-	Engines    []string `json:"engines" mapstructure:"engines"`
-	ImageProxy bool     `json:"image_proxy" mapstructure:"imageproxy"`
-	SafeSearch int      `json:"safe_search" mapstructure:"safesearch"`
+	ApiKey     string `json:"api_key" mapstructure:"apikey"`
+	Crop       bool   `json:"crop" mapstructure:"crop"`
+	CropLen    int    `json:"crop_len" mapstructure:"croplen"`
+	MaxResults int    `json:"max_results" mapstructure:"maxresults"`
+	Topic      string `json:"topic" mapstructure:"topic"`
+	Depth      string `json:"depth" mapstructure:"depth"`
+}
+
+type taskState struct {
+	Model string `json:"model" mapstructure:"model"`
 }
 
 type commonState struct {
@@ -87,6 +92,7 @@ type SystemConfig struct {
 	Site    siteState    `json:"site" mapstructure:"site"`
 	Mail    mailState    `json:"mail" mapstructure:"mail"`
 	Search  SearchState  `json:"search" mapstructure:"search"`
+	Task    taskState    `json:"task" mapstructure:"task"`
 	Common  commonState  `json:"common" mapstructure:"common"`
 }
 
@@ -121,12 +127,13 @@ func (c *SystemConfig) Load() {
 		c.General.PWAManifest = utils.ReadPWAManifest()
 	}
 
-	globals.SearchEndpoint = c.Search.Endpoint
+	globals.SearchApiKey = strings.TrimSpace(c.Search.ApiKey)
 	globals.SearchCrop = c.Search.Crop
 	globals.SearchCropLength = c.GetSearchCropLength()
-	globals.SearchEngines = c.GetSearchEngines()
-	globals.SearchImageProxy = c.GetImageProxy()
-	globals.SearchSafeSearch = c.Search.SafeSearch
+	globals.SearchMaxResults = c.GetSearchMaxResults()
+	globals.SearchTopic = c.GetSearchTopic()
+	globals.SearchDepth = c.GetSearchDepth()
+	globals.TaskModel = strings.TrimSpace(c.Task.Model)
 }
 
 func (c *SystemConfig) SaveConfig() error {
@@ -148,6 +155,7 @@ func (c *SystemConfig) AsInfo() ApiInfo {
 		Article:      c.Common.Article,
 		Generation:   c.Common.Generation,
 		RelayPlan:    c.Site.RelayPlan,
+		WebSearch:    strings.TrimSpace(globals.SearchApiKey) != "",
 	}
 }
 
@@ -156,12 +164,18 @@ func (c *SystemConfig) UpdateConfig(data *SystemConfig) error {
 	c.Site = data.Site
 	c.Mail = data.Mail
 	c.Search = data.Search
+	c.Task = data.Task
 	c.Common = data.Common
 
 	utils.ApplySeo(c.General.Title, c.General.Logo)
 	utils.ApplyPWAManifest(c.General.PWAManifest)
 
-	return c.SaveConfig()
+	if err := c.SaveConfig(); err != nil {
+		return err
+	}
+
+	c.Load()
+	return nil
 }
 
 func (c *SystemConfig) GetInitialQuota() float64 {
@@ -239,17 +253,36 @@ func (c *SystemConfig) GetSearchCropLength() int {
 	return c.Search.CropLen
 }
 
-func (c *SystemConfig) GetSearchEngines() string {
-	return strings.Join(c.Search.Engines, ",")
-}
-
-func (c *SystemConfig) GetImageProxy() string {
-	// return "True" or "False"
-	if c.Search.ImageProxy {
-		return "True"
+func (c *SystemConfig) GetSearchMaxResults() int {
+	if c.Search.MaxResults <= 0 {
+		return 5
 	}
 
-	return "False"
+	if c.Search.MaxResults > 20 {
+		return 20
+	}
+
+	return c.Search.MaxResults
+}
+
+func (c *SystemConfig) GetSearchTopic() string {
+	topic := strings.TrimSpace(c.Search.Topic)
+	switch topic {
+	case "general", "news", "finance":
+		return topic
+	default:
+		return "general"
+	}
+}
+
+func (c *SystemConfig) GetSearchDepth() string {
+	depth := strings.TrimSpace(c.Search.Depth)
+	switch depth {
+	case "basic", "advanced", "fast", "ultra-fast":
+		return depth
+	default:
+		return "basic"
+	}
 }
 
 func (c *SystemConfig) GetAppName() string {

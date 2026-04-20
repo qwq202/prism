@@ -11,16 +11,26 @@ import (
 
 var geminiMaxImages = 16
 
+func getGeminiAPIVersion(model string) string {
+	if strings.Contains(model, "preview") || strings.Contains(model, "exp") || strings.Contains(model, "latest") {
+		return "v1beta"
+	}
+
+	return "v1"
+}
+
 func (c *ChatInstance) GetChatEndpoint(model string, stream bool) string {
 	if model == globals.ChatBison001 {
 		return fmt.Sprintf("%s/v1beta2/models/%s:generateMessage?key=%s", c.Endpoint, model, c.ApiKey)
 	}
 
+	version := getGeminiAPIVersion(model)
+
 	if stream {
-		return fmt.Sprintf("%s/v1beta/models/%s:streamGenerateContent?alt=sse&key=%s", c.Endpoint, model, c.ApiKey)
+		return fmt.Sprintf("%s/%s/models/%s:streamGenerateContent?alt=sse&key=%s", c.Endpoint, version, model, c.ApiKey)
 	}
 
-	return fmt.Sprintf("%s/v1beta/models/%s:generateContent?key=%s", c.Endpoint, model, c.ApiKey)
+	return fmt.Sprintf("%s/%s/models/%s:generateContent?key=%s", c.Endpoint, version, model, c.ApiKey)
 }
 
 func (c *ChatInstance) ConvertMessage(message []globals.Message) []PalmMessage {
@@ -59,12 +69,16 @@ func (c *ChatInstance) GetPalm2ChatBody(props *adaptercommon.ChatProps) *PalmCha
 
 func (c *ChatInstance) GetGeminiChatBody(props *adaptercommon.ChatProps) *GeminiChatBody {
 	return &GeminiChatBody{
-		Contents: c.GetGeminiContents(props.Model, props.Message),
+		SystemInstruction: c.GetGeminiSystemInstruction(props.Model, props.Message),
+		Contents:          c.GetGeminiContents(props.Model, props.Message),
+		Tools:             mergeGeminiTools(getGeminiBuiltinWebTools(props.EnableWebSearch, props.EnableURLContext), getGeminiTools(props.Tools)),
+		ToolConfig:        getGeminiToolConfig(props.ToolChoice),
 		GenerationConfig: GeminiConfig{
 			Temperature:     props.Temperature,
 			MaxOutputTokens: props.MaxTokens,
 			TopP:            props.TopP,
 			TopK:            props.TopK,
+			ThinkingConfig:  getGeminiThinkingConfig(props),
 		},
 	}
 }
@@ -79,18 +93,31 @@ func (c *ChatInstance) GetPalm2ChatResponse(data interface{}) (string, error) {
 	return "", fmt.Errorf("palm2 error: cannot parse response")
 }
 
-func (c *ChatInstance) GetGeminiChatResponse(data interface{}) (string, error) {
+func (c *ChatInstance) GetGeminiChunk(data interface{}) (*globals.Chunk, error) {
 	if form := utils.MapToStruct[GeminiChatResponse](data); form != nil {
-		if len(form.Candidates) != 0 && len(form.Candidates[0].Content.Parts) != 0 {
-			return form.Candidates[0].Content.Parts[0].Text, nil
+		if len(form.Candidates) != 0 {
+			parts := form.Candidates[0].Content.Parts
+			return &globals.Chunk{
+				Content:  c.GetGeminiChatText(parts),
+				ToolCall: getGeminiToolCalls(parts),
+			}, nil
 		}
 	}
 
 	if form := utils.MapToStruct[GeminiChatErrorResponse](data); form != nil {
-		return "", fmt.Errorf("gemini error: %s (code: %d, status: %s)", form.Error.Message, form.Error.Code, form.Error.Status)
+		return nil, fmt.Errorf("gemini error: %s (code: %d, status: %s)", form.Error.Message, form.Error.Code, form.Error.Status)
 	}
 
-	return "", fmt.Errorf("gemini: cannot parse response")
+	return nil, fmt.Errorf("gemini: cannot parse response")
+}
+
+func (c *ChatInstance) GetGeminiChatResponse(data interface{}) (string, error) {
+	chunk, err := c.GetGeminiChunk(data)
+	if err != nil {
+		return "", err
+	}
+
+	return chunk.Content, nil
 }
 
 func (c *ChatInstance) CreateChatRequest(props *adaptercommon.ChatProps) (string, error) {
@@ -107,15 +134,12 @@ func (c *ChatInstance) CreateChatRequest(props *adaptercommon.ChatProps) (string
 		return c.GetPalm2ChatResponse(data)
 	}
 
-	data, err := utils.Post(uri, map[string]string{
-		"Content-Type": "application/json",
-	}, c.GetGeminiChatBody(props), props.Proxy)
-
+	chunk, err := c.CreateGeminiChatRequest(props)
 	if err != nil {
-		return "", fmt.Errorf("gemini error: %s", err.Error())
+		return "", err
 	}
 
-	return c.GetGeminiChatResponse(data)
+	return chunk.Content, nil
 }
 
 // CreateStreamChatRequest is the stream request for palm2
@@ -145,6 +169,8 @@ func (c *ChatInstance) CreateStreamChatRequest(props *adaptercommon.ChatProps, c
 	}
 
 	ticks := 0
+	c.isFirstReasoning = true
+	c.isReasonOver = false
 	scanErr := utils.EventScanner(&utils.EventScannerProps{
 		Method: "POST",
 		Uri:    c.GetChatEndpoint(props.Model, true),
@@ -157,8 +183,10 @@ func (c *ChatInstance) CreateStreamChatRequest(props *adaptercommon.ChatProps, c
 
 			if form := utils.UnmarshalForm[GeminiStreamResponse](data); form != nil {
 				if len(form.Candidates) != 0 && len(form.Candidates[0].Content.Parts) != 0 {
+					parts := form.Candidates[0].Content.Parts
 					return callback(&globals.Chunk{
-						Content: form.Candidates[0].Content.Parts[0].Text,
+						Content:  c.GetGeminiStreamText(parts),
+						ToolCall: getGeminiToolCalls(parts),
 					})
 				}
 				return nil
@@ -175,11 +203,11 @@ func (c *ChatInstance) CreateStreamChatRequest(props *adaptercommon.ChatProps, c
 	if scanErr != nil {
 		if scanErr.Error != nil && strings.Contains(scanErr.Error.Error(), "status code: 404") {
 			// downgrade to non-stream request
-			response, err := c.CreateChatRequest(props)
+			chunk, err := c.CreateGeminiChatRequest(props)
 			if err != nil {
 				return err
 			}
-			return callback(&globals.Chunk{Content: response})
+			return callback(chunk)
 		}
 
 		if scanErr.Body != "" {
@@ -195,7 +223,25 @@ func (c *ChatInstance) CreateStreamChatRequest(props *adaptercommon.ChatProps, c
 		return errors.New("no response")
 	}
 
+	if !c.isFirstReasoning && !c.isReasonOver {
+		if err := callback(&globals.Chunk{Content: "\n</think>\n\n"}); err != nil {
+			return err
+		}
+	}
+
 	return nil
+}
+
+func (c *ChatInstance) CreateGeminiChatRequest(props *adaptercommon.ChatProps) (*globals.Chunk, error) {
+	data, err := utils.Post(c.GetChatEndpoint(props.Model, false), map[string]string{
+		"Content-Type": "application/json",
+	}, c.GetGeminiChatBody(props), props.Proxy)
+
+	if err != nil {
+		return nil, fmt.Errorf("gemini error: %s", err.Error())
+	}
+
+	return c.GetGeminiChunk(data)
 }
 
 func (c *ChatInstance) GetLatestPrompt(props *adaptercommon.ChatProps) string {

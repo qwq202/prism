@@ -25,6 +25,9 @@ func AttachmentService(c *gin.Context) {
 func DeleteChannel(c *gin.Context) {
 	id := c.Param("id")
 	state := ConduitInstance.DeleteChannel(utils.ParseInt(id))
+	if state == nil {
+		ConduitInstance.Load()
+	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"status": state == nil,
@@ -35,6 +38,9 @@ func DeleteChannel(c *gin.Context) {
 func ActivateChannel(c *gin.Context) {
 	id := c.Param("id")
 	state := ConduitInstance.ActivateChannel(utils.ParseInt(id))
+	if state == nil {
+		ConduitInstance.Load()
+	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"status": state == nil,
@@ -45,6 +51,9 @@ func ActivateChannel(c *gin.Context) {
 func DeactivateChannel(c *gin.Context) {
 	id := c.Param("id")
 	state := ConduitInstance.DeactivateChannel(utils.ParseInt(id))
+	if state == nil {
+		ConduitInstance.Load()
+	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"status": state == nil,
@@ -80,6 +89,9 @@ func CreateChannel(c *gin.Context) {
 	}
 
 	state := ConduitInstance.CreateChannel(&channel)
+	if state == nil {
+		ConduitInstance.Load()
+	}
 	c.JSON(http.StatusOK, gin.H{
 		"status": state == nil,
 		"error":  utils.GetError(state),
@@ -100,6 +112,9 @@ func UpdateChannel(c *gin.Context) {
 	channel.Id = utils.ParseInt(id)
 
 	state := ConduitInstance.UpdateChannel(channel.Id, &channel)
+	if state == nil {
+		ConduitInstance.Load()
+	}
 	c.JSON(http.StatusOK, gin.H{
 		"status": state == nil,
 		"error":  utils.GetError(state),

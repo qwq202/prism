@@ -90,6 +90,8 @@ func ConnectDatabase() *sql.DB {
 	CreateInvitationTable(db)
 	CreateRedeemTable(db)
 	CreateBroadcastTable(db)
+	CreateBillingTable(db)
+	CreatePaymentOrdersTable(db)
 
 	if err := doMigration(db); err != nil {
 		fmt.Println(fmt.Sprintf("migration error: %s", err))
@@ -310,6 +312,56 @@ func CreateBroadcastTable(db *sql.DB) {
 		  content TEXT,
 		  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		  FOREIGN KEY (poster_id) REFERENCES auth(id)
+		);
+	`)
+	if err != nil {
+		fmt.Println(err)
+	}
+}
+
+func CreateBillingTable(db *sql.DB) {
+	_, err := globals.ExecDb(db, `
+		CREATE TABLE IF NOT EXISTS billing (
+		  id INT PRIMARY KEY AUTO_INCREMENT,
+		  user_id INT,
+		  username VARCHAR(255),
+		  type VARCHAR(50) DEFAULT 'consume',
+		  token_name VARCHAR(255),
+		  model VARCHAR(255),
+		  input_tokens INT DEFAULT 0,
+		  output_tokens INT DEFAULT 0,
+		  quota DECIMAL(16, 6) DEFAULT 0,
+		  duration FLOAT DEFAULT 0,
+		  detail TEXT,
+		  prompts MEDIUMTEXT,
+		  response_prompts MEDIUMTEXT,
+		  channel INT DEFAULT 0,
+		  channel_name VARCHAR(255),
+		  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		  FOREIGN KEY (user_id) REFERENCES auth(id)
+		);
+	`)
+	if err != nil {
+		fmt.Println(err)
+	}
+}
+
+func CreatePaymentOrdersTable(db *sql.DB) {
+	_, err := globals.ExecDb(db, `
+		CREATE TABLE IF NOT EXISTS payment_orders (
+		  id INT PRIMARY KEY AUTO_INCREMENT,
+		  user_id INT,
+		  username VARCHAR(255),
+		  type VARCHAR(100),
+		  service VARCHAR(255),
+		  amount DECIMAL(10, 2) DEFAULT 0,
+		  order_id VARCHAR(255) UNIQUE,
+		  name VARCHAR(255),
+		  device VARCHAR(50),
+		  state BOOLEAN DEFAULT FALSE,
+		  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		  FOREIGN KEY (user_id) REFERENCES auth(id)
 		);
 	`)
 	if err != nil {

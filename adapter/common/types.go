@@ -32,17 +32,22 @@ type ChatProps struct {
 	Model         string `json:"model,omitempty"`
 	OriginalModel string `json:"-"`
 
-	Message           []globals.Message      `json:"messages,omitempty"`
-	MaxTokens         *int                   `json:"max_tokens,omitempty"`
-	PresencePenalty   *float32               `json:"presence_penalty,omitempty"`
-	FrequencyPenalty  *float32               `json:"frequency_penalty,omitempty"`
-	RepetitionPenalty *float32               `json:"repetition_penalty,omitempty"`
-	Temperature       *float32               `json:"temperature,omitempty"`
-	TopP              *float32               `json:"top_p,omitempty"`
-	TopK              *int                   `json:"top_k,omitempty"`
-	Tools             *globals.FunctionTools `json:"tools,omitempty"`
-	ToolChoice        *interface{}           `json:"tool_choice,omitempty"`
-	Buffer            *utils.Buffer          `json:"-"`
+	Message              []globals.Message      `json:"messages,omitempty"`
+	MaxTokens            *int                   `json:"max_tokens,omitempty"`
+	PresencePenalty      *float32               `json:"presence_penalty,omitempty"`
+	FrequencyPenalty     *float32               `json:"frequency_penalty,omitempty"`
+	RepetitionPenalty    *float32               `json:"repetition_penalty,omitempty"`
+	Temperature          *float32               `json:"temperature,omitempty"`
+	TopP                 *float32               `json:"top_p,omitempty"`
+	TopK                 *int                   `json:"top_k,omitempty"`
+	Tools                *globals.FunctionTools `json:"tools,omitempty"`
+	ToolChoice           *interface{}           `json:"tool_choice,omitempty"`
+	EnableWeb            bool                   `json:"-"`
+	EnableWebSearch      bool                   `json:"-"`
+	EnableURLContext     bool                   `json:"-"`
+	GeminiThinkingBudget *int                   `json:"-"`
+	ChannelType          string                 `json:"-"`
+	Buffer               *utils.Buffer          `json:"-"`
 }
 
 func (c *ChatProps) SetupBuffer(buf *utils.Buffer) {

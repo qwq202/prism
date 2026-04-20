@@ -13,16 +13,19 @@ const defaultConversationName = "new chat"
 const defaultConversationContext = 8
 
 type Conversation struct {
-	Auth      bool              `json:"auth"`
-	UserID    int64             `json:"user_id"`
-	Id        int64             `json:"id"`
-	Name      string            `json:"name"`
-	Message   []globals.Message `json:"message"`
-	Model     string            `json:"model"`
-	TaskID    string            `json:"task_id,omitempty"`
-	EnableWeb bool              `json:"enable_web"`
-	Shared    bool              `json:"shared"`
-	Context   int               `json:"context"`
+	Auth                 bool              `json:"auth"`
+	UserID               int64             `json:"user_id"`
+	Id                   int64             `json:"id"`
+	Name                 string            `json:"name"`
+	Message              []globals.Message `json:"message"`
+	Model                string            `json:"model"`
+	TaskID               string            `json:"task_id,omitempty"`
+	EnableWeb            bool              `json:"enable_web"`
+	WebSearch            bool              `json:"web_search"`
+	URLContext           bool              `json:"url_context"`
+	GeminiThinkingBudget int               `json:"gemini_thinking_budget"`
+	Shared               bool              `json:"shared"`
+	Context              int               `json:"context"`
 
 	MaxTokens         *int     `json:"max_tokens,omitempty"`
 	Temperature       *float32 `json:"temperature,omitempty"`
@@ -34,12 +37,15 @@ type Conversation struct {
 }
 
 type FormMessage struct {
-	Type          string `json:"type"`
-	Message       string `json:"message"`
-	Web           bool   `json:"web"`
-	Model         string `json:"model"`
-	IgnoreContext bool   `json:"ignore_context"`
-	Context       int    `json:"context"`
+	Type                 string `json:"type"`
+	Message              string `json:"message"`
+	Web                  bool   `json:"web"`
+	WebSearch            bool   `json:"web_search"`
+	URLContext           bool   `json:"url_context"`
+	GeminiThinkingBudget int    `json:"gemini_thinking_budget"`
+	Model                string `json:"model"`
+	IgnoreContext        bool   `json:"ignore_context"`
+	Context              int    `json:"context"`
 
 	// request params
 	MaxTokens         *int     `json:"max_tokens,omitempty"`
@@ -109,6 +115,18 @@ func (c *Conversation) IsEnableWeb() bool {
 	return c.EnableWeb
 }
 
+func (c *Conversation) IsEnableWebSearch() bool {
+	return c.WebSearch
+}
+
+func (c *Conversation) IsEnableURLContext() bool {
+	return c.URLContext
+}
+
+func (c *Conversation) GetGeminiThinkingBudget() *int {
+	return &c.GeminiThinkingBudget
+}
+
 func (c *Conversation) GetContextLength() int {
 	if c.Context <= 0 {
 		return defaultConversationContext
@@ -126,6 +144,18 @@ func (c *Conversation) SetModel(model string) {
 
 func (c *Conversation) SetEnableWeb(enable bool) {
 	c.EnableWeb = enable
+}
+
+func (c *Conversation) SetEnableWebSearch(enable bool) {
+	c.WebSearch = enable
+}
+
+func (c *Conversation) SetEnableURLContext(enable bool) {
+	c.URLContext = enable
+}
+
+func (c *Conversation) SetGeminiThinkingBudget(budget int) {
+	c.GeminiThinkingBudget = budget
 }
 
 func (c *Conversation) GetTemperature() *float32 {
@@ -318,7 +348,10 @@ func GetMessage(data []byte) (string, error) {
 
 func (c *Conversation) ApplyParam(form *FormMessage) {
 	c.SetModel(form.Model)
-	c.SetEnableWeb(form.Web)
+	c.SetEnableWeb(form.Web || form.WebSearch || form.URLContext)
+	c.SetEnableWebSearch(utils.Multi(form.Web && !form.WebSearch && !form.URLContext, true, form.WebSearch))
+	c.SetEnableURLContext(utils.Multi(form.Web && !form.WebSearch && !form.URLContext, true, form.URLContext))
+	c.SetGeminiThinkingBudget(form.GeminiThinkingBudget)
 	c.SetContextLength(form.Context, form.IgnoreContext)
 
 	c.SetMaxTokens(form.MaxTokens)
@@ -387,6 +420,17 @@ func (c *Conversation) GetLatestMessage() string {
 func (c *Conversation) SaveResponse(db *sql.DB, message string) {
 	c.AddMessageFromAssistant(message)
 	c.SaveConversation(db)
+}
+
+func (c *Conversation) CountMessagesByRole(role string) int {
+	count := 0
+	for _, message := range c.Message {
+		if message.Role == role {
+			count++
+		}
+	}
+
+	return count
 }
 
 func (c *Conversation) RemoveMessage(index int) globals.Message {

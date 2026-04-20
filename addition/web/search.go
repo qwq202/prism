@@ -6,39 +6,28 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"net/url"
-	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 )
 
-type SearXNGResponse struct {
-	Query           string `json:"query"`
-	NumberOfResults int    `json:"number_of_results"`
-	Results         []struct {
-		Url           string   `json:"url"`
-		Title         string   `json:"title"`
-		Content       string   `json:"content"`
-		PublishedDate *string  `json:"publishedDate,omitempty"`
-		Thumbnail     *string  `json:"thumbnail,omitempty"`
-		Engine        string   `json:"engine"`
-		ParsedUrl     []string `json:"parsed_url"`
-		Template      string   `json:"template"`
-		Engines       []string `json:"engines"`
-		Positions     []int    `json:"positions"`
-		Score         float64  `json:"score"`
-		Category      string   `json:"category"`
-		IframeSrc     string   `json:"iframe_src,omitempty"`
+type TavilyResponse struct {
+	Query        string `json:"query"`
+	ResponseTime any    `json:"response_time"`
+	Results      []struct {
+		Url             string  `json:"url"`
+		Title           string  `json:"title"`
+		Content         string  `json:"content"`
+		Score           float64 `json:"score"`
+		Favicon         *string `json:"favicon,omitempty"`
+		PublishedDate   *string `json:"published_date,omitempty"`
+		RawContent      *string `json:"raw_content,omitempty"`
+		ContentSource   *string `json:"content_source,omitempty"`
+		ResponseContent *string `json:"response_content,omitempty"`
 	} `json:"results"`
-	Answers             []interface{} `json:"answers"`
-	Corrections         []interface{} `json:"corrections"`
-	Infoboxes           []interface{} `json:"infoboxes"`
-	Suggestions         []interface{} `json:"suggestions"`
-	UnresponsiveEngines [][]string    `json:"unresponsive_engines"`
 }
 
-func formatResponse(data *SearXNGResponse) string {
+func formatResponse(data *TavilyResponse) string {
 	res := make([]string, 0)
 	for _, item := range data.Results {
 		if item.Content == "" || item.Url == "" || item.Title == "" {
@@ -51,34 +40,29 @@ func formatResponse(data *SearXNGResponse) string {
 	return strings.Join(res, "\n")
 }
 
-func createURLParams(query string) string {
-	params := url.Values{}
-
-	params.Add("q", query)
-	params.Add("format", "json")
-	params.Add("safesearch", strconv.Itoa(globals.SearchSafeSearch))
-	if len(globals.SearchEngines) > 0 {
-		params.Add("engines", globals.SearchEngines)
-	}
-	if len(globals.SearchImageProxy) > 0 {
-		params.Add("image_proxy", globals.SearchImageProxy)
-	}
-
-	return fmt.Sprintf("%s?%s", globals.SearchEndpoint, params.Encode())
-}
-
-func createSearXNGRequest(query string) (*SearXNGResponse, error) {
-	data, err := utils.Get(createURLParams(query), nil)
+func createTavilyRequest(query string) (*TavilyResponse, error) {
+	data, err := utils.Post("https://api.tavily.com/search", map[string]string{
+		"Authorization": fmt.Sprintf("Bearer %s", globals.SearchApiKey),
+	}, map[string]interface{}{
+		"query":        query,
+		"topic":        globals.SearchTopic,
+		"search_depth": globals.SearchDepth,
+		"max_results":  globals.SearchMaxResults,
+	})
 
 	if err != nil {
 		return nil, err
 	}
 
-	return utils.MapToRawStruct[SearXNGResponse](data)
+	return utils.MapToRawStruct[TavilyResponse](data)
 }
 
 func GenerateSearchResult(q string) (string, error) {
-	res, err := createSearXNGRequest(q)
+	if strings.TrimSpace(globals.SearchApiKey) == "" {
+		return "search failed: tavily api key is empty", errors.New("search failed: tavily api key is empty")
+	}
+
+	res, err := createTavilyRequest(q)
 	if err != nil {
 		globals.Warn(fmt.Sprintf("[web] failed to get search result: %s (query: %s)", err.Error(), utils.Extract(q, 20, "...")))
 

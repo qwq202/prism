@@ -23,7 +23,7 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { splitList } from "@/utils/base.ts";
 import type { Model } from "@/api/types.tsx";
 import { useDispatch, useSelector } from "react-redux";
@@ -206,6 +206,7 @@ type ModelProps = React.DetailedHTMLProps<
   showPricing?: boolean;
   show1mPricing?: boolean;
   index: number;
+  onModelSelect: (model: Model) => void;
 };
 
 type PriceColumnProps = ChargeBaseProps & {
@@ -306,20 +307,19 @@ function ModelItem({
   showPricing,
   show1mPricing,
   index,
+  onModelSelect,
   ...props
 }: ModelProps) {
   const { t } = useTranslation();
   const dispatch = useDispatch();
   const list = useSelector(selectModelList);
-  const current = useSelector(selectModel);
 
   const level = useSelector(levelSelector);
   const student = useSelector(teenagerSelector);
-  const auth = useSelector(selectAuthenticated);
 
   const subscriptionData = useSelector(subscriptionDataSelector);
 
-  const state = useMemo(() => list.includes(model.id), [model, current, list]);
+  const state = useMemo(() => list.includes(model.id), [model, list]);
 
   const pro = useMemo(() => {
     return includingModelFromPlan(subscriptionData, level, model.id);
@@ -336,33 +336,7 @@ function ModelItem({
       style={style} //@ts-ignore
       ref={forwardRef}
       {...props}
-      onClick={() => {
-        if (!auth && model.auth) {
-          toast(t("login-require"), {
-            action: {
-              label: t("login"),
-              onClick: goAuth,
-            },
-          });
-          return;
-        }
-
-        dispatch(setModel(model.id));
-        router.navigate("/");
-
-        toast.info(t("market.switch-model"), {
-          description: (
-            <div
-              className={`inline-flex flex-row items-center flex-wrap space-x-1`}
-            >
-              <ArrowRightLeft className={`w-3 h-3`} />
-              <p>{t("market.switch-model-desc")}</p>
-              <ModelAvatar size={20} model={model} />
-              <p>{model.name}</p>
-            </div>
-          ),
-        });
-      }}
+      onClick={() => onModelSelect(model)}
       initial={{ opacity: 0, x: -50 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.5, delay: index * 0.1 }}
@@ -519,9 +493,10 @@ type MarketPlaceProps = {
   search: string;
   showPricing: boolean;
   show1mPricing: boolean;
+  onSelect: (model: Model) => void;
 };
 
-function MarketPlace({ search, showPricing, show1mPricing }: MarketPlaceProps) {
+function MarketPlace({ search, showPricing, show1mPricing, onSelect}: MarketPlaceProps) {
   const { t } = useTranslation();
   const select = useSelector(selectModel);
   const supportModels = useSelector(selectSupportModels);
@@ -566,9 +541,285 @@ function MarketPlace({ search, showPricing, show1mPricing }: MarketPlaceProps) {
             showPricing={showPricing}
             show1mPricing={show1mPricing}
             index={index}
+            onModelSelect={onSelect}
           />
         ))}
       </AnimatePresence>
+    </motion.div>
+  );
+}
+
+function ModelDetailPanel({
+  model,
+  onClose,
+  show1mPricing,
+}: {
+  model: Model;
+  onClose: () => void;
+  show1mPricing: boolean;
+}) {
+  const { t } = useTranslation();
+  const dispatch = useDispatch();
+  const list = useSelector(selectModelList);
+  const auth = useSelector(selectAuthenticated);
+  const level = useSelector(levelSelector);
+  const student = useSelector(teenagerSelector);
+  const subscriptionData = useSelector(subscriptionDataSelector);
+
+  const state = useMemo(() => list.includes(model.id), [model, list]);
+  const pro = useMemo(
+    () => includingModelFromPlan(subscriptionData, level, model.id),
+    [subscriptionData, model, level, student],
+  );
+  const tags = useMemo(() => getTags(model), [model]);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onClose]);
+
+  const handleUse = () => {
+    if (!auth && model.auth) {
+      toast(t("login-require"), {
+        action: { label: t("login"), onClick: goAuth },
+      });
+      return;
+    }
+    dispatch(setModel(model.id));
+    router.navigate("/");
+    onClose();
+  };
+
+  const unitLabel = show1mPricing ? "1M" : "1K";
+  const unitValue = show1mPricing ? 1000 : 1;
+  const quickEnter = 0.18;
+
+  return (
+    <motion.div
+      className="fixed inset-0 z-40"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.12 }}
+    >
+      <div
+        className="absolute inset-0 bg-black/30 backdrop-blur-[2px]"
+        onClick={onClose}
+      />
+      <motion.div
+        className="absolute right-0 top-0 h-full w-[420px] max-w-[92vw] bg-background flex flex-col shadow-2xl overflow-hidden"
+        initial={{ x: "100%" }}
+        animate={{ x: 0 }}
+        exit={{ x: "100%" }}
+        transition={{ type: "tween", duration: 0.24, ease: "easeOut" }}
+      >
+        {/* ── Hero header ── */}
+        <div className="relative shrink-0 overflow-hidden">
+          {/* gradient mesh background */}
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/8 via-primary/4 to-transparent" />
+          <div className="absolute -top-8 -right-8 w-40 h-40 rounded-full bg-primary/6 blur-2xl" />
+          <div className="absolute -bottom-4 -left-4 w-28 h-28 rounded-full bg-primary/4 blur-xl" />
+
+          {/* close button */}
+          <motion.button
+            className="absolute top-4 right-4 z-10 p-1.5 rounded-full bg-background/60 backdrop-blur-sm text-muted-foreground hover:text-foreground hover:bg-background/90 transition-colors border border-border/40"
+            whileHover={{ scale: 1.08 }}
+            whileTap={{ scale: 0.92 }}
+            onClick={onClose}
+          >
+            <X className="w-3.5 h-3.5" />
+          </motion.button>
+
+          <div className="relative flex flex-col items-center pt-10 pb-6 px-6">
+            {/* avatar with animated ring */}
+            <motion.div
+              className="relative mb-4"
+              initial={{ scale: 0.6, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{
+                type: "spring",
+                damping: 20,
+                stiffness: 260,
+                delay: 0.03,
+              }}
+            >
+              <motion.div
+                className="absolute inset-0 rounded-full border-2 border-primary/30"
+                animate={{ scale: [1, 1.18, 1], opacity: [0.6, 0, 0.6] }}
+                transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+              />
+              <div className="relative z-10 rounded-full border-2 border-background shadow-lg overflow-hidden">
+                <ModelAvatar model={model} size={64} />
+              </div>
+              {pro && (
+                <div className="absolute -bottom-1 -right-1 z-20 w-5 h-5 rounded-full bg-amber-500 flex items-center justify-center shadow-md">
+                  <Gem className="w-2.5 h-2.5 text-white" />
+                </div>
+              )}
+            </motion.div>
+
+            {/* name */}
+            <motion.h2
+              className="text-xl font-bold text-foreground text-center mb-1"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.06, duration: quickEnter }}
+            >
+              {model.name}
+            </motion.h2>
+
+            {/* model id */}
+            <motion.div
+              className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/8 border border-primary/15 text-xs text-muted-foreground"
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.09, duration: quickEnter }}
+            >
+              <Tag className="w-2.5 h-2.5" />
+              <span className="truncate max-w-[240px] font-mono">{model.id}</span>
+            </motion.div>
+
+            {/* tags row */}
+            {tags.filter((tag) => tagIcons[tag]).length > 0 && (
+              <motion.div
+                className="flex flex-wrap justify-center gap-1.5 mt-3"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.12, duration: quickEnter }}
+              >
+                {tags.filter((tag) => tagIcons[tag]).map((tag, idx) => (
+                  <motion.span
+                    key={idx}
+                    className={cn(
+                      "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium",
+                      {
+                        "text-amber-700 bg-amber-100/80": tag === "official",
+                        "text-blue-700 bg-blue-100/80": tag === "multi-modal",
+                        "text-green-700 bg-green-100/80": tag === "web",
+                        "text-purple-700 bg-purple-100/80": tag === "high-quality",
+                        "text-red-700 bg-red-100/80": tag === "high-price",
+                        "text-gray-700 bg-gray-100/80": tag === "open-source",
+                        "text-indigo-700 bg-indigo-100/80": tag === "image-generation",
+                        "text-yellow-700 bg-yellow-100/80": tag === "fast",
+                        "text-orange-700 bg-orange-100/80": tag === "unstable",
+                        "text-teal-700 bg-teal-100/80": tag === "high-context",
+                        "text-emerald-700 bg-emerald-100/80": tag === "free",
+                      }
+                    )}
+                    initial={{ opacity: 0, scale: 0.75 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.14 + idx * 0.03, duration: 0.16 }}
+                  >
+                    <Icon icon={tagIcons[tag]} className="w-2.5 h-2.5" />
+                    {t(`tag.${tag}`)}
+                  </motion.span>
+                ))}
+              </motion.div>
+            )}
+          </div>
+        </div>
+
+        {/* ── Scrollable body ── */}
+        <ScrollArea className="flex-grow">
+          <div className="px-5 py-4 space-y-4">
+            {/* description */}
+            {model.description && (
+              <motion.p
+                className="text-sm text-muted-foreground leading-relaxed"
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.12, duration: quickEnter }}
+              >
+                {model.description}
+              </motion.p>
+            )}
+
+            {/* pricing cards */}
+            {model.price && model.price.type === "token-billing" && (
+              <motion.div
+                className="grid grid-cols-2 gap-3"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.16, duration: quickEnter }}
+              >
+                <div className="rounded-xl border bg-gradient-to-br from-blue-50/60 to-transparent p-3.5">
+                  <div className="flex items-center gap-1.5 text-blue-600 mb-2">
+                    <ArrowUpFromDot className="w-3.5 h-3.5" />
+                    <span className="text-xs font-medium">输入</span>
+                  </div>
+                  <p className="text-2xl font-bold text-foreground leading-none">
+                    {parseFloat((model.price.input * unitValue).toPrecision(8))}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">点数 / {unitLabel} tokens</p>
+                </div>
+                <div className="rounded-xl border bg-gradient-to-br from-violet-50/60 to-transparent p-3.5">
+                  <div className="flex items-center gap-1.5 text-violet-600 mb-2">
+                    <ArrowDownToDot className="w-3.5 h-3.5" />
+                    <span className="text-xs font-medium">输出</span>
+                  </div>
+                  <p className="text-2xl font-bold text-foreground leading-none">
+                    {parseFloat((model.price.output * unitValue).toPrecision(8))}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">点数 / {unitLabel} tokens</p>
+                </div>
+              </motion.div>
+            )}
+
+            {model.price && model.price.type !== "token-billing" && (
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.16, duration: quickEnter }}
+              >
+                <PriceColumn
+                  type={model.price.type}
+                  input={model.price.input}
+                  output={model.price.output}
+                  pro={pro}
+                  show1mPricing={show1mPricing}
+                  anonymous
+                />
+              </motion.div>
+            )}
+          </div>
+        </ScrollArea>
+
+        {/* ── Footer ── */}
+        <motion.div
+          className="shrink-0 flex items-center gap-2 px-5 py-4 bg-background"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.14, duration: quickEnter }}
+        >
+          <motion.button
+            className={cn(
+              "shrink-0 w-10 h-10 rounded-xl border flex items-center justify-center transition-colors",
+              state
+                ? "text-amber-500 bg-amber-50 border-amber-200"
+                : "text-muted-foreground border-input hover:bg-accent",
+            )}
+            whileHover={{ scale: 1.08 }}
+            whileTap={{ scale: 0.92 }}
+            onClick={() =>
+              dispatch(state ? removeModelList(model.id) : addModelList(model.id))
+            }
+          >
+            <Star className={cn("w-4 h-4", state && "fill-current")} />
+          </motion.button>
+          <motion.button
+            className="flex-grow flex items-center justify-center gap-2 h-10 px-4 rounded-xl bg-primary text-primary-foreground text-sm font-semibold shadow-sm"
+            whileHover={{ scale: 1.02, boxShadow: "0 4px 16px rgb(0 0 0 / 0.15)" }}
+            whileTap={{ scale: 0.98 }}
+            onClick={handleUse}
+          >
+            <ArrowRightLeft className="w-4 h-4" />
+            {t("market.switch-model")}
+          </motion.button>
+        </motion.div>
+      </motion.div>
     </motion.div>
   );
 }
@@ -633,6 +884,7 @@ function Model() {
   const [show1mPricing, setShow1mPricing] = useState<boolean>(false);
   const [searchText, setSearchText] = useState<string>("");
   const [searchTags, setSearchTags] = useState<string[]>([]);
+  const [selectedModel, setSelectedModel] = useState<Model | null>(null);
 
   const search = useMemo(() => {
     return [
@@ -642,6 +894,7 @@ function Model() {
   }, [searchText, searchTags]);
 
   return (
+    <>
     <ScrollArea className={`model-market`}>
       <motion.div
         className={`market-wrapper`}
@@ -693,10 +946,22 @@ function Model() {
           search={search}
           showPricing={displayPricing}
           show1mPricing={show1mPricing}
+          onSelect={setSelectedModel}
         />
         <MarketFooter />
       </motion.div>
     </ScrollArea>
+    <AnimatePresence>
+      {selectedModel && (
+        <ModelDetailPanel
+          key="model-detail"
+          model={selectedModel}
+          onClose={() => setSelectedModel(null)}
+          show1mPricing={show1mPricing}
+        />
+      )}
+    </AnimatePresence>
+    </>
   );
 }
 

@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useDispatch, useSelector } from "react-redux";
 import {
   selectAuthenticated,
+  selectInit,
   selectUsername,
   validateToken,
 } from "@/store/auth.ts";
@@ -23,7 +24,6 @@ import { useEffectAsync } from "@/utils/hook.ts";
 import { AppDispatch, clearCronJobs, createCronJob } from "@/store";
 import { openDialog } from "@/store/settings.ts";
 import ThemeToggle from "@/components/ThemeProvider.tsx";
-import ProjectLink from "@/components/ProjectLink.tsx";
 
 function NavMenu() {
   const username = useSelector(selectUsername);
@@ -51,6 +51,7 @@ function NavBar() {
     validateToken(dispatch, getMemory(tokenField));
   }, []);
   const auth = useSelector(selectAuthenticated);
+  const init = useSelector(selectInit);
 
   useEffectAsync(async () => {
     if (!auth) return;
@@ -83,7 +84,6 @@ function NavBar() {
           onClick={() => router.navigate("/")}
         />
         <div className={`grow`} />
-        <ProjectLink />
         <ThemeToggle size="icon-md" className={`rounded-full overflow-hidden`} />
         <Button
           size={`icon-md`}
@@ -93,7 +93,9 @@ function NavBar() {
         >
           <Settings2 className={`w-4 h-4`} />
         </Button>
-        {auth ? (
+        {!init ? (
+          <div className={`h-9 w-24 rounded-full`} />
+        ) : auth ? (
           <NavMenu />
         ) : (
           <Button size={`thin`} className={`rounded-full`} onClick={goAuth}>

@@ -48,6 +48,17 @@ type CompletionRequest struct {
 	Stream   bool   `json:"stream"`
 }
 
+type ResponseMessage struct {
+	Role                string                `json:"role"`
+	Content             string                `json:"content"`
+	Name                *string               `json:"name,omitempty"`
+	FunctionCall        *globals.FunctionCall `json:"function_call,omitempty"`
+	ToolCallId          *string               `json:"tool_call_id,omitempty"`
+	ToolCalls           *globals.ToolCalls    `json:"tool_calls,omitempty"`
+	ReasoningContent    *string               `json:"reasoning_content,omitempty"`
+	Reasoning           *string               `json:"reasoning,omitempty"`
+}
+
 // ChatResponse is the native http request body for openai
 type ChatResponse struct {
 	ID      string `json:"id"`
@@ -56,7 +67,7 @@ type ChatResponse struct {
 	Model   string `json:"model"`
 	Choices []struct {
 		Index        int             `json:"index"`
-		Message      globals.Message `json:"message"`
+		Message      ResponseMessage `json:"message"`
 		FinishReason string          `json:"finish_reason"`
 	} `json:"choices"`
 	Error struct {
@@ -71,7 +82,7 @@ type ChatStreamResponse struct {
 	Created int64  `json:"created"`
 	Model   string `json:"model"`
 	Choices []struct {
-		Delta        globals.Message `json:"delta"`
+		Delta        ResponseMessage `json:"delta"`
 		Index        int             `json:"index"`
 		FinishReason string          `json:"finish_reason"`
 	} `json:"choices"`

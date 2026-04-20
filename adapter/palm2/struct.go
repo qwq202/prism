@@ -6,8 +6,10 @@ import (
 )
 
 type ChatInstance struct {
-	Endpoint string
-	ApiKey   string
+	Endpoint         string
+	ApiKey           string
+	isFirstReasoning bool
+	isReasonOver     bool
 }
 
 func (c *ChatInstance) GetApiKey() string {
@@ -20,8 +22,9 @@ func (c *ChatInstance) GetEndpoint() string {
 
 func NewChatInstance(endpoint string, apiKey string) *ChatInstance {
 	return &ChatInstance{
-		Endpoint: endpoint,
-		ApiKey:   apiKey,
+		Endpoint:         endpoint,
+		ApiKey:           apiKey,
+		isFirstReasoning: true,
 	}
 }
 

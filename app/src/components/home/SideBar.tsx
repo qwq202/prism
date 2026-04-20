@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { useDispatch, useSelector } from "react-redux";
-import { selectAuthenticated } from "@/store/auth.ts";
+import { selectAuthenticated, selectInit } from "@/store/auth.ts";
 import {
   selectCurrent,
   selectHistory,
@@ -401,6 +401,7 @@ function SideBar() {
   const current = useSelector(selectCurrent);
   const open = useSelector(selectMenu);
   const auth = useSelector(selectAuthenticated);
+  const init = useSelector(selectInit);
   const [search, setSearch] = useState<string>("");
   const [operateConversation, setOperateConversation] = useState<Operation>({
     target: null,
@@ -429,7 +430,7 @@ function SideBar() {
           operateConversation={operateConversation}
           setOperateConversation={setOperateConversation}
         />
-        {!auth && (
+        {init && !auth && (
           <Button
             className={`login-action min-h-10 h-max`}
             variant={`default`}
