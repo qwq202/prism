@@ -28,6 +28,7 @@ require (
 )
 
 require (
+	github.com/alicebob/miniredis/v2 v2.35.0 // indirect
 	github.com/andybalholm/brotli v1.0.5 // indirect
 	github.com/bincooo/requests v0.0.0-20230720064210-7eae5d6c9d1e // indirect
 	github.com/bitly/go-simplejson v0.5.0 // indirect
@@ -68,6 +69,7 @@ require (
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.2.11 // indirect
 	github.com/wangluozhe/fhttp v0.0.0-20230512135433-5c2ebfb4868a // indirect
+	github.com/yuin/gopher-lua v1.1.1 // indirect
 	golang.org/x/arch v0.5.0 // indirect
 	golang.org/x/crypto v0.13.0 // indirect
 	golang.org/x/sys v0.12.0 // indirect
