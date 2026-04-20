@@ -281,6 +281,10 @@ func getGeminiThinkingConfig(props *adaptercommon.ChatProps) *GeminiThinkingConf
 		return nil
 	}
 
+	if globals.IsGeminiNoThinkingModel(props.Model) {
+		return nil
+	}
+
 	if globals.SupportGeminiThinkingLevel(props.Model) {
 		level := getGeminiThinkingLevel(props.Model, *props.GeminiThinkingBudget)
 		if level == "" {
@@ -571,7 +575,11 @@ func getGeminiAnswerText(parts []GeminiChatPart) string {
 	return builder.String()
 }
 
-func (c *ChatInstance) GetGeminiChatText(parts []GeminiChatPart) string {
+func (c *ChatInstance) GetGeminiChatText(model string, parts []GeminiChatPart) string {
+	if globals.IsGeminiNoThinkingModel(model) {
+		return strings.TrimSpace(getGeminiAnswerText(parts))
+	}
+
 	reasoning := strings.TrimSpace(getGeminiReasoningText(parts))
 	answer := strings.TrimSpace(getGeminiAnswerText(parts))
 
@@ -586,7 +594,7 @@ func (c *ChatInstance) GetGeminiChatText(parts []GeminiChatPart) string {
 	return fmt.Sprintf("<think>\n%s\n</think>\n\n%s", reasoning, answer)
 }
 
-func (c *ChatInstance) GetGeminiStreamText(parts []GeminiChatPart) string {
+func (c *ChatInstance) GetGeminiStreamText(model string, parts []GeminiChatPart) string {
 	builder := strings.Builder{}
 
 	for _, part := range parts {
@@ -595,6 +603,9 @@ func (c *ChatInstance) GetGeminiStreamText(parts []GeminiChatPart) string {
 		}
 
 		if part.Thought {
+			if globals.IsGeminiNoThinkingModel(model) {
+				continue
+			}
 			if c.isFirstReasoning {
 				c.isFirstReasoning = false
 				builder.WriteString("<think>\n")

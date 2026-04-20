@@ -93,10 +93,10 @@ func (c *ChatInstance) GetPalm2ChatResponse(data interface{}) (string, error) {
 	return "", fmt.Errorf("palm2 error: cannot parse response")
 }
 
-func (c *ChatInstance) buildGeminiChunk(parts []GeminiChatPart, stream bool) *globals.Chunk {
-	content := c.GetGeminiChatText(parts)
+func (c *ChatInstance) buildGeminiChunk(model string, parts []GeminiChatPart, stream bool) *globals.Chunk {
+	content := c.GetGeminiChatText(model, parts)
 	if stream {
-		content = c.GetGeminiStreamText(parts)
+		content = c.GetGeminiStreamText(model, parts)
 	}
 
 	return &globals.Chunk{
@@ -106,11 +106,11 @@ func (c *ChatInstance) buildGeminiChunk(parts []GeminiChatPart, stream bool) *gl
 	}
 }
 
-func (c *ChatInstance) GetGeminiChunk(data interface{}) (*globals.Chunk, error) {
+func (c *ChatInstance) GetGeminiChunk(model string, data interface{}) (*globals.Chunk, error) {
 	if form := utils.MapToStruct[GeminiChatResponse](data); form != nil {
 		if len(form.Candidates) != 0 {
 			parts := form.Candidates[0].Content.Parts
-			return c.buildGeminiChunk(parts, false), nil
+			return c.buildGeminiChunk(model, parts, false), nil
 		}
 	}
 
@@ -122,7 +122,7 @@ func (c *ChatInstance) GetGeminiChunk(data interface{}) (*globals.Chunk, error) 
 }
 
 func (c *ChatInstance) GetGeminiChatResponse(data interface{}) (string, error) {
-	chunk, err := c.GetGeminiChunk(data)
+	chunk, err := c.GetGeminiChunk("", data)
 	if err != nil {
 		return "", err
 	}
@@ -194,7 +194,7 @@ func (c *ChatInstance) CreateStreamChatRequest(props *adaptercommon.ChatProps, c
 			if form := utils.UnmarshalForm[GeminiStreamResponse](data); form != nil {
 				if len(form.Candidates) != 0 && len(form.Candidates[0].Content.Parts) != 0 {
 					parts := form.Candidates[0].Content.Parts
-					return callback(c.buildGeminiChunk(parts, true))
+					return callback(c.buildGeminiChunk(props.Model, parts, true))
 				}
 				return nil
 			}
@@ -248,7 +248,7 @@ func (c *ChatInstance) CreateGeminiChatRequest(props *adaptercommon.ChatProps) (
 		return nil, fmt.Errorf("gemini error: %s", err.Error())
 	}
 
-	return c.GetGeminiChunk(data)
+	return c.GetGeminiChunk(props.Model, data)
 }
 
 func (c *ChatInstance) GetLatestPrompt(props *adaptercommon.ChatProps) string {

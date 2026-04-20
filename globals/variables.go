@@ -204,7 +204,15 @@ func IsGeminiModel(model string) bool {
 		strings.HasPrefix(model, "gemini-")
 }
 
+func IsGeminiNoThinkingModel(model string) bool {
+	return strings.HasSuffix(strings.TrimSpace(model), "-nothinking")
+}
+
 func SupportGeminiThinkingLevel(model string) bool {
+	if IsGeminiNoThinkingModel(model) {
+		return false
+	}
+
 	return model == "gemini-3-flash-preview" ||
 		strings.HasPrefix(model, "gemini-3-flash-preview-") ||
 		model == "gemini-3.1-flash-lite-preview" ||
@@ -222,6 +230,10 @@ func SupportGeminiThinkingLevel(model string) bool {
 }
 
 func SupportGeminiThinkingBudget(model string) bool {
+	if IsGeminiNoThinkingModel(model) {
+		return false
+	}
+
 	return model == "gemini-2.5-flash" ||
 		strings.HasPrefix(model, "gemini-2.5-flash-preview-") ||
 		model == "gemini-2.5-flash-lite" ||

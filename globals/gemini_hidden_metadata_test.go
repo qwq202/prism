@@ -43,3 +43,19 @@ func TestNormalizeGeminiThoughtSignaturesBoundsAndDedupe(t *testing.T) {
 		t.Fatalf("unexpected normalized signatures: %#v", result)
 	}
 }
+
+func TestGeminiNoThinkingModelDisablesThinkingControls(t *testing.T) {
+	model := "gemini-3-flash-preview-nothinking"
+
+	if !IsGeminiNoThinkingModel(model) {
+		t.Fatalf("expected %q to be detected as no-thinking gemini model", model)
+	}
+
+	if SupportGeminiThinkingLevel(model) {
+		t.Fatalf("expected thinking-level support to be disabled for %q", model)
+	}
+
+	if SupportGeminiThinkingBudget(model) {
+		t.Fatalf("expected thinking-budget support to be disabled for %q", model)
+	}
+}

@@ -108,10 +108,17 @@ export function isGeminiModelId(model: string | undefined | null): boolean {
   );
 }
 
+export function isGeminiNoThinkingModel(
+  model: string | undefined | null,
+): boolean {
+  return !!model && model.endsWith("-nothinking");
+}
+
 export function supportsGeminiThinkingBudgetControl(
   model: string | undefined | null,
 ): boolean {
   if (!model) return false;
+  if (isGeminiNoThinkingModel(model)) return false;
   return (
     model === "gemini-2.5-flash" ||
     model.startsWith("gemini-2.5-flash-preview-") ||

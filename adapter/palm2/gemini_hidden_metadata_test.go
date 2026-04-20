@@ -1,6 +1,7 @@
 package palm2
 
 import (
+	adaptercommon "chat/adapter/common"
 	"chat/globals"
 	"testing"
 )
@@ -228,7 +229,7 @@ func TestGetGeminiChunkCapturesThoughtSignatures(t *testing.T) {
 		},
 	}
 
-	chunk, err := instance.GetGeminiChunk(response)
+	chunk, err := instance.GetGeminiChunk("", response)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -253,7 +254,7 @@ func TestBuildGeminiChunkStreamMetadataOnly(t *testing.T) {
 		isFirstReasoning: true,
 	}
 
-	chunk := instance.buildGeminiChunk([]GeminiChatPart{
+	chunk := instance.buildGeminiChunk("", []GeminiChatPart{
 		{
 			Thought:          true,
 			ThoughtSignature: ptrString("sig-final"),
@@ -274,4 +275,43 @@ func TestBuildGeminiChunkStreamMetadataOnly(t *testing.T) {
 	if chunk.IsEmpty() {
 		t.Fatalf("metadata-only stream chunk must be non-empty for forwarding")
 	}
+}
+
+func TestGetGeminiThinkingConfigSkipsNoThinkingModels(t *testing.T) {
+	config := getGeminiThinkingConfig(&adaptercommon.ChatProps{
+		Model:                "gemini-3-flash-preview-nothinking",
+		GeminiThinkingBudget: utilsIntPtr(4096),
+	})
+
+	if config != nil {
+		t.Fatalf("expected no thinking config for nothinking model, got %#v", config)
+	}
+}
+
+func TestBuildGeminiChunkSuppressesExplicitThoughtsForNoThinkingModels(t *testing.T) {
+	instance := &ChatInstance{
+		isFirstReasoning: true,
+	}
+
+	parts := []GeminiChatPart{
+		{Text: ptrString("internal "), Thought: true},
+		{Text: ptrString("answer")},
+	}
+
+	nonStream := instance.buildGeminiChunk("gemini-3-flash-preview-nothinking", parts, false)
+	if nonStream.Content != "answer" {
+		t.Fatalf("expected non-stream nothinking content to exclude reasoning, got %q", nonStream.Content)
+	}
+
+	instance.isFirstReasoning = true
+	instance.isReasonOver = false
+
+	stream := instance.buildGeminiChunk("gemini-3-flash-preview-nothinking", parts, true)
+	if stream.Content != "answer" {
+		t.Fatalf("expected stream nothinking content to exclude reasoning, got %q", stream.Content)
+	}
+}
+
+func utilsIntPtr(value int) *int {
+	return &value
 }
