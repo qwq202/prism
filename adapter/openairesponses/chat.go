@@ -193,11 +193,132 @@ func parseResponse(data string) (*ResponseResponse, error) {
 	return form, nil
 }
 
+func parseStreamEvent(data string) (*ResponseStreamEvent, error) {
+	form := utils.UnmarshalForm[ResponseStreamEvent](data)
+	if form == nil {
+		return nil, errors.New("cannot parse stream event")
+	}
+
+	if form.Error.Message != "" {
+		return nil, fmt.Errorf("%s", form.Error.Message)
+	}
+
+	return form, nil
+}
+
+func emitReasoningSummary(delta string, started *bool) *globals.Chunk {
+	if strings.TrimSpace(delta) == "" {
+		return nil
+	}
+
+	if !*started {
+		*started = true
+		return &globals.Chunk{
+			Content: fmt.Sprintf("<think>\n%s", delta),
+		}
+	}
+
+	return &globals.Chunk{
+		Content: delta,
+	}
+}
+
+func emitOutputText(delta string, reasoningStarted *bool, reasoningClosed *bool) *globals.Chunk {
+	content := delta
+
+	if *reasoningStarted && !*reasoningClosed {
+		*reasoningClosed = true
+		if content != "" {
+			content = fmt.Sprintf("\n</think>\n\n%s", content)
+		} else {
+			content = "\n</think>\n\n"
+		}
+	}
+
+	if content == "" {
+		return nil
+	}
+
+	return &globals.Chunk{
+		Content: content,
+	}
+}
+
+func (c *ChatInstance) CreateXAIStreamChatRequest(props *adaptercommon.ChatProps, callback globals.Hook) error {
+	reasoningStarted := false
+	reasoningClosed := false
+	ticks := 0
+	body := c.GetChatBody(props)
+
+	err := utils.EventScanner(&utils.EventScannerProps{
+		Method:  "POST",
+		Uri:     c.GetChatEndpoint(),
+		Headers: c.GetHeader(),
+		Body: ResponseRequest{
+			Model:           body.Model,
+			Instructions:    body.Instructions,
+			Input:           body.Input,
+			MaxOutputTokens: body.MaxOutputTokens,
+			Temperature:     body.Temperature,
+			TopP:            body.TopP,
+			Tools:           body.Tools,
+			ToolChoice:      body.ToolChoice,
+			Stream:          true,
+		},
+		Callback: func(data string) error {
+			event, parseErr := parseStreamEvent(data)
+			if parseErr != nil {
+				return parseErr
+			}
+
+			var chunk *globals.Chunk
+			switch event.Type {
+			case "response.reasoning_summary_text.delta":
+				chunk = emitReasoningSummary(event.Delta, &reasoningStarted)
+			case "response.output_text.delta":
+				chunk = emitOutputText(event.Delta, &reasoningStarted, &reasoningClosed)
+			default:
+				return nil
+			}
+
+			if chunk == nil {
+				return nil
+			}
+
+			ticks += 1
+			return callback(chunk)
+		},
+	}, props.Proxy)
+
+	if err != nil {
+		return fmt.Errorf("openai responses error: %s", err.Error)
+	}
+
+	if reasoningStarted && !reasoningClosed {
+		if closeErr := callback(&globals.Chunk{Content: "\n</think>\n\n"}); closeErr != nil {
+			return closeErr
+		}
+		reasoningClosed = true
+		ticks += 1
+	}
+
+	if ticks == 0 {
+		return errors.New("openai responses error: empty response")
+	}
+
+	return nil
+}
+
 func (c *ChatInstance) CreateStreamChatRequest(props *adaptercommon.ChatProps, callback globals.Hook) error {
+	if props != nil && props.ChannelType == globals.XAIChannelType {
+		return c.CreateXAIStreamChatRequest(props, callback)
+	}
+
+	body := c.GetChatBody(props)
 	raw, err := utils.PostRaw(
 		c.GetChatEndpoint(),
 		c.GetHeader(),
-		c.GetChatBody(props),
+		body,
 		props.Proxy,
 	)
 	if err != nil {

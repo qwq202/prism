@@ -51,3 +51,12 @@ type ResponseResponse struct {
 		Type    string `json:"type"`
 	} `json:"error"`
 }
+
+type ResponseStreamEvent struct {
+	Type  string `json:"type"`
+	Delta string `json:"delta,omitempty"`
+	Error struct {
+		Message string `json:"message"`
+		Type    string `json:"type"`
+	} `json:"error,omitempty"`
+}
