@@ -40,6 +40,7 @@ export default defineConfig({
       "/api": {
         target: "http://localhost:8094",
         changeOrigin: true,
+        ws: true,
       },
       "/v1": {
         target: "http://localhost:8094",

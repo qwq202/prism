@@ -14,9 +14,7 @@ export const deploy: boolean = true; // is production environment (for api endpo
 export const tokenField = getTokenField(deploy); // token field name for storing token
 
 export let apiEndpoint: string = getRestApi(deploy); // api endpoint for rest api calls
-export let websocketEndpoint: string = dev
-  ? "ws://localhost:8094"
-  : getWebsocketApi(deploy); // api endpoint for websocket calls
+export let websocketEndpoint: string = getWebsocketApi(deploy); // api endpoint for websocket calls
 
 setAxiosConfig({
   endpoint: apiEndpoint,
