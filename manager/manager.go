@@ -78,6 +78,10 @@ func maybeAutoTitle(conn *Connection, user *auth.User, instance *conversation.Co
 	})
 }
 
+func hasVisibleAssistantText(message globals.Message) bool {
+	return strings.TrimSpace(message.Content) != ""
+}
+
 func ChatAPI(c *gin.Context) {
 	var conn *utils.WebSocket
 	if conn = utils.NewWebsocket(c, false); conn == nil {
@@ -111,7 +115,9 @@ func ChatAPI(c *gin.Context) {
 			if instance.HandleMessage(db, form) {
 				response := ChatHandler(buf, user, instance, false)
 				if instance.SaveResponse(db, response) {
-					maybeAutoTitle(buf, user, instance)
+					if hasVisibleAssistantText(response) {
+						maybeAutoTitle(buf, user, instance)
+					}
 				}
 			}
 		case StopType:
@@ -124,7 +130,9 @@ func ChatAPI(c *gin.Context) {
 
 			response := ChatHandler(buf, user, instance, true)
 			if instance.SaveResponse(db, response) {
-				maybeAutoTitle(buf, user, instance)
+				if hasVisibleAssistantText(response) {
+					maybeAutoTitle(buf, user, instance)
+				}
 			}
 		case MaskType:
 			instance.LoadMask(form.Message)

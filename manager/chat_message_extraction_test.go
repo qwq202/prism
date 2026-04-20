@@ -1,0 +1,124 @@
+package manager
+
+import (
+	"chat/globals"
+	"chat/utils"
+	"testing"
+)
+
+func TestExtractAssistantMessageFromBufferPlainTextResponse(t *testing.T) {
+	buffer := &utils.Buffer{}
+	buffer.WriteChunk(&globals.Chunk{
+		Content: "hello world",
+	})
+
+	message := extractAssistantMessageFromBuffer(buffer, false)
+
+	if message.Role != globals.Assistant {
+		t.Fatalf("expected role %q, got %q", globals.Assistant, message.Role)
+	}
+
+	if message.Content != "hello world" {
+		t.Fatalf("expected plain text content to be preserved, got %q", message.Content)
+	}
+
+	if message.ToolCalls != nil || message.FunctionCall != nil {
+		t.Fatalf("expected no function-calling payloads, got tool_calls=%#v function_call=%#v", message.ToolCalls, message.FunctionCall)
+	}
+}
+
+func TestExtractAssistantMessageFromBufferToolCallOnlyResponse(t *testing.T) {
+	buffer := &utils.Buffer{}
+	toolCalls := globals.ToolCalls{
+		{
+			Type: "function",
+			Id:   "tool-call-1",
+			Function: globals.ToolCallFunction{
+				Name:      "lookup_weather",
+				Arguments: "{\"city\":\"Shanghai\"}",
+			},
+		},
+	}
+	buffer.WriteChunk(&globals.Chunk{
+		ToolCall: &toolCalls,
+	})
+
+	message := extractAssistantMessageFromBuffer(buffer, false)
+
+	if message.Content != "" {
+		t.Fatalf("expected empty text content for tool-call-only response, got %q", message.Content)
+	}
+
+	if message.ToolCalls == nil || len(*message.ToolCalls) != 1 {
+		t.Fatalf("expected one tool call to be preserved, got %#v", message.ToolCalls)
+	}
+
+	if message.FunctionCall != nil {
+		t.Fatalf("expected no function_call payload, got %#v", message.FunctionCall)
+	}
+}
+
+func TestExtractAssistantMessageFromBufferMetadataOnlyResponse(t *testing.T) {
+	buffer := &utils.Buffer{}
+	buffer.WriteChunk(&globals.Chunk{
+		GeminiHiddenMetadata: &globals.GeminiHiddenMetadata{
+			ThoughtSignatures: []string{"sig-1"},
+		},
+	})
+
+	message := extractAssistantMessageFromBuffer(buffer, false)
+
+	if message.Content != "" {
+		t.Fatalf("expected metadata-only response to keep empty content, got %q", message.Content)
+	}
+
+	if message.GeminiHiddenMetadata == nil || len(message.GeminiHiddenMetadata.ThoughtSignatures) != 1 {
+		t.Fatalf("expected metadata signatures to be preserved, got %#v", message.GeminiHiddenMetadata)
+	}
+
+	if message.ToolCalls != nil || message.FunctionCall != nil {
+		t.Fatalf("expected metadata-only response without function-calling payloads, got tool_calls=%#v function_call=%#v", message.ToolCalls, message.FunctionCall)
+	}
+}
+
+func TestExtractAssistantMessageFromBufferInterruptedDropsFunctionPayloads(t *testing.T) {
+	buffer := &utils.Buffer{}
+	toolCalls := globals.ToolCalls{
+		{
+			Type: "function",
+			Id:   "partial-tool-call",
+			Function: globals.ToolCallFunction{
+				Name:      "lookup_weather",
+				Arguments: "{\"city\":\"Sha",
+			},
+		},
+	}
+
+	buffer.WriteChunk(&globals.Chunk{Content: "partial visible text"})
+	buffer.WriteChunk(&globals.Chunk{ToolCall: &toolCalls})
+	buffer.WriteChunk(&globals.Chunk{
+		FunctionCall: &globals.FunctionCall{
+			Name:      "lookup_air_quality",
+			Arguments: "{\"city\":\"Sha",
+		},
+	})
+	buffer.WriteChunk(&globals.Chunk{
+		GeminiHiddenMetadata: &globals.GeminiHiddenMetadata{
+			ThoughtSignatures: []string{"sig-2"},
+		},
+	})
+
+	message := extractAssistantMessageFromBuffer(buffer, true)
+
+	if message.Content != "partial visible text" {
+		t.Fatalf("expected visible text to remain on interrupted response, got %q", message.Content)
+	}
+
+	if message.ToolCalls != nil || message.FunctionCall != nil {
+		t.Fatalf("expected interrupted response to drop partial function-calling payloads, got tool_calls=%#v function_call=%#v", message.ToolCalls, message.FunctionCall)
+	}
+
+	if message.GeminiHiddenMetadata == nil || len(message.GeminiHiddenMetadata.ThoughtSignatures) != 1 {
+		t.Fatalf("expected metadata to remain available, got %#v", message.GeminiHiddenMetadata)
+	}
+}

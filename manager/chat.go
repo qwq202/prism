@@ -81,7 +81,7 @@ func createStopSignal(conn *Connection) chan bool {
 func createChatTask(
 	conn *Connection, user *auth.User, buffer *utils.Buffer, db *sql.DB, cache *redis.Client,
 	model string, instance *conversation.Conversation, segment []globals.Message, plan bool,
-) (hit bool, err error) {
+) (hit bool, err error, interrupted bool) {
 	chunkChan := make(chan partialChunk, 24) // the channel to send the chunk data
 	interruptSignal := make(chan error, 1)   // the signal to interrupt the chat task routine
 	stopSignal := createStopSignal(conn)     // the signal to stop from the client
@@ -213,6 +213,11 @@ func createChatTask(
 		select {
 		case data := <-chunkChan:
 			if data.Error != nil && data.Error.Error() == interruptMessage {
+				interrupted = true
+				if data.End {
+					return hit, nil, true
+				}
+
 				// skip the interrupt message
 				continue
 			}
@@ -232,7 +237,7 @@ func createChatTask(
 			}); err != nil {
 				globals.Warn(fmt.Sprintf("failed to send message to client: %s", err.Error()))
 				interruptSignal <- err
-				return hit, nil
+				return hit, nil, true
 			}
 
 		case signal := <-stopSignal:
@@ -246,10 +251,44 @@ func createChatTask(
 				})
 				interruptSignal <- errors.New("signal")
 
-				return
+				return hit, nil, true
 			}
 		}
 	}
+}
+
+func extractAssistantMessageFromBuffer(buffer *utils.Buffer, interrupted bool) globals.Message {
+	if buffer.IsEmpty() {
+		hiddenMetadata := buffer.GetGeminiHiddenMetadata()
+		if buffer.HasHiddenMetadataOnly() {
+			return globals.Message{
+				Role:                 globals.Assistant,
+				Content:              "",
+				GeminiHiddenMetadata: hiddenMetadata,
+			}
+		}
+
+		return globals.Message{
+			Role:    globals.Assistant,
+			Content: defaultMessage,
+		}
+	}
+
+	message := globals.Message{
+		Role:                 globals.Assistant,
+		Content:              buffer.ReadWithDefault(defaultMessage),
+		GeminiHiddenMetadata: buffer.GetGeminiHiddenMetadata(),
+	}
+
+	// Interrupted streams may contain partial/incomplete tool payloads.
+	// Keep visible text, but avoid persisting broken function-calling state.
+	if interrupted {
+		return message
+	}
+
+	message.ToolCalls = buffer.GetToolCalls()
+	message.FunctionCall = buffer.GetFunctionCall()
+	return message
 }
 
 func ChatHandler(conn *Connection, user *auth.User, instance *conversation.Conversation, restart bool) globals.Message {
@@ -288,7 +327,7 @@ func ChatHandler(conn *Connection, user *auth.User, instance *conversation.Conve
 	}
 
 	buffer := utils.NewBuffer(model, segment, channel.ChargeInstance.GetCharge(model))
-	hit, err := createChatTask(conn, user, buffer, db, cache, model, instance, segment, plan)
+	hit, err, interrupted := createChatTask(conn, user, buffer, db, cache, model, instance, segment, plan)
 
 	admin.AnalyseRequest(model, buffer, err)
 	if adapter.IsAvailableError(err) {
@@ -322,26 +361,18 @@ func ChatHandler(conn *Connection, user *auth.User, instance *conversation.Conve
 	}
 
 	if buffer.IsEmpty() {
-		hiddenMetadata := buffer.GetGeminiHiddenMetadata()
 		if buffer.HasHiddenMetadataOnly() {
 			conn.Send(globals.ChatSegmentResponse{
 				End: true,
 			})
-			return globals.Message{
-				Role:                 globals.Assistant,
-				Content:              "",
-				GeminiHiddenMetadata: hiddenMetadata,
-			}
+			return extractAssistantMessageFromBuffer(buffer, interrupted)
 		}
 
 		conn.Send(globals.ChatSegmentResponse{
 			Message: defaultMessage,
 			End:     true,
 		})
-		return globals.Message{
-			Role:    globals.Assistant,
-			Content: defaultMessage,
-		}
+		return extractAssistantMessageFromBuffer(buffer, interrupted)
 	}
 
 	conn.Send(globals.ChatSegmentResponse{
@@ -350,13 +381,5 @@ func ChatHandler(conn *Connection, user *auth.User, instance *conversation.Conve
 		Plan:  plan,
 	})
 
-	content := buffer.ReadWithDefault(defaultMessage)
-
-	return globals.Message{
-		Role:                 globals.Assistant,
-		Content:              content,
-		ToolCalls:            buffer.GetToolCalls(),
-		FunctionCall:         buffer.GetFunctionCall(),
-		GeminiHiddenMetadata: buffer.GetGeminiHiddenMetadata(),
-	}
+	return extractAssistantMessageFromBuffer(buffer, interrupted)
 }
