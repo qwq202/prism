@@ -51,33 +51,41 @@ type ChatProps struct {
 	EnableXSearch        bool                   `json:"-"`
 	GeminiThinkingBudget *int                   `json:"-"`
 	ChannelType          string                 `json:"-"`
+	ClientContext        string                 `json:"-"`
 	Buffer               *utils.Buffer          `json:"-"`
 }
 
 const currentDateTimePromptPrefix = "Current date and time reference:"
+const clientContextPromptPrefix = "Current client device reference:"
 
-func buildCurrentDateTimePrompt() string {
+func buildCurrentDateTimePrompt(clientContext string) string {
 	now := time.Now()
-	return fmt.Sprintf(
+	prompt := fmt.Sprintf(
 		"%s %s (%s). Treat this as the current local time unless the user specifies a different timezone.",
 		currentDateTimePromptPrefix,
 		now.Format("2006-01-02 15:04:05"),
 		now.Location().String(),
 	)
+
+	if strings.TrimSpace(clientContext) == "" {
+		return prompt
+	}
+
+	return fmt.Sprintf("%s\n%s %s", prompt, clientContextPromptPrefix, strings.TrimSpace(clientContext))
 }
 
-func injectCurrentDateTime(messages []globals.Message) []globals.Message {
+func injectCurrentDateTime(messages []globals.Message, clientContext string) []globals.Message {
 	if len(messages) == 0 {
 		return []globals.Message{
 			{
 				Role:    globals.System,
-				Content: buildCurrentDateTimePrompt(),
+				Content: buildCurrentDateTimePrompt(clientContext),
 			},
 		}
 	}
 
 	cloned := utils.DeepCopy[[]globals.Message](messages)
-	prompt := buildCurrentDateTimePrompt()
+	prompt := buildCurrentDateTimePrompt(clientContext)
 
 	for i := range cloned {
 		if cloned[i].Role != globals.System {
@@ -106,7 +114,7 @@ func injectCurrentDateTime(messages []globals.Message) []globals.Message {
 }
 
 func (c *ChatProps) SetupBuffer(buf *utils.Buffer) {
-	c.Message = injectCurrentDateTime(c.Message)
+	c.Message = injectCurrentDateTime(c.Message, c.ClientContext)
 	if buf == nil {
 		return
 	}

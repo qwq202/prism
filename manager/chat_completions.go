@@ -98,7 +98,7 @@ func ChatRelayAPI(c *gin.Context) {
 	}
 }
 
-func getChatProps(form RelayForm, messages []globals.Message, buffer *utils.Buffer, enableWeb bool) *adaptercommon.ChatProps {
+func getChatProps(form RelayForm, messages []globals.Message, buffer *utils.Buffer, enableWeb bool, clientContext string) *adaptercommon.ChatProps {
 	webSearch := utils.Multi(enableWeb && !form.WebSearch && !form.URLContext && !form.XSearch, true, form.WebSearch)
 	urlContext := utils.Multi(enableWeb && !form.WebSearch && !form.URLContext && !form.XSearch, true, form.URLContext)
 
@@ -119,6 +119,7 @@ func getChatProps(form RelayForm, messages []globals.Message, buffer *utils.Buff
 		TopK:                 form.TopK,
 		Tools:                form.Tools,
 		ToolChoice:           form.ToolChoice,
+		ClientContext:        clientContext,
 	}, buffer)
 }
 
@@ -127,7 +128,7 @@ func sendTranshipmentResponse(c *gin.Context, form RelayForm, messages []globals
 	cache := utils.GetCacheFromContext(c)
 
 	buffer := utils.NewBuffer(form.Model, messages, channel.ChargeInstance.GetCharge(form.Model))
-	hit, err := channel.NewChatRequestWithCache(cache, buffer, auth.GetGroup(db, user), getChatProps(form, messages, buffer, enableWeb), func(data *globals.Chunk) error {
+	hit, err := channel.NewChatRequestWithCache(cache, buffer, auth.GetGroup(db, user), getChatProps(form, messages, buffer, enableWeb, extractClientContext(c)), func(data *globals.Chunk) error {
 		buffer.WriteChunk(data)
 		return nil
 	})
@@ -253,7 +254,7 @@ func sendStreamTranshipmentResponse(c *gin.Context, form RelayForm, messages []g
 	go func() {
 		buffer := utils.NewBuffer(form.Model, messages, charge)
 		hit, err := channel.NewChatRequestWithCache(
-			cache, buffer, group, getChatProps(form, messages, buffer, enableWeb),
+			cache, buffer, group, getChatProps(form, messages, buffer, enableWeb, extractClientContext(c)),
 			func(data *globals.Chunk) error {
 				buffer.WriteChunk(data)
 

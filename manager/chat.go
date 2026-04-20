@@ -181,6 +181,7 @@ func createChatTask(
 				PresencePenalty:      instance.GetPresencePenalty(),
 				FrequencyPenalty:     instance.GetFrequencyPenalty(),
 				RepetitionPenalty:    instance.GetRepetitionPenalty(),
+				ClientContext:        extractClientContext(conn.GetCtx()),
 			}, buffer),
 
 			// the function to handle the chunk data

@@ -27,6 +27,24 @@ func TestCreateChatPropsInjectsCurrentDateTimeSystemMessage(t *testing.T) {
 	}
 }
 
+func TestCreateChatPropsIncludesClientContextWhenProvided(t *testing.T) {
+	props := CreateChatProps(&ChatProps{
+		Model:         "gemini-3-flash-preview",
+		ClientContext: "Operating system: macOS; Browser/App: Chrome; Device type: computer.",
+		Message: []globals.Message{
+			{Role: globals.User, Content: "hello"},
+		},
+	}, nil)
+
+	if !strings.Contains(props.Message[0].Content, clientContextPromptPrefix) {
+		t.Fatalf("expected client context prompt prefix, got %q", props.Message[0].Content)
+	}
+
+	if !strings.Contains(props.Message[0].Content, "Operating system: macOS") {
+		t.Fatalf("expected client context to be preserved, got %q", props.Message[0].Content)
+	}
+}
+
 func TestCreateChatPropsPrefixesExistingSystemMessage(t *testing.T) {
 	props := CreateChatProps(&ChatProps{
 		Model: "gemini-3-flash-preview",
