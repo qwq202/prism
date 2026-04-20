@@ -417,10 +417,17 @@ func (c *Conversation) GetLatestMessage() string {
 	return c.Message[len(c.Message)-1].Content
 }
 
-func (c *Conversation) SaveResponse(db *sql.DB, message globals.Message) {
+func (c *Conversation) SaveResponse(db *sql.DB, message globals.Message) bool {
 	message.Role = globals.Assistant
+
+	// Keep UI semantics stable: do not persist assistant messages with no visible payload.
+	if strings.TrimSpace(message.Content) == "" && message.FunctionCall == nil && (message.ToolCalls == nil || len(*message.ToolCalls) == 0) {
+		return false
+	}
+
 	c.AddMessage(message)
 	c.SaveConversation(db)
+	return true
 }
 
 func (c *Conversation) CountMessagesByRole(role string) int {

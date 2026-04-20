@@ -110,8 +110,9 @@ func ChatAPI(c *gin.Context) {
 		case ChatType:
 			if instance.HandleMessage(db, form) {
 				response := ChatHandler(buf, user, instance, false)
-				instance.SaveResponse(db, response)
-				maybeAutoTitle(buf, user, instance)
+				if instance.SaveResponse(db, response) {
+					maybeAutoTitle(buf, user, instance)
+				}
 			}
 		case StopType:
 			break
@@ -122,8 +123,9 @@ func ChatAPI(c *gin.Context) {
 			instance.ApplyParam(form)
 
 			response := ChatHandler(buf, user, instance, true)
-			instance.SaveResponse(db, response)
-			maybeAutoTitle(buf, user, instance)
+			if instance.SaveResponse(db, response) {
+				maybeAutoTitle(buf, user, instance)
+			}
 		case MaskType:
 			instance.LoadMask(form.Message)
 		case EditType:
