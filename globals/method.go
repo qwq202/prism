@@ -1,7 +1,7 @@
 package globals
 
 func (m *GeminiHiddenMetadata) IsEmpty() bool {
-	return m == nil || m.ThoughtSignature == nil || len(*m.ThoughtSignature) == 0
+	return m == nil || len(m.ThoughtSignatures) == 0
 }
 
 func (c *Chunk) IsEmpty() bool {

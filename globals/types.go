@@ -1,9 +1,39 @@
 package globals
 
+import "encoding/json"
+
 type Hook func(data *Chunk) error
 
 type GeminiHiddenMetadata struct {
-	ThoughtSignature *string `json:"thought_signature,omitempty"`
+	ThoughtSignatures []string `json:"thought_signatures,omitempty"`
+}
+
+func (m *GeminiHiddenMetadata) UnmarshalJSON(data []byte) error {
+	type rawMetadata struct {
+		ThoughtSignatures []string `json:"thought_signatures,omitempty"`
+		ThoughtSignature  *string  `json:"thought_signature,omitempty"`
+	}
+
+	var raw rawMetadata
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+
+	signatures := make([]string, 0, len(raw.ThoughtSignatures)+1)
+	for _, signature := range raw.ThoughtSignatures {
+		if len(signature) == 0 {
+			continue
+		}
+
+		signatures = append(signatures, signature)
+	}
+
+	if raw.ThoughtSignature != nil && len(*raw.ThoughtSignature) > 0 {
+		signatures = append(signatures, *raw.ThoughtSignature)
+	}
+
+	m.ThoughtSignatures = signatures
+	return nil
 }
 
 type Message struct {

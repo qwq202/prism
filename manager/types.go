@@ -6,6 +6,11 @@ import (
 	"fmt"
 )
 
+const (
+	maxGeminiThoughtSignatures = 32
+	maxGeminiThoughtSigBytes   = 4096
+)
+
 type Message struct {
 	Role                 string                        `json:"role,omitempty"`
 	Content              interface{}                   `json:"content"`
@@ -175,6 +180,32 @@ func transformContent(content interface{}) string {
 	}
 }
 
+func sanitizeGeminiHiddenMetadata(metadata *globals.GeminiHiddenMetadata) *globals.GeminiHiddenMetadata {
+	if metadata == nil || metadata.IsEmpty() {
+		return nil
+	}
+
+	signatures := make([]string, 0, len(metadata.ThoughtSignatures))
+	for _, signature := range metadata.ThoughtSignatures {
+		if len(signature) == 0 || len(signature) > maxGeminiThoughtSigBytes {
+			continue
+		}
+
+		signatures = append(signatures, signature)
+		if len(signatures) >= maxGeminiThoughtSignatures {
+			break
+		}
+	}
+
+	if len(signatures) == 0 {
+		return nil
+	}
+
+	return &globals.GeminiHiddenMetadata{
+		ThoughtSignatures: signatures,
+	}
+}
+
 func transform(m []Message) []globals.Message {
 	var messages []globals.Message
 	for _, v := range m {
@@ -185,7 +216,7 @@ func transform(m []Message) []globals.Message {
 			FunctionCall:         v.FunctionCall,
 			ToolCallId:           v.ToolCallId,
 			ToolCalls:            v.ToolCalls,
-			GeminiHiddenMetadata: v.GeminiHiddenMetadata,
+			GeminiHiddenMetadata: sanitizeGeminiHiddenMetadata(v.GeminiHiddenMetadata),
 		})
 	}
 	return messages

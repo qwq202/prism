@@ -11,6 +11,10 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
+func hasToolCalls(toolCalls *globals.ToolCalls) bool {
+	return toolCalls != nil && len(*toolCalls) > 0
+}
+
 func NewChatRequest(group string, props *adaptercommon.ChatProps, hook globals.Hook) error {
 	ticker := ConduitInstance.GetTicker(props.OriginalModel, group)
 	if ticker == nil || ticker.IsEmpty() {
@@ -63,7 +67,7 @@ func PreflightCache(cache *redis.Client, model string, hash string, buffer *util
 	toolCalls := buf.GetToolCalls()
 	functionCall := buf.GetFunctionCall()
 	hiddenMetadata := buf.GetGeminiHiddenMetadata()
-	if data == "" && hiddenMetadata.IsEmpty() {
+	if data == "" && !hasToolCalls(toolCalls) && functionCall == nil && hiddenMetadata.IsEmpty() {
 		return idx, false, nil
 	}
 

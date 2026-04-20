@@ -205,6 +205,8 @@ func getRole(data *globals.Chunk) string {
 		return globals.Tool
 	} else if data.FunctionCall != nil {
 		return globals.Function
+	} else if data.GeminiHiddenMetadata != nil && !data.GeminiHiddenMetadata.IsEmpty() {
+		return globals.Assistant
 	}
 
 	return ""

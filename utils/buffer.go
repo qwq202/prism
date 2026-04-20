@@ -218,12 +218,11 @@ func cloneGeminiHiddenMetadata(metadata *globals.GeminiHiddenMetadata) *globals.
 		return nil
 	}
 
-	copy := *metadata
-	if metadata.ThoughtSignature != nil {
-		signature := *metadata.ThoughtSignature
-		copy.ThoughtSignature = &signature
+	signatures := make([]string, 0, len(metadata.ThoughtSignatures))
+	signatures = append(signatures, metadata.ThoughtSignatures...)
+	return &globals.GeminiHiddenMetadata{
+		ThoughtSignatures: signatures,
 	}
-	return &copy
 }
 
 func (b *Buffer) SetGeminiHiddenMetadata(metadata *globals.GeminiHiddenMetadata) {
@@ -236,18 +235,7 @@ func (b *Buffer) SetGeminiHiddenMetadata(metadata *globals.GeminiHiddenMetadata)
 		return
 	}
 
-	if metadata.ThoughtSignature == nil || len(*metadata.ThoughtSignature) == 0 {
-		return
-	}
-
-	if b.GeminiHiddenMetadata.ThoughtSignature == nil {
-		signature := *metadata.ThoughtSignature
-		b.GeminiHiddenMetadata.ThoughtSignature = &signature
-		return
-	}
-
-	merged := *b.GeminiHiddenMetadata.ThoughtSignature + *metadata.ThoughtSignature
-	b.GeminiHiddenMetadata.ThoughtSignature = &merged
+	b.GeminiHiddenMetadata.ThoughtSignatures = append(b.GeminiHiddenMetadata.ThoughtSignatures, metadata.ThoughtSignatures...)
 }
 
 func (b *Buffer) GetGeminiHiddenMetadata() *globals.GeminiHiddenMetadata {
@@ -274,7 +262,7 @@ func (b *Buffer) IsFunctionCalling() bool {
 }
 
 func (b *Buffer) IsEmpty() bool {
-	return b.Cursor == 0 && !b.IsFunctionCalling() && !b.HasGeminiHiddenMetadata()
+	return b.Cursor == 0 && !b.IsFunctionCalling()
 }
 
 func (b *Buffer) GetModel() string {
@@ -315,7 +303,7 @@ func (b *Buffer) ReadBytes() []byte {
 }
 
 func (b *Buffer) ReadWithDefault(_default string) string {
-	if b.IsEmpty() || (len(strings.TrimSpace(b.Data)) == 0 && !b.IsFunctionCalling() && !b.HasGeminiHiddenMetadata()) {
+	if b.IsEmpty() || (len(strings.TrimSpace(b.Data)) == 0 && !b.IsFunctionCalling()) {
 		return _default
 	}
 	return b.Data
