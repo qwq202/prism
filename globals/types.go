@@ -4,6 +4,11 @@ import "encoding/json"
 
 type Hook func(data *Chunk) error
 
+const (
+	GeminiThoughtSignatureLimit    = 32
+	GeminiThoughtSignatureMaxBytes = 4096
+)
+
 type GeminiHiddenMetadata struct {
 	ThoughtSignatures []string `json:"thought_signatures,omitempty"`
 }
@@ -21,10 +26,6 @@ func (m *GeminiHiddenMetadata) UnmarshalJSON(data []byte) error {
 
 	signatures := make([]string, 0, len(raw.ThoughtSignatures)+1)
 	for _, signature := range raw.ThoughtSignatures {
-		if len(signature) == 0 {
-			continue
-		}
-
 		signatures = append(signatures, signature)
 	}
 
@@ -32,7 +33,7 @@ func (m *GeminiHiddenMetadata) UnmarshalJSON(data []byte) error {
 		signatures = append(signatures, *raw.ThoughtSignature)
 	}
 
-	m.ThoughtSignatures = signatures
+	m.ThoughtSignatures = NormalizeGeminiThoughtSignatures(signatures, GeminiThoughtSignatureLimit)
 	return nil
 }
 

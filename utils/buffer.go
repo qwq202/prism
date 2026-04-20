@@ -214,28 +214,15 @@ func (b *Buffer) SetFunctionCall(functionCall *globals.FunctionCall) {
 }
 
 func cloneGeminiHiddenMetadata(metadata *globals.GeminiHiddenMetadata) *globals.GeminiHiddenMetadata {
-	if metadata == nil {
-		return nil
-	}
-
-	signatures := make([]string, 0, len(metadata.ThoughtSignatures))
-	signatures = append(signatures, metadata.ThoughtSignatures...)
-	return &globals.GeminiHiddenMetadata{
-		ThoughtSignatures: signatures,
-	}
+	return metadata.Normalized(globals.GeminiThoughtSignatureLimit)
 }
 
 func (b *Buffer) SetGeminiHiddenMetadata(metadata *globals.GeminiHiddenMetadata) {
-	if metadata == nil || metadata.IsEmpty() {
-		return
-	}
-
-	if b.GeminiHiddenMetadata == nil || b.GeminiHiddenMetadata.IsEmpty() {
-		b.GeminiHiddenMetadata = cloneGeminiHiddenMetadata(metadata)
-		return
-	}
-
-	b.GeminiHiddenMetadata.ThoughtSignatures = append(b.GeminiHiddenMetadata.ThoughtSignatures, metadata.ThoughtSignatures...)
+	b.GeminiHiddenMetadata = globals.MergeGeminiHiddenMetadata(
+		globals.GeminiThoughtSignatureLimit,
+		b.GeminiHiddenMetadata,
+		metadata,
+	)
 }
 
 func (b *Buffer) GetGeminiHiddenMetadata() *globals.GeminiHiddenMetadata {
@@ -261,8 +248,18 @@ func (b *Buffer) IsFunctionCalling() bool {
 	return b.FunctionCall != nil || b.ToolCalls != nil
 }
 
+// HasVisiblePayload indicates whether the streamed result contains visible text
+// or tool/function payload. Hidden Gemini metadata alone does not count.
+func (b *Buffer) HasVisiblePayload() bool {
+	return b.Cursor > 0 || b.IsFunctionCalling()
+}
+
+func (b *Buffer) HasHiddenMetadataOnly() bool {
+	return !b.HasVisiblePayload() && b.HasGeminiHiddenMetadata()
+}
+
 func (b *Buffer) IsEmpty() bool {
-	return b.Cursor == 0 && !b.IsFunctionCalling()
+	return !b.HasVisiblePayload()
 }
 
 func (b *Buffer) GetModel() string {

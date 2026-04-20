@@ -323,7 +323,7 @@ func ChatHandler(conn *Connection, user *auth.User, instance *conversation.Conve
 
 	if buffer.IsEmpty() {
 		hiddenMetadata := buffer.GetGeminiHiddenMetadata()
-		if hiddenMetadata != nil && !hiddenMetadata.IsEmpty() {
+		if buffer.HasHiddenMetadataOnly() {
 			conn.Send(globals.ChatSegmentResponse{
 				End: true,
 			})
