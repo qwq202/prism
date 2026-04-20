@@ -70,7 +70,7 @@ func ChatRelayAPI(c *gin.Context) {
 	created := time.Now().Unix()
 
 	messages := transform(form.Messages)
-	enableWeb := form.WebSearch || form.URLContext
+	enableWeb := form.WebSearch || form.URLContext || form.XSearch
 	if strings.HasPrefix(form.Model, "web-") {
 		suffix := strings.TrimPrefix(form.Model, "web-")
 
@@ -99,8 +99,8 @@ func ChatRelayAPI(c *gin.Context) {
 }
 
 func getChatProps(form RelayForm, messages []globals.Message, buffer *utils.Buffer, enableWeb bool) *adaptercommon.ChatProps {
-	webSearch := utils.Multi(enableWeb && !form.WebSearch && !form.URLContext, true, form.WebSearch)
-	urlContext := utils.Multi(enableWeb && !form.WebSearch && !form.URLContext, true, form.URLContext)
+	webSearch := utils.Multi(enableWeb && !form.WebSearch && !form.URLContext && !form.XSearch, true, form.WebSearch)
+	urlContext := utils.Multi(enableWeb && !form.WebSearch && !form.URLContext && !form.XSearch, true, form.URLContext)
 
 	return adaptercommon.CreateChatProps(&adaptercommon.ChatProps{
 		Model:                form.Model,
@@ -108,6 +108,7 @@ func getChatProps(form RelayForm, messages []globals.Message, buffer *utils.Buff
 		EnableWeb:            enableWeb,
 		EnableWebSearch:      webSearch,
 		EnableURLContext:     urlContext,
+		EnableXSearch:        form.XSearch,
 		GeminiThinkingBudget: &form.GeminiThinkingBudget,
 		MaxTokens:            form.MaxTokens,
 		PresencePenalty:      form.PresencePenalty,

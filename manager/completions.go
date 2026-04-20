@@ -44,6 +44,7 @@ func NativeChatHandler(c *gin.Context, user *auth.User, model string, message []
 			EnableWeb:        enableWeb,
 			EnableWebSearch:  enableWeb,
 			EnableURLContext: enableWeb,
+			EnableXSearch:    false,
 		}, buffer),
 		func(resp *globals.Chunk) error {
 			buffer.WriteChunk(resp)

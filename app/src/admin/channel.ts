@@ -54,6 +54,7 @@ export type ChannelInfo = {
 export const ChannelTypes: Record<string, string> = {
   openai: "OpenAI",
   "openai-responses": "OpenAI Responses",
+  xai: "xAI Grok",
   azure: "Azure OpenAI",
   claude: "Anthropic Claude",
   palm: "Google Gemini",
@@ -77,6 +78,7 @@ export const ChannelTypes: Record<string, string> = {
 export const ShortChannelTypes: Record<string, string> = {
   openai: "OpenAI",
   "openai-responses": "OpenAI Responses",
+  xai: "xAI",
   azure: "Azure",
   claude: "Claude",
   palm: "Gemini",
@@ -151,6 +153,19 @@ export const ChannelInfos: Record<string, ChannelInfo> = {
       "o3",
       "o4-mini",
     ],
+  },
+  xai: {
+    endpoint: "https://api.x.ai",
+    format: "<api-key>",
+    models: [
+      "grok-4.20-reasoning",
+      "grok-4.20-mini",
+      "grok-4-1-fast",
+    ],
+    description:
+      "> xAI 渠道基于 **OpenAI Responses API** 兼容格式，请将接入点填写为 *https://api.x.ai* 或其反代地址，系统会自动请求 */v1/responses*。 \n" +
+      "> 已内置适配 xAI 原生 **Web Search** 与 **X Search** 两个独立开关，用户可在聊天界面分别控制是否开启。 \n" +
+      "> 常用模型可填写如 **grok-4.20-reasoning**、**grok-4-1-fast** 等 Grok 模型。\n",
   },
   azure: {
     endpoint: "2023-12-01-preview",

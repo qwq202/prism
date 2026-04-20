@@ -44,6 +44,7 @@ type RelayForm struct {
 	ToolChoice           *interface{}
 	WebSearch            bool `json:"web_search"`
 	URLContext           bool `json:"url_context"`
+	XSearch              bool `json:"x_search"`
 	GeminiThinkingBudget int  `json:"gemini_thinking_budget"`
 	Official             bool `json:"official"`
 }

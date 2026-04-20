@@ -172,6 +172,7 @@ func createChatTask(
 				EnableWeb:            instance.IsEnableWeb(),
 				EnableWebSearch:      instance.IsEnableWebSearch(),
 				EnableURLContext:     instance.IsEnableURLContext(),
+				EnableXSearch:        instance.IsEnableXSearch(),
 				GeminiThinkingBudget: instance.GetGeminiThinkingBudget(),
 				MaxTokens:            instance.GetMaxTokens(),
 				Temperature:          instance.GetTemperature(),

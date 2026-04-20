@@ -11,6 +11,7 @@ const (
 const (
 	OpenAIChannelType          = "openai"
 	OpenAIResponsesChannelType = "openai-responses"
+	XAIChannelType             = "xai"
 	AzureOpenAIChannelType     = "azure"
 	ClaudeChannelType          = "claude"
 	SlackChannelType           = "slack"

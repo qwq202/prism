@@ -12,6 +12,7 @@ export const modelColorMapper: Record<string, string> = {
   tts: "gray-300",
   openai: "gray-300",
   azure: "gray-300",
+  xai: "gray-900",
 
   // Anthropic Claude
   "claude-3": "orange-500",
@@ -49,6 +50,7 @@ export const modelColorMapper: Record<string, string> = {
 
   // DeepSeek
   deepseek: "blue-700",
+  grok: "gray-900",
 
   // New Bing
   bing: "blue-700",

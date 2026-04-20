@@ -45,6 +45,7 @@ type ChatProps struct {
 	EnableWeb            bool                   `json:"-"`
 	EnableWebSearch      bool                   `json:"-"`
 	EnableURLContext     bool                   `json:"-"`
+	EnableXSearch        bool                   `json:"-"`
 	GeminiThinkingBudget *int                   `json:"-"`
 	ChannelType          string                 `json:"-"`
 	Buffer               *utils.Buffer          `json:"-"`

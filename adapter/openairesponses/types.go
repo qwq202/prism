@@ -1,7 +1,5 @@
 package openairesponses
 
-import "chat/globals"
-
 type InputMessageContent struct {
 	Type     string  `json:"type"`
 	Text     *string `json:"text,omitempty"`
@@ -13,15 +11,23 @@ type InputMessage struct {
 	Content []InputMessageContent `json:"content"`
 }
 
+type ResponseTool struct {
+	Type        string      `json:"type"`
+	Name        string      `json:"name,omitempty"`
+	Description string      `json:"description,omitempty"`
+	Parameters  interface{} `json:"parameters,omitempty"`
+}
+
 type ResponseRequest struct {
-	Model           string                 `json:"model"`
-	Instructions    *string                `json:"instructions,omitempty"`
-	Input           []InputMessage         `json:"input"`
-	MaxOutputTokens *int                   `json:"max_output_tokens,omitempty"`
-	Temperature     *float32               `json:"temperature,omitempty"`
-	TopP            *float32               `json:"top_p,omitempty"`
-	Tools           *globals.FunctionTools `json:"tools,omitempty"`
-	Stream          bool                   `json:"stream,omitempty"`
+	Model           string         `json:"model"`
+	Instructions    *string        `json:"instructions,omitempty"`
+	Input           []InputMessage `json:"input"`
+	MaxOutputTokens *int           `json:"max_output_tokens,omitempty"`
+	Temperature     *float32       `json:"temperature,omitempty"`
+	TopP            *float32       `json:"top_p,omitempty"`
+	Tools           []ResponseTool `json:"tools,omitempty"`
+	ToolChoice      *interface{}   `json:"tool_choice,omitempty"`
+	Stream          bool           `json:"stream,omitempty"`
 }
 
 type OutputContent struct {

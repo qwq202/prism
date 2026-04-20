@@ -204,6 +204,10 @@ func IsGeminiModel(model string) bool {
 		strings.HasPrefix(model, "gemini-")
 }
 
+func IsXAIModel(model string) bool {
+	return strings.HasPrefix(strings.TrimSpace(strings.ToLower(model)), "grok")
+}
+
 func IsGeminiNoThinkingModel(model string) bool {
 	return strings.HasSuffix(strings.TrimSpace(model), "-nothinking")
 }

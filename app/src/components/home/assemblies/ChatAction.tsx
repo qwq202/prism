@@ -1,13 +1,18 @@
 import {
   isGeminiModelId,
+  isXAIModelId,
   selectGeminiThinkingBudget,
   selectGeminiGoogleSearch,
   selectGeminiURLContext,
   selectModel,
   selectWeb,
+  selectXAIWebSearch,
+  selectXAIXSearch,
   setGeminiThinkingBudget,
   setGeminiGoogleSearch,
   setGeminiURLContext,
+  setXAIWebSearch,
+  setXAIXSearch,
   supportsGeminiThinkingBudgetControl,
   toggleWeb,
   useConversationActions,
@@ -112,13 +117,17 @@ export function WebAction() {
   const model = useSelector(selectModel);
   const geminiGoogleSearch = useSelector(selectGeminiGoogleSearch);
   const geminiURLContext = useSelector(selectGeminiURLContext);
+  const xaiWebSearch = useSelector(selectXAIWebSearch);
+  const xaiXSearch = useSelector(selectXAIXSearch);
   const webSearchEnabled = useSelector(infoWebSearchSelector);
 
   const isGeminiModel = isGeminiModelId(model);
+  const isXAIModel = isXAIModelId(model);
 
   const geminiWebEnabled = geminiGoogleSearch || geminiURLContext;
+  const xaiSearchEnabled = xaiWebSearch || xaiXSearch;
 
-  if (!webSearchEnabled && !isGeminiModel) {
+  if (!webSearchEnabled && !isGeminiModel && !isXAIModel) {
     return null;
   }
 
@@ -127,13 +136,13 @@ export function WebAction() {
       <PopoverTrigger asChild>
         <div>
           <ChatAction
-            active={isGeminiModel ? geminiWebEnabled : web}
-            text={isGeminiModel ? t("chat.gemini-web") : t("chat.web")}
+            active={isGeminiModel ? geminiWebEnabled : isXAIModel ? xaiSearchEnabled : web}
+            text={isGeminiModel ? t("chat.gemini-web") : isXAIModel ? t("chat.xai-web") : t("chat.web")}
           >
             <Globe
               className={cn(
                 "h-4 w-4 web",
-                (isGeminiModel ? geminiWebEnabled : web) && "enable",
+                (isGeminiModel ? geminiWebEnabled : isXAIModel ? xaiSearchEnabled : web) && "enable",
               )}
             />
           </ChatAction>
@@ -177,6 +186,41 @@ export function WebAction() {
                 <div className="flex items-start">
                   <Icon icon={<Info />} className="h-3 w-3 mr-1 mt-0.5 shrink-0" />
                   {t("chat.gemini-web-enable-tip")}
+                </div>
+              </div>
+            </>
+          ) : isXAIModel ? (
+            <>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="xai-web-search-toggle" className="text-sm">
+                  {t("chat.xai-web-search")}
+                </Label>
+                <Switch
+                  id="xai-web-search-toggle"
+                  checked={xaiWebSearch}
+                  onCheckedChange={(state) => {
+                    dispatch(setXAIWebSearch(state));
+                  }}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <Label htmlFor="xai-x-search-toggle" className="text-sm">
+                  {t("chat.xai-x-search")}
+                </Label>
+                <Switch
+                  id="xai-x-search-toggle"
+                  checked={xaiXSearch}
+                  onCheckedChange={(state) => {
+                    dispatch(setXAIXSearch(state));
+                  }}
+                />
+              </div>
+
+              <div className="rounded-md bg-muted p-2 text-xs">
+                <div className="flex items-start">
+                  <Icon icon={<Info />} className="h-3 w-3 mr-1 mt-0.5 shrink-0" />
+                  {t("chat.xai-web-enable-tip")}
                 </div>
               </div>
             </>

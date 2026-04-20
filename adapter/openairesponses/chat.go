@@ -111,6 +111,38 @@ func formatMessages(props *adaptercommon.ChatProps) ([]InputMessage, *string) {
 	return input, instructionText
 }
 
+func getResponseTools(props *adaptercommon.ChatProps) []ResponseTool {
+	tools := make([]ResponseTool, 0)
+
+	if props != nil && props.ChannelType == globals.XAIChannelType {
+		if props.EnableWebSearch {
+			tools = append(tools, ResponseTool{Type: "web_search"})
+		}
+		if props.EnableXSearch {
+			tools = append(tools, ResponseTool{Type: "x_search"})
+		}
+	}
+
+	if props == nil || props.Tools == nil {
+		return tools
+	}
+
+	for _, tool := range *props.Tools {
+		if tool.Type != "" && tool.Type != "function" {
+			continue
+		}
+
+		tools = append(tools, ResponseTool{
+			Type:        "function",
+			Name:        tool.Function.Name,
+			Description: tool.Function.Description,
+			Parameters:  tool.Function.Parameters,
+		})
+	}
+
+	return tools
+}
+
 func (c *ChatInstance) GetChatBody(props *adaptercommon.ChatProps) ResponseRequest {
 	input, instructions := formatMessages(props)
 
@@ -121,7 +153,8 @@ func (c *ChatInstance) GetChatBody(props *adaptercommon.ChatProps) ResponseReque
 		MaxOutputTokens: props.MaxTokens,
 		Temperature:     props.Temperature,
 		TopP:            props.TopP,
-		Tools:           props.Tools,
+		Tools:           getResponseTools(props),
+		ToolChoice:      props.ToolChoice,
 		Stream:          false,
 	}
 }

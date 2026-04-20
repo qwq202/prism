@@ -23,6 +23,7 @@ type Conversation struct {
 	EnableWeb            bool              `json:"enable_web"`
 	WebSearch            bool              `json:"web_search"`
 	URLContext           bool              `json:"url_context"`
+	XSearch              bool              `json:"x_search"`
 	GeminiThinkingBudget int               `json:"gemini_thinking_budget"`
 	Shared               bool              `json:"shared"`
 	Context              int               `json:"context"`
@@ -42,6 +43,7 @@ type FormMessage struct {
 	Web                  bool   `json:"web"`
 	WebSearch            bool   `json:"web_search"`
 	URLContext           bool   `json:"url_context"`
+	XSearch              bool   `json:"x_search"`
 	GeminiThinkingBudget int    `json:"gemini_thinking_budget"`
 	Model                string `json:"model"`
 	IgnoreContext        bool   `json:"ignore_context"`
@@ -123,6 +125,10 @@ func (c *Conversation) IsEnableURLContext() bool {
 	return c.URLContext
 }
 
+func (c *Conversation) IsEnableXSearch() bool {
+	return c.XSearch
+}
+
 func (c *Conversation) GetGeminiThinkingBudget() *int {
 	return &c.GeminiThinkingBudget
 }
@@ -152,6 +158,10 @@ func (c *Conversation) SetEnableWebSearch(enable bool) {
 
 func (c *Conversation) SetEnableURLContext(enable bool) {
 	c.URLContext = enable
+}
+
+func (c *Conversation) SetEnableXSearch(enable bool) {
+	c.XSearch = enable
 }
 
 func (c *Conversation) SetGeminiThinkingBudget(budget int) {
@@ -348,9 +358,10 @@ func GetMessage(data []byte) (string, error) {
 
 func (c *Conversation) ApplyParam(form *FormMessage) {
 	c.SetModel(form.Model)
-	c.SetEnableWeb(form.Web || form.WebSearch || form.URLContext)
-	c.SetEnableWebSearch(utils.Multi(form.Web && !form.WebSearch && !form.URLContext, true, form.WebSearch))
-	c.SetEnableURLContext(utils.Multi(form.Web && !form.WebSearch && !form.URLContext, true, form.URLContext))
+	c.SetEnableWeb(form.Web || form.WebSearch || form.URLContext || form.XSearch)
+	c.SetEnableWebSearch(utils.Multi(form.Web && !form.WebSearch && !form.URLContext && !form.XSearch, true, form.WebSearch))
+	c.SetEnableURLContext(utils.Multi(form.Web && !form.WebSearch && !form.URLContext && !form.XSearch, true, form.URLContext))
+	c.SetEnableXSearch(form.XSearch)
 	c.SetGeminiThinkingBudget(form.GeminiThinkingBudget)
 	c.SetContextLength(form.Context, form.IgnoreContext)
 

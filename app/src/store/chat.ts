@@ -66,6 +66,8 @@ type initialStateType = {
   web: boolean;
   gemini_google_search: boolean;
   gemini_url_context: boolean;
+  xai_web_search: boolean;
+  xai_x_search: boolean;
   gemini_thinking_budget: number;
   current: number;
   model_list: string[];
@@ -106,6 +108,10 @@ export function isGeminiModelId(model: string | undefined | null): boolean {
     model === "gemini-pro-vision" ||
     model.startsWith("gemini-")
   );
+}
+
+export function isXAIModelId(model: string | undefined | null): boolean {
+  return !!model && model.toLowerCase().startsWith("grok");
 }
 
 export function isGeminiNoThinkingModel(
@@ -157,6 +163,8 @@ const chatSlice = createSlice({
     web: getBooleanMemory("web", false),
     gemini_google_search: getBooleanMemory("gemini_google_search", true),
     gemini_url_context: getBooleanMemory("gemini_url_context", true),
+    xai_web_search: getBooleanMemory("xai_web_search", true),
+    xai_x_search: getBooleanMemory("xai_x_search", true),
     gemini_thinking_budget: getNumberMemory("gemini_thinking_budget", 0),
     current: -1,
     model: getModel(offline, getMemory("model")),
@@ -336,6 +344,14 @@ const chatSlice = createSlice({
       setMemory("gemini_url_context", action.payload ? "true" : "false");
       state.gemini_url_context = action.payload as boolean;
     },
+    setXAIWebSearch: (state, action) => {
+      setMemory("xai_web_search", action.payload ? "true" : "false");
+      state.xai_web_search = action.payload as boolean;
+    },
+    setXAIXSearch: (state, action) => {
+      setMemory("xai_x_search", action.payload ? "true" : "false");
+      state.xai_x_search = action.payload as boolean;
+    },
     setGeminiThinkingBudget: (state, action) => {
       setNumberMemory("gemini_thinking_budget", action.payload as number);
       state.gemini_thinking_budget = action.payload as number;
@@ -413,6 +429,8 @@ export const {
   toggleWeb,
   setGeminiGoogleSearch,
   setGeminiURLContext,
+  setXAIWebSearch,
+  setXAIXSearch,
   setGeminiThinkingBudget,
   setModelList,
   addModelList,
@@ -445,6 +463,10 @@ export const selectGeminiGoogleSearch = (state: RootState): boolean =>
   state.chat.gemini_google_search;
 export const selectGeminiURLContext = (state: RootState): boolean =>
   state.chat.gemini_url_context;
+export const selectXAIWebSearch = (state: RootState): boolean =>
+  state.chat.xai_web_search;
+export const selectXAIXSearch = (state: RootState): boolean =>
+  state.chat.xai_x_search;
 export const selectGeminiThinkingBudget = (state: RootState): number =>
   state.chat.gemini_thinking_budget;
 export const selectCurrent = (state: RootState): number => state.chat.current;
@@ -553,6 +575,8 @@ export function useMessageActions() {
   const web = useSelector(selectWeb);
   const gemini_google_search = useSelector(selectGeminiGoogleSearch);
   const gemini_url_context = useSelector(selectGeminiURLContext);
+  const xai_web_search = useSelector(selectXAIWebSearch);
+  const xai_x_search = useSelector(selectXAIXSearch);
   const gemini_thinking_budget = useSelector(selectGeminiThinkingBudget);
   const history = useSelector(historySelector);
   const context = useSelector(contextSelector);
@@ -568,6 +592,7 @@ export function useMessageActions() {
     send: async (message: string, using_model?: string) => {
       const targetModel = using_model || model;
       const enableGeminiNativeWeb = isGeminiModelId(targetModel);
+      const enableXAINativeWeb = isXAIModelId(targetModel);
 
       if (current === -1 && conversations[-1].messages.length === 0) {
         // preflight history if it's a new conversation
@@ -588,9 +613,16 @@ export function useMessageActions() {
         message,
         web: enableGeminiNativeWeb
           ? gemini_google_search || gemini_url_context
+          : enableXAINativeWeb
+            ? xai_web_search || xai_x_search
           : web,
-        web_search: gemini_google_search,
-        url_context: gemini_url_context,
+        web_search: enableGeminiNativeWeb
+          ? gemini_google_search
+          : enableXAINativeWeb
+            ? xai_web_search
+            : false,
+        url_context: enableGeminiNativeWeb ? gemini_url_context : false,
+        x_search: enableXAINativeWeb ? xai_x_search : false,
         gemini_thinking_budget: supportsGeminiThinkingBudgetControl(targetModel)
           ? gemini_thinking_budget
           : undefined,
@@ -621,15 +653,23 @@ export function useMessageActions() {
     },
     restart: () => {
       const enableGeminiNativeWeb = isGeminiModelId(model);
+      const enableXAINativeWeb = isXAIModelId(model);
       if (!stack.hasConnection(current)) {
         stack.createConnection(current);
       }
       stack.sendRestartEvent(current, t, {
         web: enableGeminiNativeWeb
           ? gemini_google_search || gemini_url_context
+          : enableXAINativeWeb
+            ? xai_web_search || xai_x_search
           : web,
-        web_search: gemini_google_search,
-        url_context: gemini_url_context,
+        web_search: enableGeminiNativeWeb
+          ? gemini_google_search
+          : enableXAINativeWeb
+            ? xai_web_search
+            : false,
+        url_context: enableGeminiNativeWeb ? gemini_url_context : false,
+        x_search: enableXAINativeWeb ? xai_x_search : false,
         gemini_thinking_budget: supportsGeminiThinkingBudgetControl(model)
           ? gemini_thinking_budget
           : undefined,
