@@ -93,14 +93,24 @@ func (c *ChatInstance) GetPalm2ChatResponse(data interface{}) (string, error) {
 	return "", fmt.Errorf("palm2 error: cannot parse response")
 }
 
+func (c *ChatInstance) buildGeminiChunk(parts []GeminiChatPart, stream bool) *globals.Chunk {
+	content := c.GetGeminiChatText(parts)
+	if stream {
+		content = c.GetGeminiStreamText(parts)
+	}
+
+	return &globals.Chunk{
+		Content:              content,
+		ToolCall:             getGeminiToolCalls(parts),
+		GeminiHiddenMetadata: getGeminiHiddenMetadataFromParts(parts),
+	}
+}
+
 func (c *ChatInstance) GetGeminiChunk(data interface{}) (*globals.Chunk, error) {
 	if form := utils.MapToStruct[GeminiChatResponse](data); form != nil {
 		if len(form.Candidates) != 0 {
 			parts := form.Candidates[0].Content.Parts
-			return &globals.Chunk{
-				Content:  c.GetGeminiChatText(parts),
-				ToolCall: getGeminiToolCalls(parts),
-			}, nil
+			return c.buildGeminiChunk(parts, false), nil
 		}
 	}
 
@@ -184,10 +194,7 @@ func (c *ChatInstance) CreateStreamChatRequest(props *adaptercommon.ChatProps, c
 			if form := utils.UnmarshalForm[GeminiStreamResponse](data); form != nil {
 				if len(form.Candidates) != 0 && len(form.Candidates[0].Content.Parts) != 0 {
 					parts := form.Candidates[0].Content.Parts
-					return callback(&globals.Chunk{
-						Content:  c.GetGeminiStreamText(parts),
-						ToolCall: getGeminiToolCalls(parts),
-					})
+					return callback(c.buildGeminiChunk(parts, true))
 				}
 				return nil
 			}

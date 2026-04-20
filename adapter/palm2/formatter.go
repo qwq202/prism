@@ -157,29 +157,84 @@ func getGeminiToolResponsePart(history []globals.Message, message globals.Messag
 	}
 }
 
-func getGeminiParts(model string, history []globals.Message, message globals.Message) []GeminiChatPart {
-	if message.ToolCalls != nil && len(*message.ToolCalls) > 0 {
-		parts := make([]GeminiChatPart, 0, len(*message.ToolCalls))
-		for _, call := range *message.ToolCalls {
-			parts = append(parts, getGeminiFunctionCallPart(call.Function.Name, call.Function.Arguments))
-		}
+func replayGeminiHiddenMetadata(parts []GeminiChatPart, metadata *globals.GeminiHiddenMetadata) []GeminiChatPart {
+	normalized := metadata.Normalized(globals.GeminiThoughtSignatureLimit)
+	if normalized == nil || len(normalized.ThoughtSignatures) == 0 {
 		return parts
 	}
 
+	result := make([]GeminiChatPart, len(parts))
+	copy(result, parts)
+
+	index := 0
+	// We only persist a flat signature list, so original per-part placement is unavailable.
+	// For deterministic replay and Gemini function-calling continuity, map signatures to
+	// functionCall parts first, then earliest remaining parts, and append signature-only
+	// thought parts when signatures outnumber visible parts.
+	for i := range result {
+		if index >= len(normalized.ThoughtSignatures) {
+			return result
+		}
+
+		if result[i].FunctionCall == nil || result[i].ThoughtSignature != nil {
+			continue
+		}
+
+		result[i].ThoughtSignature = utils.ToPtr(normalized.ThoughtSignatures[index])
+		index++
+	}
+
+	for i := range result {
+		if index >= len(normalized.ThoughtSignatures) {
+			return result
+		}
+
+		if result[i].ThoughtSignature != nil {
+			continue
+		}
+
+		result[i].ThoughtSignature = utils.ToPtr(normalized.ThoughtSignatures[index])
+		index++
+	}
+
+	for ; index < len(normalized.ThoughtSignatures); index++ {
+		result = append(result, GeminiChatPart{
+			Thought:          true,
+			ThoughtSignature: utils.ToPtr(normalized.ThoughtSignatures[index]),
+		})
+	}
+
+	return result
+}
+
+func getGeminiParts(model string, history []globals.Message, message globals.Message) []GeminiChatPart {
+	var parts []GeminiChatPart
+
+	if message.ToolCalls != nil && len(*message.ToolCalls) > 0 {
+		parts = make([]GeminiChatPart, 0, len(*message.ToolCalls))
+		for _, call := range *message.ToolCalls {
+			parts = append(parts, getGeminiFunctionCallPart(call.Function.Name, call.Function.Arguments))
+		}
+		return replayGeminiHiddenMetadata(parts, message.GeminiHiddenMetadata)
+	}
+
 	if message.FunctionCall != nil {
-		return []GeminiChatPart{
+		parts = []GeminiChatPart{
 			getGeminiFunctionCallPart(message.FunctionCall.Name, message.FunctionCall.Arguments),
 		}
+		return replayGeminiHiddenMetadata(parts, message.GeminiHiddenMetadata)
 	}
 
 	if message.Role == globals.Tool {
 		part := getGeminiToolResponsePart(history, message)
 		if part != nil {
-			return []GeminiChatPart{*part}
+			parts = []GeminiChatPart{*part}
+			return replayGeminiHiddenMetadata(parts, message.GeminiHiddenMetadata)
 		}
 	}
 
-	return getGeminiContent(make([]GeminiChatPart, 0), message.Content, model)
+	parts = getGeminiContent(make([]GeminiChatPart, 0), message.Content, model)
+	return replayGeminiHiddenMetadata(parts, message.GeminiHiddenMetadata)
 }
 
 func appendGeminiContent(result []GeminiContent, role string, parts []GeminiChatPart) []GeminiContent {
@@ -188,14 +243,27 @@ func appendGeminiContent(result []GeminiContent, role string, parts []GeminiChat
 	}
 
 	if len(result) > 0 && role == result[len(result)-1].Role {
-		result[len(result)-1].Parts = append(result[len(result)-1].Parts, parts...)
-		return result
+		last := result[len(result)-1].Parts
+		if !hasGeminiReplayBoundaryParts(last) && !hasGeminiReplayBoundaryParts(parts) {
+			result[len(result)-1].Parts = append(last, parts...)
+			return result
+		}
 	}
 
 	return append(result, GeminiContent{
 		Role:  role,
 		Parts: parts,
 	})
+}
+
+func hasGeminiReplayBoundaryParts(parts []GeminiChatPart) bool {
+	for _, part := range parts {
+		if part.ThoughtSignature != nil || part.FunctionCall != nil || part.FunctionResponse != nil {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (c *ChatInstance) GetGeminiSystemInstruction(model string, messages []globals.Message) *GeminiContent {
@@ -462,6 +530,21 @@ func getGeminiToolCalls(parts []GeminiChatPart) *globals.ToolCalls {
 	}
 
 	return &calls
+}
+
+func getGeminiHiddenMetadataFromParts(parts []GeminiChatPart) *globals.GeminiHiddenMetadata {
+	signatures := make([]string, 0, len(parts))
+	for _, part := range parts {
+		if part.ThoughtSignature == nil {
+			continue
+		}
+
+		signatures = append(signatures, *part.ThoughtSignature)
+	}
+
+	return (&globals.GeminiHiddenMetadata{
+		ThoughtSignatures: signatures,
+	}).Normalized(globals.GeminiThoughtSignatureLimit)
 }
 
 func (c *ChatInstance) GetGeminiText(parts []GeminiChatPart) string {
