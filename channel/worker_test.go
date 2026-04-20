@@ -1,6 +1,7 @@
 package channel
 
 import (
+	adaptercommon "chat/adapter/common"
 	"chat/globals"
 	"chat/utils"
 	"testing"
@@ -68,5 +69,65 @@ func TestBuildCacheChunkDoesNotPrewriteLiveBufferPayload(t *testing.T) {
 	metadata := liveBuffer.GetGeminiHiddenMetadata()
 	if metadata == nil || len(metadata.ThoughtSignatures) != 1 || metadata.ThoughtSignatures[0] != "sig-a" {
 		t.Fatalf("expected hidden metadata to be replayed once, got %#v", metadata)
+	}
+}
+
+func TestCacheHashForChatPropsIgnoresHiddenMetadataOnNonGemini(t *testing.T) {
+	plain := &adaptercommon.ChatProps{
+		OriginalModel: "gpt-4o",
+		Message: []globals.Message{
+			{Role: globals.User, Content: "hello"},
+			{Role: globals.Assistant, Content: "world"},
+		},
+	}
+
+	withMetadata := &adaptercommon.ChatProps{
+		OriginalModel: "gpt-4o",
+		Message: []globals.Message{
+			{Role: globals.User, Content: "hello"},
+			{
+				Role:    globals.Assistant,
+				Content: "world",
+				GeminiHiddenMetadata: &globals.GeminiHiddenMetadata{
+					ThoughtSignatures: []string{"sig-a"},
+				},
+			},
+		},
+	}
+
+	if got, want := cacheHashForChatProps(withMetadata), cacheHashForChatProps(plain); got != want {
+		t.Fatalf("expected non-gemini cache hash to ignore hidden metadata, got %q want %q", got, want)
+	}
+
+	if withMetadata.Message[1].GeminiHiddenMetadata == nil {
+		t.Fatalf("expected original props to remain unchanged")
+	}
+}
+
+func TestCacheHashForChatPropsKeepsHiddenMetadataOnGemini(t *testing.T) {
+	plain := &adaptercommon.ChatProps{
+		OriginalModel: "gemini-2.5-pro",
+		Message: []globals.Message{
+			{Role: globals.User, Content: "hello"},
+			{Role: globals.Assistant, Content: "world"},
+		},
+	}
+
+	withMetadata := &adaptercommon.ChatProps{
+		OriginalModel: "gemini-2.5-pro",
+		Message: []globals.Message{
+			{Role: globals.User, Content: "hello"},
+			{
+				Role:    globals.Assistant,
+				Content: "world",
+				GeminiHiddenMetadata: &globals.GeminiHiddenMetadata{
+					ThoughtSignatures: []string{"sig-a"},
+				},
+			},
+		},
+	}
+
+	if got, want := cacheHashForChatProps(withMetadata), cacheHashForChatProps(plain); got == want {
+		t.Fatalf("expected gemini cache hash to retain hidden metadata sensitivity")
 	}
 }

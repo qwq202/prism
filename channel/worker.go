@@ -11,6 +11,59 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
+func cacheModelForChatProps(props *adaptercommon.ChatProps) string {
+	if props == nil {
+		return ""
+	}
+
+	if props.OriginalModel != "" {
+		return props.OriginalModel
+	}
+
+	return props.Model
+}
+
+func stripGeminiHiddenMetadataForCache(messages []globals.Message) []globals.Message {
+	if len(messages) == 0 {
+		return messages
+	}
+
+	sanitized := make([]globals.Message, len(messages))
+	changed := false
+
+	for idx, message := range messages {
+		sanitized[idx] = message
+		if message.GeminiHiddenMetadata == nil {
+			continue
+		}
+
+		sanitized[idx].GeminiHiddenMetadata = nil
+		changed = true
+	}
+
+	if !changed {
+		return messages
+	}
+
+	return sanitized
+}
+
+func cacheHashForChatProps(props *adaptercommon.ChatProps) string {
+	if props == nil {
+		return utils.Md5Encrypt("")
+	}
+
+	model := cacheModelForChatProps(props)
+	if globals.IsGeminiModel(model) {
+		return utils.Md5Encrypt(utils.Marshal(props))
+	}
+
+	cloned := *props
+	cloned.Message = stripGeminiHiddenMetadataForCache(props.Message)
+
+	return utils.Md5Encrypt(utils.Marshal(&cloned))
+}
+
 func hasToolCalls(toolCalls *globals.ToolCalls) bool {
 	return toolCalls != nil && len(*toolCalls) > 0
 }
@@ -101,12 +154,11 @@ func StoreCache(cache *redis.Client, hash string, index int64, buffer *utils.Buf
 }
 
 func NewChatRequestWithCache(cache *redis.Client, buffer *utils.Buffer, group string, props *adaptercommon.ChatProps, hook globals.Hook) (bool, error) {
-	hash := utils.Md5Encrypt(utils.Marshal(props))
-
 	if len(props.OriginalModel) == 0 {
 		props.OriginalModel = props.Model
 	}
 
+	hash := cacheHashForChatProps(props)
 	idx, hit, err := PreflightCache(cache, props.OriginalModel, hash, buffer, hook)
 	if hit {
 		return true, err
