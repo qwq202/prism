@@ -1,19 +1,36 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronDown, ChevronUp, Brain, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/components/ui/lib/utils";
 import Markdown from "@/components/Markdown";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
+import { useSelector } from "react-redux";
+import { collapseThinkingSelector } from "@/store/settings.ts";
 
 interface ThinkContentProps {
   content: string;
   isComplete?: boolean;
 }
 
+function getExpandedState(collapseThinking: boolean, isComplete: boolean): boolean {
+  if (collapseThinking) {
+    return !isComplete;
+  }
+
+  return isComplete;
+}
+
 export function ThinkContent({ content, isComplete = true }: ThinkContentProps) {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const collapseThinking = useSelector(collapseThinkingSelector);
+  const [isExpanded, setIsExpanded] = useState(
+    getExpandedState(collapseThinking, isComplete),
+  );
   const { t } = useTranslation();
+
+  useEffect(() => {
+    setIsExpanded(getExpandedState(collapseThinking, isComplete));
+  }, [collapseThinking, isComplete]);
 
   const toggleExpand = () => {
     setIsExpanded(!isExpanded);
