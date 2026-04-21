@@ -218,6 +218,25 @@ func buildStorageTestConfig(config StorageTestConfig) storageClientConfig {
 	}
 }
 
+func isBlockedPublicStorageHost(host string) bool {
+	host = strings.ToLower(strings.TrimSpace(host))
+	if host == "" {
+		return false
+	}
+
+	blockedSuffixes := []string{
+		"r2.cloudflarestorage.com",
+	}
+
+	for _, suffix := range blockedSuffixes {
+		if host == suffix || strings.HasSuffix(host, "."+suffix) {
+			return true
+		}
+	}
+
+	return false
+}
+
 func storageReadyWithConfig(config storageClientConfig) bool {
 	switch strings.ToLower(strings.TrimSpace(config.Mode)) {
 	case "s3", "r2":
@@ -535,6 +554,17 @@ func TestStorageConnection(config StorageTestConfig) error {
 	current := buildStorageTestConfig(config)
 	if strings.TrimSpace(current.PublicBaseURL) == "" && strings.TrimSpace(current.Backend) == "" {
 		return fmt.Errorf("public base url or backend domain is required")
+	}
+
+	if strings.TrimSpace(current.PublicBaseURL) != "" {
+		instance, err := neturl.Parse(current.PublicBaseURL)
+		if err != nil {
+			return fmt.Errorf("invalid public base url: %w", err)
+		}
+
+		if isBlockedPublicStorageHost(instance.Hostname()) {
+			return fmt.Errorf("public base url must be a real public file url such as r2.dev or a custom domain, not the object storage api endpoint")
+		}
 	}
 
 	content := []byte(fmt.Sprintf("storage-test-%d", time.Now().UnixNano()))

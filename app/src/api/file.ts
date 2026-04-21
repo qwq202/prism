@@ -27,6 +27,7 @@ export type FileArray = FileObject[];
 const GROK_IMAGE_MIME_TYPES = new Set(["image/jpeg", "image/jpg", "image/png"]);
 const GROK_IMAGE_EXTENSIONS = new Set(["jpg", "jpeg", "png"]);
 const LOCAL_ATTACHMENT_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
+const BLOCKED_ATTACHMENT_HOST_SUFFIXES = ["r2.cloudflarestorage.com"];
 
 function getFileExtension(filename: string): string {
   const segments = filename.toLowerCase().split(".");
@@ -57,6 +58,17 @@ function normalizeAttachmentUrl(url: string): string {
         : window.location.origin;
     const resolved = new URL(url, baseUrl);
     if (LOCAL_ATTACHMENT_HOSTS.has(resolved.hostname)) {
+      return "";
+    }
+    if (
+      BLOCKED_ATTACHMENT_HOST_SUFFIXES.some(
+        (suffix) =>
+          resolved.hostname === suffix || resolved.hostname.endsWith(`.${suffix}`),
+      )
+    ) {
+      console.warn(
+        `[parser] attachment url "${resolved.hostname}" looks like an object storage api endpoint, fallback to base64`,
+      );
       return "";
     }
     return resolved.toString();

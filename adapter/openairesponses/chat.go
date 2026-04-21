@@ -291,6 +291,14 @@ func (c *ChatInstance) CreateXAIStreamChatRequest(props *adaptercommon.ChatProps
 	}, props.Proxy)
 
 	if err != nil {
+		if err.Body != "" {
+			if form := utils.UnmarshalForm[ResponseResponse](err.Body); form != nil && form.Error.Message != "" {
+				return fmt.Errorf("openai responses error: %s", form.Error.Message)
+			}
+
+			return fmt.Errorf("openai responses error: %s", strings.TrimSpace(err.Body))
+		}
+
 		return fmt.Errorf("openai responses error: %s", err.Error)
 	}
 
