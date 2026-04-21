@@ -1,3 +1,4 @@
+import axios from "axios";
 import { blobEndpoint } from "@/conf/env.ts";
 import { trimSuffixes } from "@/utils/base.ts";
 
@@ -25,6 +26,7 @@ export type FileArray = FileObject[];
 
 const GROK_IMAGE_MIME_TYPES = new Set(["image/jpeg", "image/jpg", "image/png"]);
 const GROK_IMAGE_EXTENSIONS = new Set(["jpg", "jpeg", "png"]);
+const LOCAL_ATTACHMENT_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
 
 function getFileExtension(filename: string): string {
   const segments = filename.toLowerCase().split(".");
@@ -41,6 +43,26 @@ function isGrokCompatibleImage(file: File): boolean {
     return true;
   }
   return GROK_IMAGE_EXTENSIONS.has(getFileExtension(file.name));
+}
+
+function normalizeAttachmentUrl(url: string): string {
+  if (!url) {
+    return "";
+  }
+
+  try {
+    const baseUrl =
+      typeof axios.defaults.baseURL === "string" && axios.defaults.baseURL.length > 0
+        ? axios.defaults.baseURL
+        : window.location.origin;
+    const resolved = new URL(url, baseUrl);
+    if (LOCAL_ATTACHMENT_HOSTS.has(resolved.hostname)) {
+      return "";
+    }
+    return resolved.toString();
+  } catch {
+    return "";
+  }
 }
 
 async function decodeImageFile(file: File): Promise<HTMLImageElement> {
@@ -154,6 +176,12 @@ export async function quickBlobParser(
       if (couldLocalVision && file.type.startsWith("image/")) {
         console.log("[parser] hit image/* file, using local parser");
         const imageFile = await ensureGrokCompatibleImage(file, model);
+        if (isXAIChannelModel(model)) {
+          const attachmentUrl = await uploadXAIImage(imageFile);
+          if (attachmentUrl) {
+            return attachmentUrl;
+          }
+        }
         // parse image as base64 (e.g. result: data:image/png;base64,xxx)
         const base64 = await fileToBase64(imageFile);
         return base64;
@@ -190,6 +218,29 @@ export async function quickBlobParser(
   }
 
   return blobParser(file, model, onProgress);
+}
+
+async function uploadXAIImage(file: File): Promise<string> {
+  try {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await axios.post("/attachment/upload", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+
+    const data = response.data as BlobParserResponse & { url?: string };
+    if (!data.status || !data.url) {
+      return "";
+    }
+
+    return normalizeAttachmentUrl(data.url);
+  } catch (error) {
+    console.warn("[parser] failed to upload xai image attachment, fallback to base64:", error);
+    return "";
+  }
 }
 
 export async function blobParser(

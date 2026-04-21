@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"chat/globals"
 	"context"
+	"crypto/md5"
 	"fmt"
 	"io"
 	"mime"
@@ -227,6 +228,19 @@ func attachmentNameForSource(source string, contentType string) string {
 	return Md5Encrypt(source) + ext
 }
 
+func attachmentNameForUpload(filename string, data []byte, contentType string) string {
+	ext := extensionFromContentType(contentType)
+	if ext == "" {
+		ext = strings.ToLower(path.Ext(filename))
+	}
+	if ext == "" {
+		ext = ".bin"
+	}
+
+	sum := md5.Sum(data)
+	return fmt.Sprintf("%x%s", sum, ext)
+}
+
 func readStoredImageSource(source string) ([]byte, string, error) {
 	if strings.HasPrefix(source, "data:image/") {
 		parts := SafeSplit(source, ",", 2)
@@ -345,6 +359,28 @@ func StoreImage(source string) string {
 	}
 
 	return AttachmentPublicURL(name)
+}
+
+func StoreAttachmentData(filename string, data []byte, contentType string) (string, error) {
+	if len(data) == 0 {
+		return "", fmt.Errorf("attachment data is empty")
+	}
+
+	contentType = normalizeContentType(contentType)
+	if contentType == "" {
+		contentType = normalizeContentType(http.DetectContentType(data))
+	}
+
+	name := attachmentNameForUpload(filename, data, contentType)
+	if storageModeReady() && !strings.EqualFold(strings.TrimSpace(globals.StorageMode), "local") {
+		if err := writeAttachmentS3(context.Background(), name, data, contentType); err != nil {
+			return "", err
+		}
+	} else if err := writeAttachmentLocal(name, data); err != nil {
+		return "", err
+	}
+
+	return AttachmentPublicURL(name), nil
 }
 
 func ServeStoredAttachment(c *gin.Context, name string) {
