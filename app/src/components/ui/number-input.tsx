@@ -14,7 +14,7 @@ export interface NumberInputProps extends InputProps {
 }
 
 const NumberInput = React.forwardRef<HTMLInputElement, NumberInputProps>(
-  ({ className, type, ...props }, ref) => {
+  ({ className, type, onValueChange, ...props }, ref) => {
     const [value, setValue] = useState(props.value.toString());
     useEffect(() => {
       // fix life cycle: update value when props.value changed
@@ -78,7 +78,7 @@ const NumberInput = React.forwardRef<HTMLInputElement, NumberInputProps>(
         value={value}
         onChange={(e) => {
           setValue(formatValue(e.target.value));
-          props.onValueChange(getValue(e.target.value));
+          onValueChange(getValue(e.target.value));
         }}
         min={props.min}
         max={props.max}
