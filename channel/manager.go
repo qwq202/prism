@@ -4,6 +4,7 @@ import (
 	"chat/globals"
 	"chat/utils"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/spf13/viper"
@@ -25,6 +26,14 @@ func NewChannelManager() *Manager {
 	var seq Sequence
 	if err := viper.UnmarshalKey("channel", &seq); err != nil {
 		panic(err)
+	}
+
+	if filtered, removed := filterRemovedChannels(seq); removed > 0 {
+		globals.Warn(fmt.Sprintf("[channel] removed %d deprecated channel(s) from config", removed))
+		seq = filtered
+		if err := utils.SaveConfig("channel", seq); err != nil {
+			globals.Warn(fmt.Sprintf("[channel] failed to persist deprecated channel cleanup: %s", err.Error()))
+		}
 	}
 
 	// sort by priority
@@ -146,12 +155,18 @@ func (m *Manager) SaveConfig() error {
 }
 
 func (m *Manager) CreateChannel(channel *Channel) error {
+	if err := validateChannelType(channel); err != nil {
+		return err
+	}
 	channel.Id = m.GetMaxId() + 1
 	m.Sequence = append(m.Sequence, channel)
 	return m.SaveConfig()
 }
 
 func (m *Manager) UpdateChannel(id int, channel *Channel) error {
+	if err := validateChannelType(channel); err != nil {
+		return err
+	}
 	for i, item := range m.Sequence {
 		if item.Id == id {
 			m.Sequence[i] = channel
@@ -189,4 +204,33 @@ func (m *Manager) DeactivateChannel(id int) error {
 		}
 	}
 	return errors.New("channel not found")
+}
+
+func filterRemovedChannels(seq Sequence) (Sequence, int) {
+	filtered := make(Sequence, 0, len(seq))
+	removed := 0
+	for _, channel := range seq {
+		if channel == nil {
+			continue
+		}
+		if isRemovedChannelType(channel.Type) {
+			removed++
+			continue
+		}
+		filtered = append(filtered, channel)
+	}
+
+	return filtered, removed
+}
+
+func validateChannelType(channel *Channel) error {
+	if channel != nil && isRemovedChannelType(channel.Type) {
+		return fmt.Errorf("channel type %s has been removed", channel.Type)
+	}
+
+	return nil
+}
+
+func isRemovedChannelType(channelType string) bool {
+	return channelType == "bing"
 }
