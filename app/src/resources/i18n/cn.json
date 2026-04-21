@@ -1561,6 +1561,8 @@
     "chat-full": "开始对话",
     "model": "模型",
     "model-full": "探索模型",
+    "translate": "翻译",
+    "translate-full": "双栏翻译",
     "preset": "预设",
     "preset-full": "预设市场",
     "wallet": "钱包",
@@ -1736,5 +1738,24 @@
       "pending": "待结算",
       "rate": "返佣率"
     }
+  },
+  "translate": {
+    "title": "翻译",
+    "subtitle": "双栏即时翻译工作台",
+    "source": "源语言",
+    "target": "目标语言",
+    "input": "原文",
+    "output": "译文",
+    "input-placeholder": "输入或粘贴需要翻译的内容...",
+    "output-placeholder": "翻译结果会显示在这里",
+    "action": "翻译",
+    "detected": "支持 11 种常用语言互译",
+    "translating": "正在翻译...",
+    "shortcut": "按 Cmd/Ctrl + Enter 快速翻译",
+    "empty": "请先输入需要翻译的内容",
+    "same-language": "源语言与目标语言相同，已直接返回原文",
+    "characters": "字符",
+    "source-ready": "原文区域",
+    "result-ready": "译文区域"
   }
 }

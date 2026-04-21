@@ -1437,6 +1437,7 @@
   "bar": {
     "chat": "ダイアログ",
     "model": "モデル",
+    "translate": "翻訳",
     "wallet": "財布",
     "log": "ログ",
     "admin": "バックグラウンド",
@@ -1444,6 +1445,7 @@
     "account": "アカウント",
     "chat-full": "会話を開始する",
     "model-full": "モデルを見る",
+    "translate-full": "翻訳ワークスペース",
     "preset-full": "プリセットマーケット",
     "wallet-full": "ウォレット",
     "log-full": "使用履歴",
@@ -1761,5 +1763,24 @@
       "pending": "決済待ち",
       "rate": "リベート率"
     }
+  },
+  "translate": {
+    "title": "翻訳",
+    "subtitle": "2 カラムの即時翻訳ワークスペース",
+    "source": "原文言語",
+    "target": "翻訳先言語",
+    "input": "原文",
+    "output": "翻訳結果",
+    "input-placeholder": "翻訳したい文章を入力または貼り付けてください...",
+    "output-placeholder": "翻訳結果がここに表示されます",
+    "action": "翻訳",
+    "detected": "11 の主要言語に対応",
+    "translating": "翻訳中...",
+    "shortcut": "Cmd/Ctrl + Enter ですぐ翻訳",
+    "empty": "先に翻訳する文章を入力してください",
+    "same-language": "原文と言語設定が同じため、そのまま表示しました。",
+    "characters": "文字",
+    "source-ready": "原文パネル",
+    "result-ready": "翻訳パネル"
   }
 }

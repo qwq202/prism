@@ -4,6 +4,7 @@ import (
 	"chat/addition/article"
 	"chat/addition/card"
 	"chat/addition/generation"
+	translateapi "chat/addition/translate"
 	"github.com/gin-gonic/gin"
 )
 
@@ -18,5 +19,7 @@ func Register(app *gin.RouterGroup) {
 		app.GET("/article/create", article.GenerateAPI)
 		app.GET("/article/download/tar", article.ProjectTarDownloadAPI)
 		app.GET("/article/download/zip", article.ProjectZipDownloadAPI)
+
+		app.POST("/translate", translateapi.TranslateAPI)
 	}
 }
