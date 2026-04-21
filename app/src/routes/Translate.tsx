@@ -5,8 +5,6 @@ import {
   ArrowLeftRight,
   Clipboard,
   Languages,
-  Sparkles,
-  Wand2,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button.tsx";
@@ -18,6 +16,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select.tsx";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card.tsx";
+import { ScrollArea } from "@/components/ui/scroll-area.tsx";
 import { cn } from "@/components/ui/lib/utils.ts";
 import { useClipboard } from "@/utils/dom.ts";
 import { translateText } from "@/api/translate.ts";
@@ -53,13 +58,6 @@ function Translate() {
   const [sourceText, setSourceText] = React.useState("");
   const [translatedText, setTranslatedText] = React.useState("");
   const [translating, setTranslating] = React.useState(false);
-
-  const sourceMeta =
-    languageOptions.find((item) => item.value === sourceLanguage) ??
-    languageOptions[0];
-  const targetMeta =
-    languageOptions.find((item) => item.value === targetLanguage) ??
-    languageOptions[2];
 
   async function handleTranslate() {
     const value = sourceText.trim();
@@ -118,156 +116,143 @@ function Translate() {
   }
 
   return (
-    <div className="translate-page">
-      <div className="translate-shell">
-        <div className="translate-shell__glow translate-shell__glow--left" />
-        <div className="translate-shell__glow translate-shell__glow--right" />
-
-        <div className="translate-header">
-          <div>
-            <div className="translate-eyebrow">
-              <Sparkles className="h-3.5 w-3.5" />
+    <ScrollArea className="w-full h-full flex flex-col p-2 pr-4 bg-muted/25">
+      <div className="translate-page">
+        <Card className="translate-card">
+          <CardHeader className="translate-card-header">
+            <CardTitle className="flex items-center gap-2">
+              <Languages className="h-5 w-5" />
               {t("translate.title")}
-            </div>
-            <h1 className="translate-title">{t("translate.subtitle")}</h1>
-          </div>
-          <div className="translate-badge">
-            <Wand2 className="h-3.5 w-3.5" />
-            {t("translate.detected")}
-          </div>
-        </div>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="translate-card-content">
+            <div className="flex items-center gap-2 mb-4 flex-wrap">
+              <Select value={sourceLanguage} onValueChange={setSourceLanguage}>
+                <SelectTrigger className="translate-select">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {languageOptions.map((item) => (
+                    <SelectItem key={item.value} value={item.value}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-        <div className="translate-toolbar">
-          <div className="translate-toolbar__control">
-            <span className="translate-toolbar__meta">{sourceMeta.short}</span>
-            <Select value={sourceLanguage} onValueChange={setSourceLanguage}>
-              <SelectTrigger className="translate-select">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {languageOptions.map((item) => (
-                  <SelectItem key={item.value} value={item.value}>
-                    {item.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <Button
-            size="icon"
-            variant="outline"
-            className="translate-toolbar__swap"
-            onClick={handleSwap}
-          >
-            <ArrowLeftRight className="h-4 w-4" />
-          </Button>
-
-          <div className="translate-toolbar__control">
-            <span className="translate-toolbar__meta">{targetMeta.short}</span>
-            <Select value={targetLanguage} onValueChange={setTargetLanguage}>
-              <SelectTrigger className="translate-select">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {languageOptions.map((item) => (
-                  <SelectItem key={item.value} value={item.value}>
-                    {item.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <Button
-            className="translate-toolbar__submit"
-            onClick={handleTranslate}
-            loading
-          >
-            <Languages className="mr-2 h-4 w-4" />
-            {t("translate.action")}
-          </Button>
-
-          <div className="translate-toolbar__aside">
-            <span>{t("translate.shortcut")}</span>
-          </div>
-        </div>
-
-        <div className="translate-workspace">
-          <section className="translate-panel">
-            <div className="translate-panel__header">
-              <div>
-                <p className="translate-panel__label">{t("translate.input")}</p>
-                <p className="translate-panel__hint">{t("translate.source")}</p>
-              </div>
               <Button
                 size="icon-sm"
-                variant="ghost"
-                onClick={handleClear}
-                disabled={!sourceText.length && !translatedText.length}
+                variant="outline"
+                onClick={handleSwap}
               >
-                <X className="h-4 w-4" />
+                <ArrowLeftRight className="h-4 w-4" />
               </Button>
-            </div>
 
-            <Textarea
-              value={sourceText}
-              onChange={(event) => setSourceText(event.target.value)}
-              placeholder={t("translate.input-placeholder")}
-              className="translate-textarea"
-              onKeyDown={(event) => {
-                if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
-                  event.preventDefault();
-                  handleTranslate();
-                }
-              }}
-            />
+              <Select value={targetLanguage} onValueChange={setTargetLanguage}>
+                <SelectTrigger className="translate-select">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {languageOptions.map((item) => (
+                    <SelectItem key={item.value} value={item.value}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-            <div className="translate-panel__footer">
-              <span>{t("translate.source-ready")}</span>
-              <span>{sourceText.length} {t("translate.characters")}</span>
-            </div>
-          </section>
-
-          <section className={cn("translate-panel", "translate-panel--result")}>
-            <div className="translate-panel__header">
-              <div>
-                <p className="translate-panel__label">{t("translate.output")}</p>
-                <p className="translate-panel__hint">{t("translate.target")}</p>
-              </div>
-              <Button
-                size="icon-sm"
-                variant="ghost"
-                onClick={handleCopy}
-                disabled={!translatedText.trim().length}
-              >
-                <Clipboard className="h-4 w-4" />
+              <Button className="translate-submit" onClick={handleTranslate} loading>
+                <Languages className="mr-2 h-4 w-4" />
+                {t("translate.action")}
               </Button>
-            </div>
 
-            <Textarea
-              readOnly
-              value={translatedText}
-              placeholder={
-                translating
-                  ? t("translate.translating")
-                  : t("translate.output-placeholder")
-              }
-              className={cn("translate-textarea", "translate-textarea--output")}
-            />
-
-            <div className="translate-panel__footer">
-              <span>
-                {translating
-                  ? t("translate.translating")
-                  : t("translate.result-ready")}
+              <span className="translate-shortcut">
+                {t("translate.shortcut")}
               </span>
-              <span>{translatedText.length} {t("translate.characters")}</span>
             </div>
-          </section>
-        </div>
+
+            <div className="translate-workspace">
+              <div className="translate-panel">
+                <div className="translate-panel-header">
+                  <span className="translate-panel-label">
+                    {t("translate.input")}
+                  </span>
+                  <Button
+                    size="icon-xs"
+                    variant="ghost"
+                    onClick={handleClear}
+                    disabled={!sourceText.length && !translatedText.length}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+
+                <Textarea
+                  value={sourceText}
+                  onChange={(e) => setSourceText(e.target.value)}
+                  placeholder={t("translate.input-placeholder")}
+                  className="translate-textarea"
+                  onKeyDown={(e) => {
+                    if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+                      e.preventDefault();
+                      handleTranslate();
+                    }
+                  }}
+                />
+
+                <div className="translate-panel-footer">
+                  <span>{t("translate.source-ready")}</span>
+                  <span>
+                    {sourceText.length} {t("translate.characters")}
+                  </span>
+                </div>
+              </div>
+
+              <div className="translate-panel">
+                <div className="translate-panel-header">
+                  <span className="translate-panel-label">
+                    {t("translate.output")}
+                  </span>
+                  <Button
+                    size="icon-xs"
+                    variant="ghost"
+                    onClick={handleCopy}
+                    disabled={!translatedText.trim().length}
+                  >
+                    <Clipboard className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+
+                <Textarea
+                  readOnly
+                  value={translatedText}
+                  placeholder={
+                    translating
+                      ? t("translate.translating")
+                      : t("translate.output-placeholder")
+                  }
+                  className={cn(
+                    "translate-textarea",
+                    "translate-textarea--output",
+                  )}
+                />
+
+                <div className="translate-panel-footer">
+                  <span>
+                    {translating
+                      ? t("translate.translating")
+                      : t("translate.result-ready")}
+                  </span>
+                  <span>
+                    {translatedText.length} {t("translate.characters")}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
-    </div>
+    </ScrollArea>
   );
 }
 
