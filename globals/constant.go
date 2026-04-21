@@ -14,6 +14,7 @@ const (
 	XAIChannelType                = "xai"
 	AzureOpenAIChannelType        = "azure"
 	ClaudeChannelType             = "claude"
+	GLMCodingPlanCNChannelType    = "glm-coding-plan-cn"
 	MiniMaxTokenPlanCNChannelType = "minimax-token-plan-cn"
 	SlackChannelType              = "slack"
 	SparkdeskChannelType          = "sparkdesk"

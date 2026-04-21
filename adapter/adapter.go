@@ -29,6 +29,7 @@ var channelFactories = map[string]adaptercommon.FactoryCreator{
 	globals.XAIChannelType:                openairesponses.NewChatInstanceFromConfig,
 	globals.AzureOpenAIChannelType:        azure.NewChatInstanceFromConfig,
 	globals.ClaudeChannelType:             claude.NewChatInstanceFromConfig,
+	globals.GLMCodingPlanCNChannelType:    claude.NewChatInstanceFromConfig, // anthropic-compatible
 	globals.MiniMaxTokenPlanCNChannelType: claude.NewChatInstanceFromConfig, // anthropic-compatible
 	globals.SlackChannelType:              slack.NewChatInstanceFromConfig,
 	globals.PalmChannelType:               palm2.NewChatInstanceFromConfig,

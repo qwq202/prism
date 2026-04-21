@@ -57,6 +57,7 @@ export const ChannelTypes: Record<string, string> = {
   xai: "xAI Grok",
   azure: "Azure OpenAI",
   claude: "Anthropic Claude",
+  "glm-coding-plan-cn": "GLM Coding Plan（CN）",
   "minimax-token-plan-cn": "MiniMax Token Plan（CN）",
   palm: "Google Gemini",
   midjourney: "Midjourney Proxy",
@@ -81,6 +82,7 @@ export const ShortChannelTypes: Record<string, string> = {
   xai: "xAI",
   azure: "Azure",
   claude: "Claude",
+  "glm-coding-plan-cn": "GLM Coding",
   "minimax-token-plan-cn": "MiniMax",
   palm: "Gemini",
   midjourney: "Midjourney",
@@ -215,6 +217,15 @@ export const ChannelInfos: Record<string, ChannelInfo> = {
       "claude-3-sonnet-20240229",
       "claude-3-haiku-20240307",
     ],
+  },
+  "glm-coding-plan-cn": {
+    endpoint: "https://open.bigmodel.cn/api/anthropic",
+    format: "<x-api-key>",
+    description:
+      "> GLM Coding Plan（CN）渠道基于 **Anthropic / Claude API** 兼容格式，接入点请填写 *https://open.bigmodel.cn/api/anthropic* 或其反代地址。 \n" +
+      "> 密钥请填写智谱 API Key，系统会按 **x-api-key** 方式请求官方 *`/v1/messages`* 接口。 \n" +
+      "> 官方当前推荐模型包括 **glm-5.1**、**glm-5**、**glm-4.7**，编码套餐文档中也常见 **glm-4.5-air**。 \n",
+    models: ["glm-5.1", "glm-5", "glm-4.7", "glm-4.5-air"],
   },
   "minimax-token-plan-cn": {
     endpoint: "https://api.minimaxi.com/anthropic",
