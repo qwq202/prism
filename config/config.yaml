@@ -1,7 +1,7 @@
 mysql:
   db: chatnio
   host: 127.0.0.1
-  password: chatnio123456!
+  password: chatnio123456
   port: 3306
   user: chatnio
   tls: false
