@@ -6,11 +6,12 @@ import {
   ChevronDown,
   MessageCircle,
   Shield,
+  Sparkles,
   Wallet,
   LibraryBig,
   User,
 } from "lucide-react";
-import React from "react";
+import React, { useState } from "react";
 import Icon from "@/components/utils/Icon.tsx";
 import router from "@/router.tsx";
 import { useTranslation } from "react-i18next";
@@ -29,6 +30,12 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip.tsx";
 import NavBar from "@/components/app/NavBar.tsx";
+import {
+  Sheet,
+  SheetContent,
+  SheetTitle,
+} from "@/components/ui/sheet.tsx";
+import PersonalizationPanel from "@/components/home/PersonalizationPanel.tsx";
 
 type BarItemProps = {
   icon: React.ReactElement;
@@ -93,6 +100,65 @@ function BarItem({ icon, path, name }: BarItemProps) {
   );
 }
 
+function PersonaBarItem() {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const mobile = useMobile();
+  const hidden = useSelector(hideToolbarTextSelector);
+
+  return (
+    <>
+      <div className={`inline-flex flex-col`}>
+        <TooltipProvider delayDuration={100}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                size="icon"
+                variant="outline"
+                onClick={() => setOpen(true)}
+              >
+                <Icon
+                  icon={<Sparkles />}
+                  className="h-4 w-4 stroke-[1.75]"
+                />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent
+              side={mobile ? "top" : "right"}
+              align="center"
+              className={`z-[100]`}
+            >
+              {t("settings.personalization.title")}
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        <div
+          className={cn(
+            `toolbar-text text-secondary text-center text-xs mt-1.5 cursor-pointer select-none`,
+            hidden && `hidden`,
+          )}
+          onClick={() => setOpen(true)}
+        >
+          {t("settings.personalization.title")}
+        </div>
+      </div>
+
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetContent
+          side="left"
+          className="persona-sheet p-0 flex flex-col"
+          style={{ width: "min(300px, 85vw)" }}
+        >
+          <SheetTitle className="sr-only">
+            {t("settings.personalization.title")}
+          </SheetTitle>
+          <PersonalizationPanel />
+        </SheetContent>
+      </Sheet>
+    </>
+  );
+}
+
 function ToolBar() {
   const admin = useSelector(selectAdmin);
   const hideToolbar = useSelector(hideToolbarSelector);
@@ -118,6 +184,7 @@ function ToolBar() {
       {/* <BarItem icon={<PieChart />} path={`/log`} name={"log"} /> */}
       <BarItem icon={<User />} path={`/account`} name={"account"} />
       {admin && <BarItem icon={<Shield />} path={`/admin`} name={"admin"} />}
+      <PersonaBarItem />
     </div>
   );
 }

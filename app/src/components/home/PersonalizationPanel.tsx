@@ -11,12 +11,10 @@ import {
 } from "@/components/ui/select.tsx";
 import { Input } from "@/components/ui/input.tsx";
 import { Textarea } from "@/components/ui/textarea.tsx";
-import { Button } from "@/components/ui/button.tsx";
 import {
-  ArrowLeft,
   MessageSquare,
   Smile,
-  List,
+  List as ListIcon,
   Zap,
   Heart,
   User,
@@ -82,10 +80,6 @@ function StyleChip({ label, emoji, selected, onClick }: StyleChipProps) {
   );
 }
 
-type PersonalizationPanelProps = {
-  onClose: () => void;
-};
-
 const styleEmojis: Record<string, string> = {
   friendly: "😊",
   professional: "💼",
@@ -94,7 +88,7 @@ const styleEmojis: Record<string, string> = {
   playful: "🎉",
 };
 
-function PersonalizationPanel({ onClose }: PersonalizationPanelProps) {
+function PersonalizationPanel() {
   const { t } = useTranslation();
   const dispatch = useDispatch();
 
@@ -202,16 +196,8 @@ function PersonalizationPanel({ onClose }: PersonalizationPanelProps) {
         exit={{ opacity: 0, x: -16 }}
         transition={{ duration: 0.22, ease: "easeOut" }}
       >
-        {/* 顶部导航栏 */}
+        {/* 顶部标题栏 */}
         <div className="persona-panel-header">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="persona-back-btn"
-            onClick={onClose}
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
           <div className="persona-panel-title-wrap">
             <Sparkles className="h-3.5 w-3.5 persona-panel-title-icon" />
             <span className="persona-panel-title">
@@ -295,7 +281,7 @@ function PersonalizationPanel({ onClose }: PersonalizationPanelProps) {
                 onChange={(v) => dispatch(settings.setPersonaEnthusiasm(v))}
               />
               <TraitCard
-                icon={<List className="h-3.5 w-3.5" />}
+                icon={<ListIcon className="h-3.5 w-3.5" />}
                 title={t("settings.personalization.headings-lists")}
                 value={personaLists}
                 options={listOptions}

@@ -22,10 +22,8 @@ import {
   Plus,
   RotateCw,
   Search,
-  Sparkles,
   User,
 } from "lucide-react";
-import PersonalizationPanel from "./PersonalizationPanel.tsx";
 import ConversationItem from "./ConversationItem.tsx";
 import {
   AlertDialog,
@@ -405,7 +403,6 @@ function SideBar() {
   const auth = useSelector(selectAuthenticated);
   const init = useSelector(selectInit);
   const [search, setSearch] = useState<string>("");
-  const [showPersona, setShowPersona] = useState<boolean>(false);
   const [operateConversation, setOperateConversation] = useState<Operation>({
     target: null,
     type: "",
@@ -423,42 +420,24 @@ function SideBar() {
   return (
     <div className={cn("sidebar", open && "open")}>
       <div className={`sidebar-content`}>
-        {showPersona ? (
-          <PersonalizationPanel onClose={() => setShowPersona(false)} />
-        ) : (
-          <>
-            <SidebarAction
-              search={search}
-              setSearch={setSearch}
-              setOperateConversation={setOperateConversation}
-            />
-            <SidebarConversationList
-              search={search}
-              operateConversation={operateConversation}
-              setOperateConversation={setOperateConversation}
-            />
-            <div className={`sidebar-footer`}>
-              {init && !auth && (
-                <Button
-                  className={`login-action min-h-10 h-max`}
-                  variant={`default`}
-                  onClick={goAuth}
-                >
-                  <User className={`h-4 w-4 mr-1.5 shrink-0`} />{" "}
-                  {t("login-action")}
-                </Button>
-              )}
-              <Button
-                variant={`ghost`}
-                size={`icon`}
-                className={`persona-entry-btn`}
-                onClick={() => setShowPersona(true)}
-                title={t("settings.personalization.title")}
-              >
-                <Sparkles className={`h-4 w-4`} />
-              </Button>
-            </div>
-          </>
+        <SidebarAction
+          search={search}
+          setSearch={setSearch}
+          setOperateConversation={setOperateConversation}
+        />
+        <SidebarConversationList
+          search={search}
+          operateConversation={operateConversation}
+          setOperateConversation={setOperateConversation}
+        />
+        {init && !auth && (
+          <Button
+            className={`login-action min-h-10 h-max`}
+            variant={`default`}
+            onClick={goAuth}
+          >
+            <User className={`h-4 w-4 mr-1.5 shrink-0`} /> {t("login-action")}
+          </Button>
         )}
       </div>
     </div>
