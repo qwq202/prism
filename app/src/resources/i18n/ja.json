@@ -976,7 +976,9 @@
       "storageSecretKeyTip": "オブジェクトストアのシークレットアクセスキー; R 2作成時に表示されるシークレットキーを記入してください",
       "storagePublicBaseUrlTip": "r2.devやカスタムドメイン名など、オブジェクトのパブリックアクセスプレフィックスを入力します。S 3 APIアドレスを入力しないでください",
       "storageR2AccountIdTip": "S 3 APIのアドレス全体ではなく、CloudflareアカウントID",
-      "storageR2JurisdictionTip": "通常のバケットは空のままにします。EUまたはFedRAMP認定バケットのみがEUまたはフェドランプを満たします"
+      "storageR2JurisdictionTip": "通常のバケットは空のままにします。EUまたはFedRAMP認定バケットのみがEUまたはフェドランプを満たします",
+      "storageTest": "保管テスト",
+      "storageTestSuccess": "ストレージテストに成功しました"
     },
     "user": "ユーザー管理",
     "invitation-code": "招待コード",

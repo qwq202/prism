@@ -11,6 +11,7 @@ func Register(app *gin.RouterGroup) {
 	channel.Register(app)
 
 	app.GET("/admin/config/test/search", web.TestSearch)
+	app.POST("/admin/config/test/storage", channel.TestStorageConfig)
 
 	app.GET("/admin/analytics/info", InfoAPI)
 	app.GET("/admin/analytics/model", ModelAnalysisAPI)

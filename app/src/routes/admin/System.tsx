@@ -36,6 +36,7 @@ import {
   setConfig,
   SiteState,
   SystemProps,
+  testStorageConfig,
   testWebSearching,
   updateRootPassword,
 } from "@/admin/api/system.ts";
@@ -820,6 +821,7 @@ function StorageSettings({
   onChange,
 }: CompProps<CommonState>) {
   const { t } = useTranslation();
+  const [testing, setTesting] = useState<boolean>(false);
 
   return (
     <Paragraph
@@ -1086,6 +1088,29 @@ function StorageSettings({
       )}
       <ParagraphFooter>
         <div className={`grow`} />
+        <Button
+          variant={`outline`}
+          size={`sm`}
+          loading={true}
+          disabled={testing}
+          onClick={async () => {
+            if (testing) return;
+            setTesting(true);
+            try {
+              const res = await testStorageConfig(form);
+              withNotify(
+                t,
+                res,
+                true,
+                res.message || t("admin.system.storageTestSuccess"),
+              );
+            } finally {
+              setTesting(false);
+            }
+          }}
+        >
+          {t("admin.system.storageTest")}
+        </Button>
         <Button
           size={`sm`}
           loading={true}

@@ -193,6 +193,45 @@ func UpdateConfig(c *gin.Context) {
 	})
 }
 
+func TestStorageConfig(c *gin.Context) {
+	var config SystemConfig
+	if err := c.ShouldBindJSON(&config); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status": false,
+			"error":  err.Error(),
+		})
+		return
+	}
+
+	err := utils.TestStorageConnection(utils.StorageTestConfig{
+		Mode:    config.GetStorageMode(),
+		Backend: config.GetBackend(),
+		S3: utils.StorageS3Config{
+			Endpoint:       config.GetStorageS3Endpoint(),
+			Region:         config.GetStorageS3Region(),
+			Bucket:         config.GetStorageS3Bucket(),
+			AccessKey:      config.GetStorageS3AccessKey(),
+			SecretKey:      config.GetStorageS3SecretKey(),
+			PublicBaseURL:  config.GetStorageS3PublicBaseURL(),
+			ForcePathStyle: config.Common.S3.ForcePathStyle,
+		},
+		R2: utils.StorageR2Config{
+			AccountID:     config.GetStorageR2AccountID(),
+			Jurisdiction:  config.GetStorageR2Jurisdiction(),
+			Bucket:        config.GetStorageR2Bucket(),
+			AccessKey:     config.GetStorageR2AccessKey(),
+			SecretKey:     config.GetStorageR2SecretKey(),
+			PublicBaseURL: config.GetStorageR2PublicBaseURL(),
+		},
+	})
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  err == nil,
+		"error":   utils.GetError(err),
+		"message": "storage test passed",
+	})
+}
+
 func GetPlanConfig(c *gin.Context) {
 	c.JSON(http.StatusOK, PlanInstance)
 }

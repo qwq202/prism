@@ -729,6 +729,8 @@
       "storageMode_s3": "S3",
       "storageEndpoint": "Endpoint",
       "storageEndpointTip": "S3 API endpoint for your object storage service; not used in R2 mode",
+      "storageTest": "Test Storage",
+      "storageTestSuccess": "Storage test passed",
       "storageRegion": "Region",
       "storageRegionTip": "S3 region such as us-east-1; R2 always uses auto",
       "storageBucket": "Bucket",

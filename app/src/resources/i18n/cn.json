@@ -1225,6 +1225,8 @@
       "storageMode_local": "本地",
       "storageMode_s3": "S3",
       "storageMode_r2": "R2",
+      "storageTest": "测试存储",
+      "storageTestSuccess": "存储测试成功",
       "storageEndpoint": "Endpoint",
       "storageEndpointTip": "对象存储的 S3 接口地址；R2 模式不用填这里",
       "storageRegion": "Region",

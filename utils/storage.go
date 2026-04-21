@@ -14,6 +14,7 @@ import (
 	"path"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
@@ -25,6 +26,44 @@ import (
 const attachmentPrefix = "attachments"
 
 var attachmentNamePattern = regexp.MustCompile(`attachments/([a-f0-9]{32}\.[A-Za-z0-9]+)`)
+
+type StorageS3Config struct {
+	Endpoint       string
+	Region         string
+	Bucket         string
+	AccessKey      string
+	SecretKey      string
+	PublicBaseURL  string
+	ForcePathStyle bool
+}
+
+type StorageR2Config struct {
+	AccountID     string
+	Jurisdiction  string
+	Bucket        string
+	AccessKey     string
+	SecretKey     string
+	PublicBaseURL string
+}
+
+type StorageTestConfig struct {
+	Mode    string
+	Backend string
+	S3      StorageS3Config
+	R2      StorageR2Config
+}
+
+type storageClientConfig struct {
+	Mode           string
+	Endpoint       string
+	Region         string
+	Bucket         string
+	AccessKey      string
+	SecretKey      string
+	PublicBaseURL  string
+	ForcePathStyle bool
+	Backend        string
+}
 
 func AttachmentObjectKey(name string) string {
 	return fmt.Sprintf("%s/%s", attachmentPrefix, name)
@@ -72,30 +111,17 @@ func ExtractAttachmentNames(data string) []string {
 }
 
 func s3StorageReady() bool {
-	return strings.EqualFold(strings.TrimSpace(globals.StorageMode), "s3") &&
-		strings.TrimSpace(globals.StorageS3Bucket) != "" &&
-		strings.TrimSpace(globals.StorageS3Region) != "" &&
-		strings.TrimSpace(globals.StorageS3AccessKey) != "" &&
-		strings.TrimSpace(globals.StorageS3SecretKey) != ""
+	return storageReadyWithConfig(currentStorageConfig())
 }
 
 func r2StorageReady() bool {
-	return strings.EqualFold(strings.TrimSpace(globals.StorageMode), "r2") &&
-		strings.TrimSpace(globals.StorageR2AccountID) != "" &&
-		strings.TrimSpace(globals.StorageR2Bucket) != "" &&
-		strings.TrimSpace(globals.StorageR2AccessKey) != "" &&
-		strings.TrimSpace(globals.StorageR2SecretKey) != ""
+	current := currentStorageConfig()
+	return strings.EqualFold(strings.TrimSpace(current.Mode), "r2") &&
+		storageReadyWithConfig(current)
 }
 
 func getStoragePublicBaseURL() string {
-	switch strings.ToLower(strings.TrimSpace(globals.StorageMode)) {
-	case "s3":
-		return strings.TrimSpace(globals.StorageS3PublicBaseURL)
-	case "r2":
-		return strings.TrimSpace(globals.StorageR2PublicBaseURL)
-	default:
-		return ""
-	}
+	return strings.TrimSpace(currentStorageConfig().PublicBaseURL)
 }
 
 func getR2Endpoint() string {
@@ -112,45 +138,108 @@ func getR2Endpoint() string {
 	return fmt.Sprintf("https://%s.%s.r2.cloudflarestorage.com", accountID, jurisdiction)
 }
 
-func newS3Client(ctx context.Context) (*s3.Client, error) {
-	var (
-		region         string
-		accessKey      string
-		secretKey      string
-		endpoint       string
-		forcePathStyle bool
-	)
-
-	switch strings.ToLower(strings.TrimSpace(globals.StorageMode)) {
+func currentStorageConfig() storageClientConfig {
+	mode := strings.ToLower(strings.TrimSpace(globals.StorageMode))
+	switch mode {
 	case "s3":
-		if !s3StorageReady() {
-			return nil, fmt.Errorf("s3 storage is not configured")
+		return storageClientConfig{
+			Mode:           "s3",
+			Endpoint:       strings.TrimSpace(globals.StorageS3Endpoint),
+			Region:         strings.TrimSpace(globals.StorageS3Region),
+			Bucket:         strings.TrimSpace(globals.StorageS3Bucket),
+			AccessKey:      strings.TrimSpace(globals.StorageS3AccessKey),
+			SecretKey:      strings.TrimSpace(globals.StorageS3SecretKey),
+			PublicBaseURL:  strings.TrimSpace(globals.StorageS3PublicBaseURL),
+			ForcePathStyle: globals.StorageS3ForcePathStyle,
+			Backend:        strings.TrimSpace(globals.NotifyUrl),
 		}
-
-		region = globals.StorageS3Region
-		accessKey = globals.StorageS3AccessKey
-		secretKey = globals.StorageS3SecretKey
-		endpoint = strings.TrimSpace(globals.StorageS3Endpoint)
-		forcePathStyle = globals.StorageS3ForcePathStyle
 	case "r2":
-		if !r2StorageReady() {
-			return nil, fmt.Errorf("r2 storage is not configured")
+		return storageClientConfig{
+			Mode:           "r2",
+			Endpoint:       strings.TrimSpace(getR2Endpoint()),
+			Region:         "auto",
+			Bucket:         strings.TrimSpace(globals.StorageR2Bucket),
+			AccessKey:      strings.TrimSpace(globals.StorageR2AccessKey),
+			SecretKey:      strings.TrimSpace(globals.StorageR2SecretKey),
+			PublicBaseURL:  strings.TrimSpace(globals.StorageR2PublicBaseURL),
+			ForcePathStyle: true,
+			Backend:        strings.TrimSpace(globals.NotifyUrl),
 		}
-
-		region = "auto"
-		accessKey = globals.StorageR2AccessKey
-		secretKey = globals.StorageR2SecretKey
-		endpoint = getR2Endpoint()
-		forcePathStyle = true
 	default:
-		return nil, fmt.Errorf("s3 storage is not configured")
+		return storageClientConfig{
+			Mode:    "local",
+			Backend: strings.TrimSpace(globals.NotifyUrl),
+		}
+	}
+}
+
+func buildStorageTestConfig(config StorageTestConfig) storageClientConfig {
+	mode := strings.ToLower(strings.TrimSpace(config.Mode))
+	switch mode {
+	case "s3":
+		return storageClientConfig{
+			Mode:           "s3",
+			Endpoint:       strings.TrimSuffix(strings.TrimSpace(config.S3.Endpoint), "/"),
+			Region:         strings.TrimSpace(config.S3.Region),
+			Bucket:         strings.TrimSpace(config.S3.Bucket),
+			AccessKey:      strings.TrimSpace(config.S3.AccessKey),
+			SecretKey:      strings.TrimSpace(config.S3.SecretKey),
+			PublicBaseURL:  strings.TrimSuffix(strings.TrimSpace(config.S3.PublicBaseURL), "/"),
+			ForcePathStyle: config.S3.ForcePathStyle,
+			Backend:        strings.TrimSuffix(strings.TrimSpace(config.Backend), "/"),
+		}
+	case "r2":
+		accountID := strings.TrimSpace(config.R2.AccountID)
+		jurisdiction := strings.TrimSpace(config.R2.Jurisdiction)
+		endpoint := ""
+		if accountID != "" {
+			if jurisdiction == "" {
+				endpoint = fmt.Sprintf("https://%s.r2.cloudflarestorage.com", accountID)
+			} else {
+				endpoint = fmt.Sprintf("https://%s.%s.r2.cloudflarestorage.com", accountID, jurisdiction)
+			}
+		}
+		return storageClientConfig{
+			Mode:           "r2",
+			Endpoint:       endpoint,
+			Region:         "auto",
+			Bucket:         strings.TrimSpace(config.R2.Bucket),
+			AccessKey:      strings.TrimSpace(config.R2.AccessKey),
+			SecretKey:      strings.TrimSpace(config.R2.SecretKey),
+			PublicBaseURL:  strings.TrimSuffix(strings.TrimSpace(config.R2.PublicBaseURL), "/"),
+			ForcePathStyle: true,
+			Backend:        strings.TrimSuffix(strings.TrimSpace(config.Backend), "/"),
+		}
+	default:
+		return storageClientConfig{
+			Mode:    "local",
+			Backend: strings.TrimSuffix(strings.TrimSpace(config.Backend), "/"),
+		}
+	}
+}
+
+func storageReadyWithConfig(config storageClientConfig) bool {
+	switch strings.ToLower(strings.TrimSpace(config.Mode)) {
+	case "s3", "r2":
+		return strings.TrimSpace(config.Bucket) != "" &&
+			strings.TrimSpace(config.Region) != "" &&
+			strings.TrimSpace(config.AccessKey) != "" &&
+			strings.TrimSpace(config.SecretKey) != ""
+	default:
+		return true
+	}
+}
+
+func newS3ClientWithConfig(ctx context.Context, config storageClientConfig) (*s3.Client, error) {
+	if !storageReadyWithConfig(config) || !Contains(config.Mode, []string{"s3", "r2"}) {
+		return nil, fmt.Errorf("%s storage is not configured", config.Mode)
 	}
 
 	loadOptions := []func(*awsconfig.LoadOptions) error{
-		awsconfig.WithRegion(region),
+		awsconfig.WithRegion(config.Region),
 		awsconfig.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(
-			accessKey,
-			secretKey,
+			config.AccessKey,
+			config.SecretKey,
 			"",
 		)),
 	}
@@ -161,26 +250,24 @@ func newS3Client(ctx context.Context) (*s3.Client, error) {
 	}
 
 	return s3.NewFromConfig(cfg, func(o *s3.Options) {
-		o.UsePathStyle = forcePathStyle
-		if endpoint != "" {
-			o.BaseEndpoint = aws.String(endpoint)
+		o.UsePathStyle = config.ForcePathStyle
+		if config.Endpoint != "" {
+			o.BaseEndpoint = aws.String(config.Endpoint)
 		}
 	}), nil
 }
 
+func newS3Client(ctx context.Context) (*s3.Client, error) {
+	return newS3ClientWithConfig(ctx, currentStorageConfig())
+}
+
 func storageBucket() string {
-	switch strings.ToLower(strings.TrimSpace(globals.StorageMode)) {
-	case "s3":
-		return globals.StorageS3Bucket
-	case "r2":
-		return globals.StorageR2Bucket
-	default:
-		return ""
-	}
+	return currentStorageConfig().Bucket
 }
 
 func storageModeReady() bool {
-	return s3StorageReady() || r2StorageReady()
+	current := currentStorageConfig()
+	return Contains(current.Mode, []string{"s3", "r2"}) && storageReadyWithConfig(current)
 }
 
 func normalizeContentType(contentType string) string {
@@ -286,13 +373,18 @@ func writeAttachmentLocal(name string, data []byte) error {
 }
 
 func writeAttachmentS3(ctx context.Context, name string, data []byte, contentType string) error {
-	client, err := newS3Client(ctx)
+	config := currentStorageConfig()
+	return writeAttachmentS3WithConfig(ctx, config, name, data, contentType)
+}
+
+func writeAttachmentS3WithConfig(ctx context.Context, config storageClientConfig, name string, data []byte, contentType string) error {
+	client, err := newS3ClientWithConfig(ctx, config)
 	if err != nil {
 		return err
 	}
 
 	_, err = client.PutObject(ctx, &s3.PutObjectInput{
-		Bucket:      aws.String(storageBucket()),
+		Bucket:      aws.String(config.Bucket),
 		Key:         aws.String(AttachmentObjectKey(name)),
 		Body:        bytes.NewReader(data),
 		ContentType: aws.String(normalizeContentType(contentType)),
@@ -324,13 +416,17 @@ func readAttachmentS3(ctx context.Context, name string) ([]byte, string, error) 
 }
 
 func deleteAttachmentS3(ctx context.Context, name string) error {
-	client, err := newS3Client(ctx)
+	return deleteAttachmentS3WithConfig(ctx, currentStorageConfig(), name)
+}
+
+func deleteAttachmentS3WithConfig(ctx context.Context, config storageClientConfig, name string) error {
+	client, err := newS3ClientWithConfig(ctx, config)
 	if err != nil {
 		return err
 	}
 
 	_, err = client.DeleteObject(ctx, &s3.DeleteObjectInput{
-		Bucket: aws.String(storageBucket()),
+		Bucket: aws.String(config.Bucket),
 		Key:    aws.String(AttachmentObjectKey(name)),
 	})
 	return err
@@ -433,4 +529,35 @@ func DeleteStoredAttachment(name string) error {
 	}
 
 	return result
+}
+
+func TestStorageConnection(config StorageTestConfig) error {
+	current := buildStorageTestConfig(config)
+	if strings.TrimSpace(current.PublicBaseURL) == "" && strings.TrimSpace(current.Backend) == "" {
+		return fmt.Errorf("public base url or backend domain is required")
+	}
+
+	content := []byte(fmt.Sprintf("storage-test-%d", time.Now().UnixNano()))
+	name := attachmentNameForUpload("storage-test.txt", content, "text/plain")
+
+	switch current.Mode {
+	case "local":
+		if err := writeAttachmentLocal(name, content); err != nil {
+			return err
+		}
+		if err := DeleteFile(AttachmentLocalPath(name)); err != nil && !os.IsNotExist(err) {
+			return err
+		}
+		return nil
+	case "s3", "r2":
+		if err := writeAttachmentS3WithConfig(context.Background(), current, name, content, "text/plain"); err != nil {
+			return err
+		}
+		if err := deleteAttachmentS3WithConfig(context.Background(), current, name); err != nil {
+			return err
+		}
+		return nil
+	default:
+		return fmt.Errorf("unsupported storage mode")
+	}
 }

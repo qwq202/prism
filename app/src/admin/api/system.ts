@@ -534,6 +534,17 @@ export async function testWebSearching(
   }
 }
 
+export async function testStorageConfig(
+  config: SystemProps,
+): Promise<CommonResponse> {
+  try {
+    const response = await axios.post(`/admin/config/test/storage`, config);
+    return response.data as CommonResponse;
+  } catch (e) {
+    return { status: false, error: getErrorMessage(e) };
+  }
+}
+
 export enum AuditTypes {
   None = "none",
   Dict = "dict",

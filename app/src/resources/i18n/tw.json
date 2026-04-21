@@ -1175,7 +1175,9 @@
       "storageSecretKeyTip": "物件儲存的Secret Access Key；R2 請填寫建立時顯示的Secret Key",
       "storagePublicBaseUrlTip": "填物件的公有網路存取前綴，例如r2.dev 或自訂網域名稱；不要填入S3 API 位址",
       "storageR2AccountIdTip": "Cloudflare 帳戶ID，不是S3 API 那一整段位址",
-      "storageR2JurisdictionTip": "普通桶留空；只有EU 或FedRAMP 限定桶才填eu 或fedramp"
+      "storageR2JurisdictionTip": "普通桶留空；只有EU 或FedRAMP 限定桶才填eu 或fedramp",
+      "storageTest": "測試存儲",
+      "storageTestSuccess": "儲存測試成功"
     },
     "logger": {
       "title": "服務日誌",
