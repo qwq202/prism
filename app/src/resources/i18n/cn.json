@@ -742,6 +742,16 @@
     "prize": "价格设定",
     "payment": "支付订单",
     "subscription": "订阅管理",
+    "attachment": {
+      "title": "附件管理",
+      "description": "查看当前存储模式下的附件文件，并支持管理员手动删除。",
+      "empty": "当前存储中没有附件",
+      "open": "打开附件",
+      "orphan": "孤儿附件",
+      "referenced-count": "已引用 {{count}} 次",
+      "delete-confirm": "确定删除附件 {{name}} 吗？",
+      "delete-referenced-confirm": "附件 {{name}} 仍被 {{count}} 条对话引用，删除后相关图片将失效，确定继续吗？"
+    },
     "exit": "退出后台",
     "billing": "收入",
     "billing-today": "今日入账",

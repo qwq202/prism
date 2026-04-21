@@ -6,6 +6,7 @@ import {
   CalendarRange,
   CloudCog,
   CreditCard,
+  FolderOpen,
   FileClock,
   Gauge,
   GitFork,
@@ -107,6 +108,11 @@ function MenuBar() {
         title={t("admin.settings")}
         icon={<Settings />}
         path={"/system"}
+      />
+      <MenuItem
+        title={t("admin.attachment.title")}
+        icon={<FolderOpen />}
+        path={"/attachment"}
       />
       <MenuItem
         title={t("admin.logger.title")}

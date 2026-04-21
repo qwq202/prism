@@ -14,6 +14,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 
@@ -52,6 +53,14 @@ type StorageTestConfig struct {
 	Backend string
 	S3      StorageS3Config
 	R2      StorageR2Config
+}
+
+type StoredAttachmentInfo struct {
+	Name        string
+	Size        int64
+	UpdatedAt   time.Time
+	StorageMode string
+	PublicURL   string
 }
 
 type storageClientConfig struct {
@@ -551,6 +560,24 @@ func DeleteStoredAttachment(name string) error {
 	return result
 }
 
+func DeleteConfiguredStoredAttachment(name string) error {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return fmt.Errorf("attachment name is required")
+	}
+
+	current := currentStorageConfig()
+	if Contains(current.Mode, []string{"s3", "r2"}) && storageReadyWithConfig(current) {
+		return deleteAttachmentS3(context.Background(), name)
+	}
+
+	if err := DeleteFile(AttachmentLocalPath(name)); err != nil && !os.IsNotExist(err) {
+		return err
+	}
+
+	return nil
+}
+
 func ListStoredAttachmentNames() ([]string, error) {
 	seen := map[string]struct{}{}
 	result := make([]string, 0)
@@ -604,6 +631,86 @@ func ListStoredAttachmentNames() ([]string, error) {
 			}
 		}
 	}
+
+	return result, nil
+}
+
+func ListConfiguredStoredAttachments() ([]StoredAttachmentInfo, error) {
+	current := currentStorageConfig()
+	result := make([]StoredAttachmentInfo, 0)
+
+	appendAttachment := func(item StoredAttachmentInfo) {
+		item.Name = strings.TrimSpace(item.Name)
+		if item.Name == "" {
+			return
+		}
+		item.StorageMode = current.Mode
+		item.PublicURL = AttachmentPublicURL(item.Name)
+		result = append(result, item)
+	}
+
+	if Contains(current.Mode, []string{"s3", "r2"}) && storageReadyWithConfig(current) {
+		ctx := context.Background()
+		client, err := newS3Client(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		paginator := s3.NewListObjectsV2Paginator(client, &s3.ListObjectsV2Input{
+			Bucket: aws.String(storageBucket()),
+			Prefix: aws.String(attachmentPrefix + "/"),
+		})
+
+		for paginator.HasMorePages() {
+			page, err := paginator.NextPage(ctx)
+			if err != nil {
+				return nil, err
+			}
+
+			for _, object := range page.Contents {
+				key := strings.TrimSpace(aws.ToString(object.Key))
+				if key == "" || !strings.HasPrefix(key, attachmentPrefix+"/") {
+					continue
+				}
+
+				appendAttachment(StoredAttachmentInfo{
+					Name:      strings.TrimPrefix(key, attachmentPrefix+"/"),
+					Size:      aws.ToInt64(object.Size),
+					UpdatedAt: aws.ToTime(object.LastModified),
+				})
+			}
+		}
+	} else {
+		localDir := filepath.Dir(AttachmentLocalPath("placeholder"))
+		entries, err := os.ReadDir(localDir)
+		if err != nil {
+			if os.IsNotExist(err) {
+				return result, nil
+			}
+			return nil, err
+		}
+
+		for _, entry := range entries {
+			if entry.IsDir() {
+				continue
+			}
+
+			info, err := entry.Info()
+			if err != nil {
+				continue
+			}
+
+			appendAttachment(StoredAttachmentInfo{
+				Name:      entry.Name(),
+				Size:      info.Size(),
+				UpdatedAt: info.ModTime(),
+			})
+		}
+	}
+
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].UpdatedAt.After(result[j].UpdatedAt)
+	})
 
 	return result, nil
 }

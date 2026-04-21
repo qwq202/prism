@@ -544,6 +544,16 @@
     "settings": "系統設定",
     "prize": "價格設定",
     "subscription": "訂閱管理",
+    "attachment": {
+      "title": "附件管理",
+      "description": "檢視目前儲存模式中的附件檔案，並支援管理員手動刪除。",
+      "empty": "目前儲存中沒有附件",
+      "open": "開啟附件",
+      "orphan": "孤兒附件",
+      "referenced-count": "已被引用 {{count}} 次",
+      "delete-confirm": "確定刪除附件 {{name}} 嗎？",
+      "delete-referenced-confirm": "附件 {{name}} 仍被 {{count}} 條對話引用，刪除後相關圖片將失效，確定繼續嗎？"
+    },
     "exit": "退出後台",
     "billing": "收入",
     "billing-today": "今日入帳",

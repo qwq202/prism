@@ -1041,6 +1041,16 @@
     },
     "model-chart-tip": "トークンの使用状況",
     "subscription": "サブスクリプション管理",
+    "attachment": {
+      "title": "添付ファイル管理",
+      "description": "現在のストレージ内の添付ファイルを確認し、管理者が手動で削除できます。",
+      "empty": "現在のストレージに添付ファイルはありません",
+      "open": "添付ファイルを開く",
+      "orphan": "孤立ファイル",
+      "referenced-count": "{{count}} 件の会話で参照中",
+      "delete-confirm": "添付ファイル {{name}} を削除しますか？",
+      "delete-referenced-confirm": "添付ファイル {{name}} はまだ {{count}} 件の会話で参照されています。削除すると画像が無効になります。続行しますか？"
+    },
     "logger": {
       "title": "サービスログ",
       "console": "コンソール",

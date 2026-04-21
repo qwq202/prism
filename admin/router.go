@@ -41,6 +41,9 @@ func Register(app *gin.RouterGroup) {
 
 	app.POST("/admin/market/update", UpdateMarketAPI)
 
+	app.GET("/admin/attachment/list", ListAttachmentAPI)
+	app.POST("/admin/attachment/delete", DeleteAttachmentAPI)
+
 	app.GET("/admin/logger/list", ListLoggerAPI)
 	app.GET("/admin/logger/download", DownloadLoggerAPI)
 	app.GET("/admin/logger/console", ConsoleLoggerAPI)
