@@ -7,10 +7,6 @@ export let appLogo =
   localStorage.getItem("app_logo") ||
   import.meta.env.VITE_APP_LOGO ||
   "/favicon.ico";
-export let blobEndpoint =
-  localStorage.getItem("blob_endpoint") ||
-  import.meta.env.VITE_BLOB_ENDPOINT ||
-  "https://blob.coai.dev";
 export let docsEndpoint =
   localStorage.getItem("docs_url") ||
   import.meta.env.VITE_DOCS_ENDPOINT ||
@@ -98,15 +94,6 @@ export function setDocsUrl(url: string): void {
   docsEndpoint = url;
 }
 
-export function setBlobEndpoint(endpoint: string): void {
-  /**
-   * set the blob endpoint in localStorage
-   */
-  endpoint = endpoint.trim() || "https://blob.coai.dev";
-  setMemory("blob_endpoint", endpoint);
-  blobEndpoint = endpoint;
-}
-
 export function setBuyLink(link: string): void {
   /**
    * set the buy link in localStorage
@@ -115,4 +102,3 @@ export function setBuyLink(link: string): void {
   setMemory("buy_link", link);
   buyLink = link;
 }
-

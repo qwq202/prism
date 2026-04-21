@@ -19,7 +19,6 @@ export type GeneralState = {
   description: string;
   backend: string;
   docs: string;
-  file: string;
   pwa_manifest: string;
   gravatar: string;
   debug_mode: boolean;
@@ -203,7 +202,6 @@ export const initialSystemState: SystemProps = {
     title: "",
     backend: "",
     docs: "",
-    file: "",
     pwa_manifest: "",
     gravatar: "",
     debug_mode: false,

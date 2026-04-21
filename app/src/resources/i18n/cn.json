@@ -550,8 +550,8 @@
   "file": {
     "file": "文件",
     "upload": "上传",
-    "type": "支持 pdf, docx, pptx, xlsx, 图像, 文本等格式",
-    "drop": "拖拽文件到此处或点击上传",
+    "type": "仅支持图像上传",
+    "drop": "拖拽图片到此处或点击上传",
     "parse-error": "解析失败",
     "parse-error-prompt": "文件解析失败：{{reason}}",
     "parse-success-prompt": "文件解析成功: {{file}}",
@@ -568,7 +568,9 @@
     "number": "{{number}} 个文件",
     "zipper": "{{filename}} 和其他 {{number}} 个文件",
     "empty-file": "无内容文件",
-    "empty-file-prompt": "文件内容为空，已自动忽略"
+    "empty-file-prompt": "文件内容为空，已自动忽略",
+    "image-only": "当前仅支持上传图片",
+    "vision-model-required": "当前模型不支持图像识别"
   },
   "generate": {
     "title": "AI 项目生成器",

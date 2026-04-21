@@ -44,7 +44,6 @@ export const infoSlice = createSlice({
     payment_aggregation: getBooleanMemory("payment_aggregation", false),
     title: getMemory("title"),
     logo: getMemory("logo"),
-    file: getMemory("file"),
     docs: getMemory("docs"),
     announcement: getMemory("announcement"),
     buy_link: getMemory("buy_link"),
@@ -78,7 +77,6 @@ export const infoSlice = createSlice({
       state.payment = form.payment ?? [];
       state.title = form.title ?? "";
       state.logo = form.logo ?? "";
-      state.file = form.file ?? "";
       state.docs = form.docs ?? "";
       state.announcement = form.announcement ?? "";
       state.buy_link = form.buy_link ?? "";
@@ -91,7 +89,6 @@ export const infoSlice = createSlice({
       };
       setMemory("title", state.title);
       setMemory("logo", state.logo);
-      setMemory("file", state.file);
       setMemory("docs", state.docs);
       setMemory("announcement", state.announcement);
       setMemory("buy_link", state.buy_link);

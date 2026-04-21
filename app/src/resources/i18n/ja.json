@@ -330,8 +330,8 @@
   "percent": "{{cent}}オフ",
   "file": {
     "upload": "アップロード",
-    "type": "pdf、docx、pptx、xlsx、画像、テキスト、その他の形式をサポート",
-    "drop": "ここにファイルをドロップするか、クリックしてアップロードしてください",
+    "type": "画像アップロードのみサポート",
+    "drop": "ここに画像をドロップするか、クリックしてアップロードしてください",
     "parse-error": "解析に失敗しました",
     "parse-error-prompt": "解析に失敗しました: {{reason}}",
     "max-length": "コンテンツが長すぎます",
@@ -349,7 +349,9 @@
     "file": "ファイル",
     "parse-success-prompt": "ファイルが正常に解析されました: {{file}}",
     "uploading": "ファイルのアップロード中…",
-    "uploading-prompt": "ファイルをアップロードしています。しばらくお待ちください"
+    "uploading-prompt": "画像をアップロードしています。しばらくお待ちください",
+    "image-only": "画像のみアップロードできます",
+    "vision-model-required": "現在のモデルは画像認識に対応していません"
   },
   "generate": {
     "title": "AIプロジェクトビルダー",

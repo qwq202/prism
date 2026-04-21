@@ -218,22 +218,6 @@ function General({ data, dispatch, onChange }: CompProps<GeneralState>) {
         })}
       </ParagraphDescription>
       <ParagraphItem>
-        <Label>{t("admin.system.file")}</Label>
-        <Input
-          value={data.file}
-          onChange={(e) =>
-            dispatch({
-              type: "update:general.file",
-              value: e.target.value,
-            })
-          }
-          placeholder={t("admin.system.filePlaceholder")}
-        />
-      </ParagraphItem>
-      <ParagraphDescription border>
-        {t("admin.system.fileTip")}
-      </ParagraphDescription>
-      <ParagraphItem>
         <Label>PWA Manifest</Label>
         <JSONEditorProvider
           value={data.pwa_manifest ?? ""}

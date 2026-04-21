@@ -2,7 +2,6 @@ import axios from "axios";
 import {
   setAppLogo,
   setAppName,
-  setBlobEndpoint,
   setBuyLink,
   setDocsUrl,
 } from "@/conf/env.ts";
@@ -14,7 +13,6 @@ export type SiteInfo = {
   title: string;
   logo: string;
   docs: string;
-  file: string;
   backend?: string;
   currency: string;
   announcement: string;
@@ -45,7 +43,6 @@ export async function getSiteInfo(): Promise<SiteInfo> {
       title: "",
       logo: "",
       docs: "",
-      file: "",
       backend: undefined,
       currency: "cny",
       announcement: "",
@@ -79,7 +76,6 @@ export function syncSiteInfo() {
     setAppName(info.title);
     setAppLogo(info.logo);
     setDocsUrl(info.docs);
-    setBlobEndpoint(info.file);
     setBuyLink(info.buy_link);
     initGoogleAnalytics(info.ga_tracking_id);
 

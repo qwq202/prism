@@ -403,8 +403,8 @@
   "file": {
     "file": "檔案",
     "upload": "上傳檔案",
-    "type": "支援 PDF、DOCX、PPTX、XLSX、圖片、文字等格式",
-    "drop": "將檔案拖曳至此處或點選上傳",
+    "type": "僅支援圖像上傳",
+    "drop": "將圖片拖曳至此處或點選上傳",
     "parse-error": "解析失敗",
     "parse-error-prompt": "解析失敗：{{reason}}",
     "max-length": "內容過長",
@@ -421,7 +421,9 @@
     "empty-file-prompt": "檔案內容為空，已自動忽略",
     "parse-success-prompt": "檔案解析成功: {{file}}",
     "uploading": "文件上傳中...",
-    "uploading-prompt": "正在上傳文件中，請耐心等待"
+    "uploading-prompt": "正在上傳圖片中，請耐心等待",
+    "image-only": "目前僅支援上傳圖片",
+    "vision-model-required": "當前模型不支援圖像識別"
   },
   "generate": {
     "title": "AI 專案產生器",

@@ -153,7 +153,13 @@ function FileProvider({ files, dispatch }: FileProviderProps) {
               type: "remove",
               payload: id,
             });
-            return t("file.parse-error-prompt", { reason: error.message });
+            const reason =
+              error.message === "The current model does not support image recognition"
+                ? t("file.vision-model-required")
+                : error.message === "Only image uploads are supported"
+                  ? t("file.image-only")
+                  : error.message;
+            return t("file.parse-error-prompt", { reason });
           },
         });
       }
@@ -506,15 +512,7 @@ function FileInput({ id, loading, className, handleEvent }: FileInputProps) {
 
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           {[
-            { icon: FileIcon, text: "Text" },
-            { icon: FileVideo2Icon, text: "PPT" },
-            { icon: FileDigitIcon, text: "Word" },
-            { icon: FileTextIcon, text: "PDF" },
-            { icon: FileSpreadsheetIcon, text: "Excel" },
             { icon: FileImageIcon, text: "Image" },
-            { icon: FileAudioIcon, text: "Audio" },
-            { icon: FileCodeIcon, text: "Code" },
-            { icon: FileJsonIcon, text: "Data" },
           ].map((item, index) => (
             <motion.div
               key={index}
@@ -538,7 +536,7 @@ function FileInput({ id, loading, className, handleEvent }: FileInputProps) {
         type="file"
         className={className}
         onChange={(e) => handleEvent(Array.from(e.target?.files || []))}
-        accept="*"
+        accept="image/*"
         style={{ display: "none" }}
         multiple={true}
         // on transfer file

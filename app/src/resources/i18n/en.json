@@ -330,8 +330,8 @@
   "percent": "{{cent}}0%",
   "file": {
     "upload": "Upload",
-    "type": "Supports pdf, docx, pptx, xlsx, image, text and other formats",
-    "drop": "Drag and drop files here or click to upload",
+    "type": "Only image uploads are supported",
+    "drop": "Drag and drop images here or click to upload",
     "parse-error": "Parse Error",
     "parse-error-prompt": "Parse Error: {{reason}}",
     "max-length": "Content too long",
@@ -349,7 +349,9 @@
     "file": "Files",
     "parse-success-prompt": "File parsed successfully: {{file}}",
     "uploading": "File upload on the way...",
-    "uploading-prompt": "Uploading file, please be patient"
+    "uploading-prompt": "Uploading image, please be patient",
+    "image-only": "Only image uploads are supported",
+    "vision-model-required": "The current model does not support image recognition"
   },
   "generate": {
     "title": "AI Project Generator",
