@@ -16,6 +16,7 @@ import { ScrollArea } from "@/components/ui/scroll-area.tsx";
 type SelectOption = {
   value: string;
   label: string;
+  desc?: string;
 };
 
 type InlineSelectItemProps = {
@@ -47,8 +48,19 @@ function InlineSelectItem({
         </SelectTrigger>
         <SelectContent>
           {options.map((opt) => (
-            <SelectItem key={opt.value} value={opt.value}>
-              {opt.label}
+            <SelectItem
+              key={opt.value}
+              value={opt.value}
+              textValue={opt.label}
+            >
+              {opt.desc ? (
+                <div className="pz-option">
+                  <span className="pz-option-label">{opt.label}</span>
+                  <span className="pz-option-desc">{opt.desc}</span>
+                </div>
+              ) : (
+                opt.label
+              )}
             </SelectItem>
           ))}
         </SelectContent>
@@ -96,20 +108,51 @@ function Personalization() {
     },
   ];
 
-  const levelOptions: SelectOption[] = [
+  const warmthOptions: SelectOption[] = [
+    {
+      value: "high",
+      label: t("settings.personalization.options.level.high"),
+      desc: t("settings.personalization.options.level.high-desc-warmth"),
+    },
     {
       value: "default",
       label: t("settings.personalization.options.level.default"),
     },
-    { value: "low", label: t("settings.personalization.options.level.low") },
     {
-      value: "medium",
-      label: t("settings.personalization.options.level.medium"),
+      value: "low",
+      label: t("settings.personalization.options.level.low"),
+      desc: t("settings.personalization.options.level.low-desc-warmth"),
     },
-    { value: "high", label: t("settings.personalization.options.level.high") },
+  ];
+
+  const enthusiasmOptions: SelectOption[] = [
+    {
+      value: "high",
+      label: t("settings.personalization.options.level.high"),
+      desc: t("settings.personalization.options.level.high-desc-enthusiasm"),
+    },
+    {
+      value: "default",
+      label: t("settings.personalization.options.level.default"),
+    },
+    {
+      value: "low",
+      label: t("settings.personalization.options.level.low"),
+      desc: t("settings.personalization.options.level.low-desc-enthusiasm"),
+    },
   ];
 
   const listOptions: SelectOption[] = [
+    {
+      value: "structured",
+      label: t("settings.personalization.options.list.structured"),
+      desc: t("settings.personalization.options.list.structured-desc"),
+    },
+    {
+      value: "balanced",
+      label: t("settings.personalization.options.list.balanced"),
+      desc: t("settings.personalization.options.list.balanced-desc"),
+    },
     {
       value: "default",
       label: t("settings.personalization.options.list.default"),
@@ -117,18 +160,21 @@ function Personalization() {
     {
       value: "minimal",
       label: t("settings.personalization.options.list.minimal"),
-    },
-    {
-      value: "balanced",
-      label: t("settings.personalization.options.list.balanced"),
-    },
-    {
-      value: "structured",
-      label: t("settings.personalization.options.list.structured"),
+      desc: t("settings.personalization.options.list.minimal-desc"),
     },
   ];
 
   const emojiOptions: SelectOption[] = [
+    {
+      value: "expressive",
+      label: t("settings.personalization.options.emoji.expressive"),
+      desc: t("settings.personalization.options.emoji.expressive-desc"),
+    },
+    {
+      value: "light",
+      label: t("settings.personalization.options.emoji.light"),
+      desc: t("settings.personalization.options.emoji.light-desc"),
+    },
     {
       value: "default",
       label: t("settings.personalization.options.emoji.default"),
@@ -136,14 +182,7 @@ function Personalization() {
     {
       value: "none",
       label: t("settings.personalization.options.emoji.none"),
-    },
-    {
-      value: "light",
-      label: t("settings.personalization.options.emoji.light"),
-    },
-    {
-      value: "expressive",
-      label: t("settings.personalization.options.emoji.expressive"),
+      desc: t("settings.personalization.options.emoji.none-desc"),
     },
   ];
 
@@ -174,13 +213,13 @@ function Personalization() {
           <InlineSelectItem
             label={t("settings.personalization.warmth")}
             value={personaWarmth}
-            options={levelOptions}
+            options={warmthOptions}
             onChange={(v) => dispatch(settings.setPersonaWarmth(v))}
           />
           <InlineSelectItem
             label={t("settings.personalization.enthusiasm")}
             value={personaEnthusiasm}
-            options={levelOptions}
+            options={enthusiasmOptions}
             onChange={(v) => dispatch(settings.setPersonaEnthusiasm(v))}
           />
           <InlineSelectItem

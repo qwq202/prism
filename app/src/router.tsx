@@ -17,6 +17,9 @@ import { selectAdmin, selectAuthenticated, selectInit } from "@/store/auth.ts";
 import Index from "@/routes/Index.tsx";
 
 const Model = lazyFactor(() => import("@/routes/Model.tsx"));
+const Personalization = lazyFactor(
+  () => import("@/routes/Personalization.tsx"),
+);
 const Wallet = lazyFactor(() => import("@/routes/Wallet.tsx"));
 const Account = lazyFactor(() => import("@/routes/Account.tsx"));
 
@@ -57,6 +60,15 @@ const router = createBrowserRouter([
         id: "home",
         path: "",
         element: <Home />,
+      },
+      {
+        id: "personalization",
+        path: "personalization",
+        element: (
+          <Suspense>
+            <Personalization />
+          </Suspense>
+        ),
       },
       {
         id: "model",

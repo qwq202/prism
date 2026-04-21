@@ -482,21 +482,31 @@
         },
         "level": {
           "default": "Default",
-          "low": "Low",
+          "low": "Decrease",
+          "low-desc-warmth": "More professional, fact-focused",
+          "low-desc-enthusiasm": "More restrained, steady",
           "medium": "Medium",
-          "high": "High"
+          "high": "Increase",
+          "high-desc-warmth": "Warmer, more personal",
+          "high-desc-enthusiasm": "More energetic, upbeat"
         },
         "list": {
           "default": "Default",
           "minimal": "Use Less Often",
+          "minimal-desc": "More natural flow",
           "balanced": "Use When Helpful",
-          "structured": "Use More Often"
+          "balanced-desc": "Balance readability",
+          "structured": "Use More Often",
+          "structured-desc": "Clearer structure"
         },
         "emoji": {
           "default": "Default",
           "none": "Do Not Use",
+          "none-desc": "Plain text only",
           "light": "Occasionally",
-          "expressive": "Expressive"
+          "light-desc": "Just the right amount",
+          "expressive": "Expressive",
+          "expressive-desc": "Add expressive flair"
         }
       }
     }

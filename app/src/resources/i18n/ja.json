@@ -482,21 +482,31 @@
         },
         "level": {
           "default": "デフォルト",
-          "low": "小さく",
+          "low": "下げる",
+          "low-desc-warmth": "よりプロ、事実重視",
+          "low-desc-enthusiasm": "より落ち着き、安定感",
           "medium": "中距離",
-          "high": "かなり高い"
+          "high": "上げる",
+          "high-desc-warmth": "より親しみやすく",
+          "high-desc-enthusiasm": "より活発、元気"
         },
         "list": {
           "default": "デフォルト",
           "minimal": "できるだけ使用量を減らす",
+          "minimal-desc": "より自然な流れ",
           "balanced": "オンデマンド使用",
-          "structured": "より頻繁に使用される"
+          "balanced-desc": "読みやすさを重視",
+          "structured": "より頻繁に使用される",
+          "structured-desc": "より明確な構造"
         },
         "emoji": {
           "default": "デフォルト",
           "none": "無効",
+          "none-desc": "テキストのみ",
           "light": "臨時使用",
-          "expressive": "ある程度アクティブ"
+          "light-desc": "ちょうどいい量",
+          "expressive": "ある程度アクティブ",
+          "expressive-desc": "表現力を加える"
         }
       }
     }

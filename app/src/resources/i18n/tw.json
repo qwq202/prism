@@ -554,21 +554,31 @@
         },
         "level": {
           "default": "預設",
-          "low": "較低",
+          "low": "減弱",
+          "low-desc-warmth": "更專業、事實性更強",
+          "low-desc-enthusiasm": "更克制、更平穩",
           "medium": "中等",
-          "high": "較高"
+          "high": "增強",
+          "high-desc-warmth": "更友好、更親近",
+          "high-desc-enthusiasm": "更活躍、更有活力"
         },
         "list": {
           "default": "預設",
           "minimal": "盡量少用",
+          "minimal-desc": "更連貫自然",
           "balanced": "按需使用",
-          "structured": "更常使用"
+          "balanced-desc": "兼顧可讀性",
+          "structured": "更常使用",
+          "structured-desc": "結構更清晰"
         },
         "emoji": {
           "default": "預設",
           "none": "不使用",
+          "none-desc": "保持純文字",
           "light": "偶爾使用",
-          "expressive": "適度活潑"
+          "light-desc": "恰到好處",
+          "expressive": "適度活潑",
+          "expressive-desc": "增添表達色彩"
         }
       }
     }

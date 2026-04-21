@@ -748,21 +748,31 @@
         },
         "level": {
           "default": "默认",
-          "low": "较低",
+          "low": "减弱",
+          "low-desc-warmth": "更专业、事实性更强",
+          "low-desc-enthusiasm": "更克制、更平稳",
           "medium": "中等",
-          "high": "较高"
+          "high": "增强",
+          "high-desc-warmth": "更友好、更亲近",
+          "high-desc-enthusiasm": "更活跃、更有活力"
         },
         "list": {
           "default": "默认",
           "minimal": "尽量少用",
+          "minimal-desc": "更连贯自然",
           "balanced": "按需使用",
-          "structured": "更常使用"
+          "balanced-desc": "兼顾可读性",
+          "structured": "更常使用",
+          "structured-desc": "结构更清晰"
         },
         "emoji": {
           "default": "默认",
           "none": "不使用",
+          "none-desc": "保持纯文字",
           "light": "偶尔使用",
-          "expressive": "适度活泼"
+          "light-desc": "恰到好处",
+          "expressive": "适度活泼",
+          "expressive-desc": "增添表达色彩"
         }
       }
     },
