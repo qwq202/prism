@@ -22,6 +22,96 @@ type Model = {
 
 export type FileArray = FileObject[];
 
+const GROK_IMAGE_MIME_TYPES = new Set(["image/jpeg", "image/jpg", "image/png"]);
+const GROK_IMAGE_EXTENSIONS = new Set(["jpg", "jpeg", "png"]);
+
+function getFileExtension(filename: string): string {
+  const segments = filename.toLowerCase().split(".");
+  return segments.length > 1 ? segments.at(-1) || "" : "";
+}
+
+function isGrokModel(modelId: string): boolean {
+  return modelId.toLowerCase().startsWith("grok");
+}
+
+function isGrokCompatibleImage(file: File): boolean {
+  const mimeType = file.type.toLowerCase();
+  if (GROK_IMAGE_MIME_TYPES.has(mimeType)) {
+    return true;
+  }
+  return GROK_IMAGE_EXTENSIONS.has(getFileExtension(file.name));
+}
+
+async function decodeImageFile(file: File): Promise<HTMLImageElement> {
+  const objectUrl = URL.createObjectURL(file);
+
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(image);
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error("Failed to decode image"));
+    };
+    image.src = objectUrl;
+  });
+}
+
+async function convertImageFileToPng(file: File): Promise<File> {
+  const image = await decodeImageFile(file);
+  const width = image.naturalWidth || image.width;
+  const height = image.naturalHeight || image.height;
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+
+  const context = canvas.getContext("2d");
+  if (!context) {
+    throw new Error("Failed to create canvas context");
+  }
+  context.drawImage(image, 0, 0, width, height);
+
+  const pngBlob = await new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) {
+        resolve(blob);
+      } else {
+        reject(new Error("Failed to encode png"));
+      }
+    }, "image/png");
+  });
+
+  const nextName = /\.[^.]+$/.test(file.name)
+    ? file.name.replace(/\.[^.]+$/, ".png")
+    : `${file.name}.png`;
+
+  return new File([pngBlob], nextName, {
+    type: "image/png",
+    lastModified: file.lastModified,
+  });
+}
+
+async function ensureGrokCompatibleImage(file: File, model: Model): Promise<File> {
+  if (!isGrokModel(model.id) || isGrokCompatibleImage(file)) {
+    return file;
+  }
+
+  try {
+    console.log(
+      `[parser] grok model received unsupported image type "${file.type || "unknown"}", converting to image/png`,
+    );
+    return await convertImageFileToPng(file);
+  } catch (error) {
+    console.warn(
+      "[parser] failed to convert image for grok compatibility, fallback to original file:",
+      error,
+    );
+    return file;
+  }
+}
+
 export async function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -62,8 +152,9 @@ export async function quickBlobParser(
       const couldLocalVision = model.vision_model;
       if (couldLocalVision && file.type.startsWith("image/")) {
         console.log("[parser] hit image/* file, using local parser");
+        const imageFile = await ensureGrokCompatibleImage(file, model);
         // parse image as base64 (e.g. result: data:image/png;base64,xxx)
-        const base64 = await fileToBase64(file);
+        const base64 = await fileToBase64(imageFile);
         return base64;
       }
 
