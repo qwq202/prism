@@ -82,19 +82,19 @@ type s3StorageState struct {
 	Endpoint       string `json:"endpoint" mapstructure:"endpoint"`
 	Region         string `json:"region" mapstructure:"region"`
 	Bucket         string `json:"bucket" mapstructure:"bucket"`
-	AccessKey      string `json:"access_key" mapstructure:"access_key"`
-	SecretKey      string `json:"secret_key" mapstructure:"secret_key"`
-	PublicBaseURL  string `json:"public_base_url" mapstructure:"public_base_url"`
-	ForcePathStyle bool   `json:"force_path_style" mapstructure:"force_path_style"`
+	AccessKey      string `json:"access_key" mapstructure:"accesskey"`
+	SecretKey      string `json:"secret_key" mapstructure:"secretkey"`
+	PublicBaseURL  string `json:"public_base_url" mapstructure:"publicbaseurl"`
+	ForcePathStyle bool   `json:"force_path_style" mapstructure:"forcepathstyle"`
 }
 
 type r2StorageState struct {
-	AccountID     string `json:"account_id" mapstructure:"account_id"`
+	AccountID     string `json:"account_id" mapstructure:"accountid"`
 	Jurisdiction  string `json:"jurisdiction" mapstructure:"jurisdiction"`
 	Bucket        string `json:"bucket" mapstructure:"bucket"`
-	AccessKey     string `json:"access_key" mapstructure:"access_key"`
-	SecretKey     string `json:"secret_key" mapstructure:"secret_key"`
-	PublicBaseURL string `json:"public_base_url" mapstructure:"public_base_url"`
+	AccessKey     string `json:"access_key" mapstructure:"accesskey"`
+	SecretKey     string `json:"secret_key" mapstructure:"secretkey"`
+	PublicBaseURL string `json:"public_base_url" mapstructure:"publicbaseurl"`
 }
 
 type commonState struct {
@@ -105,7 +105,7 @@ type commonState struct {
 	Size        int64          `json:"size" mapstructure:"size"`
 	ImageStore  bool           `json:"image_store" mapstructure:"imagestore"`
 	PromptStore bool           `json:"prompt_store" mapstructure:"promptstore"`
-	StorageMode string         `json:"storage_mode" mapstructure:"storage_mode"`
+	StorageMode string         `json:"storage_mode" mapstructure:"storagemode"`
 	S3          s3StorageState `json:"s3" mapstructure:"s3"`
 	R2          r2StorageState `json:"r2" mapstructure:"r2"`
 }
