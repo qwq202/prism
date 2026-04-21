@@ -876,7 +876,10 @@ function StorageSettings({
       {data.storage_mode === "s3" && (
         <>
           <ParagraphItem>
-            <Label>{t("admin.system.storageEndpoint")}</Label>
+            <Label className={`flex flex-row items-center`}>
+              {t("admin.system.storageEndpoint")}
+              <Tips content={t("admin.system.storageEndpointTip")} />
+            </Label>
             <Input
               value={data.s3.endpoint}
               onChange={(e) =>
@@ -889,7 +892,10 @@ function StorageSettings({
             />
           </ParagraphItem>
           <ParagraphItem>
-            <Label>{t("admin.system.storageRegion")}</Label>
+            <Label className={`flex flex-row items-center`}>
+              {t("admin.system.storageRegion")}
+              <Tips content={t("admin.system.storageRegionTip")} />
+            </Label>
             <Input
               value={data.s3.region}
               onChange={(e) =>
@@ -902,7 +908,10 @@ function StorageSettings({
             />
           </ParagraphItem>
           <ParagraphItem>
-            <Label>{t("admin.system.storageBucket")}</Label>
+            <Label className={`flex flex-row items-center`}>
+              {t("admin.system.storageBucket")}
+              <Tips content={t("admin.system.storageBucketTip")} />
+            </Label>
             <Input
               value={data.s3.bucket}
               onChange={(e) =>
@@ -915,7 +924,10 @@ function StorageSettings({
             />
           </ParagraphItem>
           <ParagraphItem>
-            <Label>{t("admin.system.storageAccessKey")}</Label>
+            <Label className={`flex flex-row items-center`}>
+              {t("admin.system.storageAccessKey")}
+              <Tips content={t("admin.system.storageAccessKeyTip")} />
+            </Label>
             <Input
               value={data.s3.access_key}
               onChange={(e) =>
@@ -927,7 +939,10 @@ function StorageSettings({
             />
           </ParagraphItem>
           <ParagraphItem>
-            <Label>{t("admin.system.storageSecretKey")}</Label>
+            <Label className={`flex flex-row items-center`}>
+              {t("admin.system.storageSecretKey")}
+              <Tips content={t("admin.system.storageSecretKeyTip")} />
+            </Label>
             <Input
               value={data.s3.secret_key}
               onChange={(e) =>
@@ -939,7 +954,10 @@ function StorageSettings({
             />
           </ParagraphItem>
           <ParagraphItem>
-            <Label>{t("admin.system.storagePublicBaseUrl")}</Label>
+            <Label className={`flex flex-row items-center`}>
+              {t("admin.system.storagePublicBaseUrl")}
+              <Tips content={t("admin.system.storagePublicBaseUrlTip")} />
+            </Label>
             <Input
               value={data.s3.public_base_url}
               onChange={(e) =>
@@ -971,7 +989,10 @@ function StorageSettings({
       {data.storage_mode === "r2" && (
         <>
           <ParagraphItem>
-            <Label>{t("admin.system.storageR2AccountId")}</Label>
+            <Label className={`flex flex-row items-center`}>
+              {t("admin.system.storageR2AccountId")}
+              <Tips content={t("admin.system.storageR2AccountIdTip")} />
+            </Label>
             <Input
               value={data.r2.account_id}
               onChange={(e) =>
@@ -984,7 +1005,10 @@ function StorageSettings({
             />
           </ParagraphItem>
           <ParagraphItem>
-            <Label>{t("admin.system.storageR2Jurisdiction")}</Label>
+            <Label className={`flex flex-row items-center`}>
+              {t("admin.system.storageR2Jurisdiction")}
+              <Tips content={t("admin.system.storageR2JurisdictionTip")} />
+            </Label>
             <Input
               value={data.r2.jurisdiction}
               onChange={(e) =>
@@ -997,7 +1021,10 @@ function StorageSettings({
             />
           </ParagraphItem>
           <ParagraphItem>
-            <Label>{t("admin.system.storageBucket")}</Label>
+            <Label className={`flex flex-row items-center`}>
+              {t("admin.system.storageBucket")}
+              <Tips content={t("admin.system.storageBucketTip")} />
+            </Label>
             <Input
               value={data.r2.bucket}
               onChange={(e) =>
@@ -1010,7 +1037,10 @@ function StorageSettings({
             />
           </ParagraphItem>
           <ParagraphItem>
-            <Label>{t("admin.system.storageAccessKey")}</Label>
+            <Label className={`flex flex-row items-center`}>
+              {t("admin.system.storageAccessKey")}
+              <Tips content={t("admin.system.storageAccessKeyTip")} />
+            </Label>
             <Input
               value={data.r2.access_key}
               onChange={(e) =>
@@ -1022,7 +1052,10 @@ function StorageSettings({
             />
           </ParagraphItem>
           <ParagraphItem>
-            <Label>{t("admin.system.storageSecretKey")}</Label>
+            <Label className={`flex flex-row items-center`}>
+              {t("admin.system.storageSecretKey")}
+              <Tips content={t("admin.system.storageSecretKeyTip")} />
+            </Label>
             <Input
               value={data.r2.secret_key}
               onChange={(e) =>
@@ -1034,7 +1067,10 @@ function StorageSettings({
             />
           </ParagraphItem>
           <ParagraphItem>
-            <Label>{t("admin.system.storagePublicBaseUrl")}</Label>
+            <Label className={`flex flex-row items-center`}>
+              {t("admin.system.storagePublicBaseUrl")}
+              <Tips content={t("admin.system.storagePublicBaseUrlTip")} />
+            </Label>
             <Input
               value={data.r2.public_base_url}
               onChange={(e) =>

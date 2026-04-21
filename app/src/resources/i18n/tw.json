@@ -1167,7 +1167,15 @@
       },
       "storageMode_r2": "R2",
       "storageR2AccountId": "Account ID",
-      "storageR2Jurisdiction": "Jurisdiction"
+      "storageR2Jurisdiction": "Jurisdiction",
+      "storageEndpointTip": "物件儲存的S3 介面位址；R2 模式不用填這裡",
+      "storageRegionTip": "S3 區域，例如us-east-1；R2 固定使用auto",
+      "storageBucketTip": "要寫入檔案的儲存桶名稱",
+      "storageAccessKeyTip": "物件儲存的Access Key ID；R2 請填寫R2 API Token 產生的Access Key",
+      "storageSecretKeyTip": "物件儲存的Secret Access Key；R2 請填寫建立時顯示的Secret Key",
+      "storagePublicBaseUrlTip": "填物件的公有網路存取前綴，例如r2.dev 或自訂網域名稱；不要填入S3 API 位址",
+      "storageR2AccountIdTip": "Cloudflare 帳戶ID，不是S3 API 那一整段位址",
+      "storageR2JurisdictionTip": "普通桶留空；只有EU 或FedRAMP 限定桶才填eu 或fedramp"
     },
     "logger": {
       "title": "服務日誌",
