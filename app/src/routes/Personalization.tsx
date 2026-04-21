@@ -223,7 +223,6 @@ function Personalization() {
             </span>
           </div>
 
-          <div className="pz-divider" />
           <div className="pz-field">
             <span className="pz-field-label">
               {t("settings.personalization.nickname")}
@@ -240,7 +239,6 @@ function Personalization() {
             />
           </div>
 
-          <div className="pz-divider" />
           <div className="pz-field">
             <div className="pz-field-copy">
               <span className="pz-field-label">
