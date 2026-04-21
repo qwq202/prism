@@ -380,7 +380,8 @@ function Account() {
               <motion.div
                 className="bg-card shadow-sm rounded-lg p-4 transition-all border"
                 variants={contentVariants}
-                whileHover={{ y: -3 }}
+                whileHover={{ scale: 1.01 }}
+                transition={{ type: "spring", stiffness: 320, damping: 24 }}
               >
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-muted-foreground">
@@ -393,7 +394,8 @@ function Account() {
               <motion.div
                 className="bg-card shadow-sm rounded-lg p-4 transition-all border"
                 variants={contentVariants}
-                whileHover={{ y: -3 }}
+                whileHover={{ scale: 1.01 }}
+                transition={{ type: "spring", stiffness: 320, damping: 24 }}
               >
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-muted-foreground">
@@ -406,7 +408,8 @@ function Account() {
               <motion.div
                 className="bg-card shadow-sm rounded-lg p-4 transition-all border"
                 variants={contentVariants}
-                whileHover={{ y: -3 }}
+                whileHover={{ scale: 1.01 }}
+                transition={{ type: "spring", stiffness: 320, damping: 24 }}
               >
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-muted-foreground">
