@@ -4,7 +4,6 @@ import "@/assets/pages/home.less";
 import { Button } from "@/components/ui/button.tsx";
 import {
   ChevronDown,
-  Languages,
   MessageCircle,
   Shield,
   Wallet,
@@ -113,7 +112,6 @@ function ToolBar() {
       </div>
       <BarItem icon={<MessageCircle />} path={`/`} name={"chat"} />
       <BarItem icon={<LibraryBig />} path={`/model`} name={"model"} />
-      <BarItem icon={<Languages />} path={`/translate`} name={"translate"} />
       {/* <BarItem icon={<Compass />} path={`/preset`} name={"preset"} /> */}
       <BarItem icon={<Wallet />} path={`/wallet`} name={"wallet"} />
       {/* <BarItem icon={<DraftingCompass />} path={`/key`} name={"key"} /> */}

@@ -17,7 +17,6 @@ import { selectAdmin, selectAuthenticated, selectInit } from "@/store/auth.ts";
 import Index from "@/routes/Index.tsx";
 
 const Model = lazyFactor(() => import("@/routes/Model.tsx"));
-const Translate = lazyFactor(() => import("@/routes/Translate.tsx"));
 const Wallet = lazyFactor(() => import("@/routes/Wallet.tsx"));
 const Account = lazyFactor(() => import("@/routes/Account.tsx"));
 
@@ -65,15 +64,6 @@ const router = createBrowserRouter([
         element: (
           <Suspense>
             <Model />
-          </Suspense>
-        ),
-      },
-      {
-        id: "translate",
-        path: "translate",
-        element: (
-          <Suspense>
-            <Translate />
           </Suspense>
         ),
       },

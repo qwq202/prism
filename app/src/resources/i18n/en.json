@@ -1437,7 +1437,6 @@
   "bar": {
     "chat": "Chat",
     "model": "Model",
-    "translate": "Translate",
     "wallet": "Wallet",
     "log": "Log",
     "admin": "Admin",
@@ -1445,7 +1444,6 @@
     "account": "Accounts",
     "chat-full": "Chat",
     "model-full": "Model",
-    "translate-full": "Translator",
     "preset-full": "Discover",
     "wallet-full": "Wallet",
     "log-full": "Usage",
@@ -1763,24 +1761,5 @@
     "withdraw-failed": "Withdraw failed.",
     "withdraw-failed-prompt": "Withdrawal failed! Reason: {{reason}}",
     "invalid-amount": "Invalid amount"
-  },
-  "translate": {
-    "title": "Translate",
-    "subtitle": "A focused bilingual translation workspace",
-    "source": "Source language",
-    "target": "Target language",
-    "input": "Source text",
-    "output": "Translation",
-    "input-placeholder": "Type or paste the text you want to translate...",
-    "output-placeholder": "Your translation will appear here",
-    "action": "Translate",
-    "detected": "Supports 11 common languages",
-    "translating": "Translating...",
-    "shortcut": "Press Cmd/Ctrl + Enter to translate",
-    "empty": "Enter some text to translate first",
-    "same-language": "Source and target languages match, so the original text was returned.",
-    "characters": "chars",
-    "source-ready": "Source panel",
-    "result-ready": "Result panel"
   }
 }

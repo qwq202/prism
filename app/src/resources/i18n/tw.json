@@ -1586,8 +1586,6 @@
     "chat-full": "開始對話",
     "model": "模型",
     "model-full": "探索模型",
-    "translate": "翻譯",
-    "translate-full": "雙欄翻譯",
     "preset": "預設",
     "preset-full": "預設市場",
     "wallet": "錢包",
@@ -1765,24 +1763,5 @@
       "pending": "待結算",
       "rate": "返傭率"
     }
-  },
-  "translate": {
-    "title": "翻譯",
-    "subtitle": "雙欄即時翻譯工作台",
-    "source": "來源語言",
-    "target": "目標語言",
-    "input": "原文",
-    "output": "譯文",
-    "input-placeholder": "輸入或貼上需要翻譯的內容...",
-    "output-placeholder": "翻譯結果會顯示在這裡",
-    "action": "翻譯",
-    "detected": "支援 11 種常用語言互譯",
-    "translating": "翻譯中...",
-    "shortcut": "按 Cmd/Ctrl + Enter 快速翻譯",
-    "empty": "請先輸入需要翻譯的內容",
-    "same-language": "來源語言與目標語言相同，已直接返回原文",
-    "characters": "字元",
-    "source-ready": "原文區域",
-    "result-ready": "譯文區域"
   }
 }
