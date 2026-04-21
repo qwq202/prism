@@ -70,8 +70,8 @@ func TestGetChatBodyDisablesStoreForXAIImageRequests(t *testing.T) {
 	if len(body.Input) != 1 || len(body.Input[0].Content) != 2 {
 		t.Fatalf("unexpected input payload shape: %#v", body.Input)
 	}
-	if body.Input[0].Content[1].Detail == nil || *body.Input[0].Content[1].Detail != "high" {
-		t.Fatalf("expected input image detail to be high")
+	if body.Input[0].Content[1].Detail != nil {
+		t.Fatalf("expected xai input image detail to be omitted")
 	}
 }
 
@@ -91,5 +91,27 @@ func TestGetChatBodyLeavesStoreUnsetForTextOnlyXAIRequests(t *testing.T) {
 	body := instance.GetChatBody(props)
 	if body.Store != nil {
 		t.Fatalf("expected text-only xai requests to leave store unset")
+	}
+}
+
+func TestGetChatBodyKeepsDetailForNonXAIImageRequests(t *testing.T) {
+	instance := &ChatInstance{}
+	props := &adaptercommon.ChatProps{
+		Model:       "gpt-4.1",
+		ChannelType: globals.OpenAIResponsesChannelType,
+		Message: []globals.Message{
+			{
+				Role:    globals.User,
+				Content: "![image](https://example.com/test.png)\n这是什么",
+			},
+		},
+	}
+
+	body := instance.GetChatBody(props)
+	if len(body.Input) != 1 || len(body.Input[0].Content) != 2 {
+		t.Fatalf("unexpected input payload shape: %#v", body.Input)
+	}
+	if body.Input[0].Content[1].Detail == nil || *body.Input[0].Content[1].Detail != "high" {
+		t.Fatalf("expected non-xai input image detail to stay high")
 	}
 }

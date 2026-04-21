@@ -136,8 +136,9 @@ async function ensureGrokCompatibleImage(file: File, model: Model): Promise<File
   try {
     if (isGrokCompatibleImage(file)) {
       console.log(
-        `[parser] xai image upload detected "${file.type || "unknown"}", normalizing to image/png for stable decoding`,
+        `[parser] xai image upload detected compatible type "${file.type || "unknown"}", keeping original bytes`,
       );
+      return file;
     } else {
       console.log(
         `[parser] xai image upload received unsupported image type "${file.type || "unknown"}", converting to image/png`,

@@ -66,11 +66,15 @@ func formatInputMessage(props *adaptercommon.ChatProps, message globals.Message)
 				}
 			}
 
-			items = append(items, InputMessageContent{
+			item := InputMessageContent{
 				Type:     "input_image",
 				ImageURL: &url,
-				Detail:   &imageDetail,
-			})
+			}
+			if props == nil || props.ChannelType != globals.XAIChannelType {
+				item.Detail = &imageDetail
+			}
+
+			items = append(items, item)
 		}
 
 		return &InputMessage{
