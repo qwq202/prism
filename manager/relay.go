@@ -13,7 +13,7 @@ func ModelAPI(c *gin.Context) {
 }
 
 func MarketAPI(c *gin.Context) {
-	c.JSON(http.StatusOK, admin.MarketInstance.GetModels())
+	c.JSON(http.StatusOK, admin.MarketInstance.GetViewModels())
 }
 
 func ChargeAPI(c *gin.Context) {

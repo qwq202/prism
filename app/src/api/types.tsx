@@ -75,6 +75,7 @@ export type Message = {
 export type Model = {
   id: string;
   name: string;
+  channel_type?: string;
   description?: string;
   free: boolean;
   auth: boolean;

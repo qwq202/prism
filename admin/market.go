@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"chat/channel"
 	"chat/globals"
 	"chat/utils"
 	"fmt"
@@ -23,6 +24,22 @@ type MarketModel struct {
 	Avatar          string   `json:"avatar" mapstructure:"avatar"`
 	Tag             ModelTag `json:"tag" mapstructure:"tag"`
 }
+
+type MarketModelView struct {
+	Id              string   `json:"id"`
+	Name            string   `json:"name"`
+	Description     string   `json:"description"`
+	Default         bool     `json:"default"`
+	HighContext     bool     `json:"high_context"`
+	FunctionCalling bool     `json:"function_calling"`
+	VisionModel     bool     `json:"vision_model"`
+	OCRModel        bool     `json:"ocr_model"`
+	ReverseModel    bool     `json:"reverse_model"`
+	ThinkingModel   bool     `json:"thinking_model"`
+	Avatar          string   `json:"avatar"`
+	Tag             ModelTag `json:"tag"`
+	ChannelType     string   `json:"channel_type,omitempty"`
+}
 type MarketModelList []MarketModel
 
 type Market struct {
@@ -43,6 +60,37 @@ func NewMarket() *Market {
 
 func (m *Market) GetModels() MarketModelList {
 	return m.Models
+}
+
+func (m *Market) GetViewModels() []MarketModelView {
+	items := make([]MarketModelView, 0, len(m.Models))
+
+	for _, model := range m.Models {
+		channelType := ""
+		if channel.ConduitInstance != nil {
+			if seq := channel.ConduitInstance.HitSequence(model.Id); len(seq) > 0 && seq[0] != nil {
+				channelType = seq[0].GetType()
+			}
+		}
+
+		items = append(items, MarketModelView{
+			Id:              model.Id,
+			Name:            model.Name,
+			Description:     model.Description,
+			Default:         model.Default,
+			HighContext:     model.HighContext,
+			FunctionCalling: model.FunctionCalling,
+			VisionModel:     model.VisionModel,
+			OCRModel:        model.OCRModel,
+			ReverseModel:    model.ReverseModel,
+			ThinkingModel:   model.ThinkingModel,
+			Avatar:          model.Avatar,
+			Tag:             model.Tag,
+			ChannelType:     channelType,
+		})
+	}
+
+	return items
 }
 
 func (m *Market) GetModel(id string) *MarketModel {

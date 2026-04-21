@@ -15,6 +15,7 @@ export type FileObject = {
 
 type Model = {
   id: string;
+  channel_type?: string;
   ocr_model?: boolean;
   vision_model?: boolean;
   reverse_model?: boolean;
@@ -30,8 +31,8 @@ function getFileExtension(filename: string): string {
   return segments.length > 1 ? segments.at(-1) || "" : "";
 }
 
-function isGrokModel(modelId: string): boolean {
-  return modelId.toLowerCase().startsWith("grok");
+function isXAIChannelModel(model: Model): boolean {
+  return (model.channel_type || "").toLowerCase() === "xai";
 }
 
 function isGrokCompatibleImage(file: File): boolean {
@@ -94,7 +95,7 @@ async function convertImageFileToPng(file: File): Promise<File> {
 }
 
 async function ensureGrokCompatibleImage(file: File, model: Model): Promise<File> {
-  if (!isGrokModel(model.id) || isGrokCompatibleImage(file)) {
+  if (!isXAIChannelModel(model) || isGrokCompatibleImage(file)) {
     return file;
   }
 
