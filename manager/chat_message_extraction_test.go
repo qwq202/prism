@@ -76,6 +76,39 @@ func TestExtractAssistantMessageFromBufferPreservesReasoningContent(t *testing.T
 	}
 }
 
+func TestExtractAssistantMessageFromBufferPreservesVisibleTextAndToolCalls(t *testing.T) {
+	buffer := &utils.Buffer{}
+	toolCalls := globals.ToolCalls{
+		{
+			Type: "function",
+			Id:   "memory-tool-1",
+			Function: globals.ToolCallFunction{
+				Name:      "memory_tool",
+				Arguments: "{\"action\":\"create\"}",
+			},
+		},
+	}
+
+	buffer.AddToolCalls(&toolCalls)
+	buffer.WriteChunk(&globals.Chunk{
+		Content: "已经帮你记住了。",
+	})
+
+	message := extractAssistantMessageFromBuffer(buffer, false)
+
+	if message.Content != "已经帮你记住了。" {
+		t.Fatalf("expected visible assistant content to be preserved, got %q", message.Content)
+	}
+
+	if message.ToolCalls == nil || len(*message.ToolCalls) != 1 {
+		t.Fatalf("expected tool calls to be preserved alongside visible content, got %#v", message.ToolCalls)
+	}
+
+	if (*message.ToolCalls)[0].Function.Name != "memory_tool" {
+		t.Fatalf("unexpected tool call payload: %#v", (*message.ToolCalls)[0])
+	}
+}
+
 func TestExtractAssistantMessageFromBufferMetadataOnlyResponse(t *testing.T) {
 	buffer := &utils.Buffer{}
 	buffer.WriteChunk(&globals.Chunk{
