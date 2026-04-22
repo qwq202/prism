@@ -168,33 +168,11 @@ func TestGetChatBodyAddsImageAndVideoUnderstandingTools(t *testing.T) {
 	if body.Tools[1].Type != "x_search" || body.Tools[1].EnableVideoUnderstanding == nil || !*body.Tools[1].EnableVideoUnderstanding {
 		t.Fatalf("expected x_search to enable video understanding, got %#v", body.Tools[1])
 	}
-	if len(body.Include) != 1 || body.Include[0] != "verbose_streaming" {
-		t.Fatalf("expected xai stream body to request verbose streaming, got %#v", body.Include)
+	if body.Include != nil {
+		t.Fatalf("expected xai responses body to omit include, got %#v", body.Include)
 	}
 	if body.ResponseFormat == nil {
 		t.Fatalf("expected response format to pass through")
-	}
-}
-
-func TestGetChatBodyOmitsVerboseStreamingForNonReasoningModel(t *testing.T) {
-	instance := &ChatInstance{}
-	props := &adaptercommon.ChatProps{
-		Model:           "grok-4-1-fast-non-reasoning",
-		EnableWebSearch: true,
-		Message: []globals.Message{
-			{
-				Role:    globals.User,
-				Content: "帮我搜一下",
-			},
-		},
-	}
-
-	body := instance.GetChatBody(props, true)
-	if len(body.Tools) != 1 || body.Tools[0].Type != "web_search" {
-		t.Fatalf("expected builtin web_search tool, got %#v", body.Tools)
-	}
-	if body.Include != nil {
-		t.Fatalf("expected non-reasoning xai model to omit include, got %#v", body.Include)
 	}
 }
 
