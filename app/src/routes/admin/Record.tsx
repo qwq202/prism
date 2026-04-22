@@ -39,6 +39,20 @@ import { RotateCw, Search, Activity, DollarSign, Zap, Clock } from "lucide-react
 import { mobile } from "@/utils/device.ts";
 import { cn } from "@/components/ui/lib/utils.ts";
 
+const defaultRecordQuery: RecordQuery = {
+  type: RecordType.All,
+  show_channel: true,
+};
+
+const defaultRecordInput = {
+  username: "",
+  model: "",
+  token_name: "",
+  start_time: "",
+  end_time: "",
+  type: RecordType.All as RecordType,
+};
+
 function StatCard({
   title,
   value,
@@ -85,17 +99,8 @@ function RecordTable() {
   const [total, setTotal] = useState(1);
   const [records, setRecords] = useState<BillingRecord[]>([]);
   const [loading, setLoading] = useState(false);
-  const [query, setQuery] = useState<RecordQuery>({
-    type: RecordType.All,
-    show_channel: true,
-  });
-  const [input, setInput] = useState({
-    username: "",
-    model: "",
-    token_name: "",
-    start_time: "",
-    end_time: "",
-  });
+  const [query, setQuery] = useState<RecordQuery>(defaultRecordQuery);
+  const [input, setInput] = useState(defaultRecordInput);
 
   const sync = async (p = page, q = query) => {
     setLoading(true);
@@ -116,7 +121,7 @@ function RecordTable() {
 
   const handleSearch = async () => {
     const q: RecordQuery = {
-      type: query.type,
+      type: input.type,
       username: input.username || undefined,
       model: input.model || undefined,
       token_name: input.token_name || undefined,
@@ -129,6 +134,21 @@ function RecordTable() {
     await sync(0, q);
   };
 
+  const handleReset = async () => {
+    setInput(defaultRecordInput);
+    setQuery(defaultRecordQuery);
+    setPage(0);
+    await sync(0, defaultRecordQuery);
+  };
+
+  const handleEnterSearch = async (
+    event: React.KeyboardEvent<HTMLInputElement>,
+  ) => {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    await handleSearch();
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-2 items-end">
@@ -136,18 +156,21 @@ function RecordTable() {
           placeholder={t("record.cond.username-placeholder")}
           value={input.username}
           onChange={(e) => setInput({ ...input, username: e.target.value })}
+          onKeyDown={handleEnterSearch}
           className="w-36"
         />
         <Input
           placeholder={t("record.cond.model-placeholder")}
           value={input.model}
           onChange={(e) => setInput({ ...input, model: e.target.value })}
+          onKeyDown={handleEnterSearch}
           className="w-36"
         />
         <Input
           placeholder={t("record.cond.token-name-placeholder")}
           value={input.token_name}
           onChange={(e) => setInput({ ...input, token_name: e.target.value })}
+          onKeyDown={handleEnterSearch}
           className="w-36"
         />
         <div className="flex flex-col gap-0.5">
@@ -156,6 +179,7 @@ function RecordTable() {
             type="date"
             value={input.start_time}
             onChange={(e) => setInput({ ...input, start_time: e.target.value })}
+            onKeyDown={handleEnterSearch}
             className="w-36"
           />
         </div>
@@ -165,12 +189,15 @@ function RecordTable() {
             type="date"
             value={input.end_time}
             onChange={(e) => setInput({ ...input, end_time: e.target.value })}
+            onKeyDown={handleEnterSearch}
             className="w-36"
           />
         </div>
         <Select
-          value={query.type ?? RecordType.All}
-          onValueChange={(v) => setQuery({ ...query, type: v as RecordType })}
+          value={input.type}
+          onValueChange={(v) =>
+            setInput({ ...input, type: v as RecordType })
+          }
         >
           <SelectTrigger className="w-28">
             <SelectValue />
@@ -187,7 +214,7 @@ function RecordTable() {
           <Search className="w-4 h-4" />
         </Button>
         <Button
-          onClick={() => sync()}
+          onClick={handleReset}
           variant="outline"
           size="icon"
           disabled={loading}

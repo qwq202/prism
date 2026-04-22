@@ -87,6 +87,38 @@ func resolveChannelNameByModel(model string) string {
 	return strings.Join(names, ", ")
 }
 
+func buildRecordTimeRange(value string, isEnd bool) (string, error) {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return "", nil
+	}
+
+	layouts := []string{
+		"2006-01-02",
+		time.RFC3339,
+		"2006-01-02 15:04:05",
+		"2006-01-02T15:04:05",
+	}
+
+	for _, layout := range layouts {
+		parsed, err := time.ParseInLocation(layout, value, time.Local)
+		if err != nil {
+			continue
+		}
+
+		if layout == "2006-01-02" {
+			if isEnd {
+				return parsed.AddDate(0, 0, 1).Format("2006-01-02 15:04:05"), nil
+			}
+			return parsed.Format("2006-01-02 15:04:05"), nil
+		}
+
+		return parsed.Format("2006-01-02 15:04:05"), nil
+	}
+
+	return "", fmt.Errorf("invalid time format: %s", value)
+}
+
 func ListRecords(db *sql.DB, isAdmin bool, userId int64, page int64, query RecordQuery) (RecordData, error) {
 	var conditions []string
 	var args []interface{}
@@ -103,18 +135,30 @@ func ListRecords(db *sql.DB, isAdmin bool, userId int64, page int64, query Recor
 	}
 
 	if query.StartTime != "" {
+		startTime, err := buildRecordTimeRange(query.StartTime, false)
+		if err != nil {
+			return RecordData{}, err
+		}
 		conditions = append(conditions, "b.created_at >= ?")
-		args = append(args, query.StartTime)
+		args = append(args, startTime)
 	}
 
 	if query.EndTime != "" {
-		conditions = append(conditions, "b.created_at <= ?")
-		args = append(args, query.EndTime)
+		endTime, err := buildRecordTimeRange(query.EndTime, true)
+		if err != nil {
+			return RecordData{}, err
+		}
+		if len(strings.TrimSpace(query.EndTime)) == len("2006-01-02") {
+			conditions = append(conditions, "b.created_at < ?")
+		} else {
+			conditions = append(conditions, "b.created_at <= ?")
+		}
+		args = append(args, endTime)
 	}
 
 	if query.TokenName != "" {
-		conditions = append(conditions, "b.token_name = ?")
-		args = append(args, query.TokenName)
+		conditions = append(conditions, "b.token_name LIKE ?")
+		args = append(args, "%"+query.TokenName+"%")
 	}
 
 	if query.Model != "" {
