@@ -16,7 +16,6 @@ import { useEffectAsync } from "@/utils/hook.ts";
 import { Switch } from "@/components/ui/switch.tsx";
 import {
   Activity,
-  BookDashed,
   ChevronDown,
   ChevronUp,
   Maximize,
@@ -33,12 +32,6 @@ import { NumberInput } from "@/components/ui/number-input.tsx";
 import { Input } from "@/components/ui/input.tsx";
 import { MultiCombobox } from "@/components/ui/multi-combobox.tsx";
 import { Button } from "@/components/ui/button.tsx";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu.tsx";
 import { withNotify } from "@/api/common.ts";
 import { dispatchSubscriptionData } from "@/store/globals.ts";
 import { useDispatch } from "react-redux";
@@ -309,26 +302,6 @@ function reducer(state: PlanConfig, action: Record<string, any>): PlanConfig {
           return plan;
         }),
       };
-    case "import-item":
-      const { level, id, target } = action.payload;
-      const plan = state.plans.find((p: Plan) => p.level === level);
-      const item = plan?.items.find((i: PlanItem) => i.id === id);
-      if (!plan || !item) return state;
-
-      return {
-        ...state,
-        plans: state.plans.map((p: Plan) => {
-          if (p.level === target) {
-            const items = p.items;
-            items.push(item);
-            return {
-              ...p,
-              items,
-            };
-          }
-          return p;
-        }),
-      };
     case "set-discount":
       return {
         ...state,
@@ -362,57 +335,6 @@ function reducer(state: PlanConfig, action: Record<string, any>): PlanConfig {
     default:
       throw new Error();
   }
-}
-
-type ImportActionProps = {
-  plans: Plan[];
-  level: number;
-  dispatch: (action: Record<string, any>) => void;
-};
-
-type ImportActionItem = {
-  item: PlanItem;
-  level: number;
-};
-
-function ImportAction({ plans, level, dispatch }: ImportActionProps) {
-  const { t } = useTranslation();
-  const usableItems = useMemo((): ImportActionItem[] => {
-    const raw = plans.filter((p: Plan) => p.level !== level);
-    return raw
-      .map((p: Plan) =>
-        p.items.map((item: PlanItem) => ({ level: p.level, item })),
-      )
-      .flat();
-  }, [plans, level]);
-
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant={`outline`}>
-          <BookDashed className={`h-4 w-4 mr-1`} />
-          {t("admin.plan.import-item")}
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent>
-        {usableItems.map(
-          ({ level: from, item }: ImportActionItem, index: number) => (
-            <DropdownMenuItem
-              key={index}
-              onClick={() => {
-                dispatch({
-                  type: "import-item",
-                  payload: { level: from, id: item.id, target: level },
-                });
-              }}
-            >
-              {t(`sub.${getPlanName(from)}`)} - {item.name} ({item.id})
-            </DropdownMenuItem>
-          ),
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
 }
 
 function PlanConfig() {
@@ -734,11 +656,6 @@ function PlanConfig() {
               ))}
             </div>
             <div className={`plan-items-action`}>
-              <ImportAction
-                plans={form.plans}
-                level={plan.level}
-                dispatch={formDispatch}
-              />
               <Button
                 variant={`default`}
                 onClick={() => {
