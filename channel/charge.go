@@ -100,7 +100,12 @@ func (m *ChargeManager) AddRawRule(charge *Charge) {
 
 func (m *ChargeManager) AddRule(charge Charge) error {
 	m.AddRawRule(&charge)
-	return m.SaveConfig()
+	if err := m.SaveConfig(); err != nil {
+		return err
+	}
+
+	m.Load()
+	return nil
 }
 
 func (m *ChargeManager) UpdateRawRule(charge *Charge) {
@@ -114,7 +119,12 @@ func (m *ChargeManager) UpdateRawRule(charge *Charge) {
 
 func (m *ChargeManager) UpdateRule(charge Charge) error {
 	m.UpdateRawRule(&charge)
-	return m.SaveConfig()
+	if err := m.SaveConfig(); err != nil {
+		return err
+	}
+
+	m.Load()
+	return nil
 }
 
 func (m *ChargeManager) SetRawRule(charge *Charge) {
@@ -127,7 +137,12 @@ func (m *ChargeManager) SetRawRule(charge *Charge) {
 
 func (m *ChargeManager) SetRule(charge Charge) error {
 	m.SetRawRule(&charge)
-	return m.SaveConfig()
+	if err := m.SaveConfig(); err != nil {
+		return err
+	}
+
+	m.Load()
+	return nil
 }
 
 func (m *ChargeManager) DeleteRawRule(id int) {
@@ -141,7 +156,12 @@ func (m *ChargeManager) DeleteRawRule(id int) {
 
 func (m *ChargeManager) DeleteRule(id int) error {
 	m.DeleteRawRule(id)
-	return m.SaveConfig()
+	if err := m.SaveConfig(); err != nil {
+		return err
+	}
+
+	m.Load()
+	return nil
 }
 
 func (m *ChargeManager) SyncRules(charge ChargeSequence, overwrite bool) error {
@@ -149,7 +169,12 @@ func (m *ChargeManager) SyncRules(charge ChargeSequence, overwrite bool) error {
 		m.SyncRule(item, overwrite)
 	}
 
-	return m.SaveConfig()
+	if err := m.SaveConfig(); err != nil {
+		return err
+	}
+
+	m.Load()
+	return nil
 }
 
 func (m *ChargeManager) SyncRule(charge *Charge, overwrite bool) {
