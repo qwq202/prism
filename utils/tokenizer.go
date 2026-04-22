@@ -46,9 +46,28 @@ func GetWeightByModel(model string) int {
 		}
 	}
 }
+
+func getEncodingForChatModel(model string) (*tiktoken.Tiktoken, string, error) {
+	tkm, err := tiktoken.EncodingForModel(model)
+	if err == nil {
+		return tkm, "", nil
+	}
+
+	normalized := strings.ToLower(strings.TrimSpace(model))
+	switch {
+	case strings.HasPrefix(normalized, "deepseek"):
+		fallback, fallbackErr := tiktoken.GetEncoding("cl100k_base")
+		if fallbackErr == nil {
+			return fallback, "cl100k_base", nil
+		}
+	}
+
+	return nil, "", err
+}
+
 func NumTokensFromMessages(messages []globals.Message, model string, responseType bool) (tokens int) {
 	tokensPerMessage := GetWeightByModel(model)
-	tkm, err := tiktoken.EncodingForModel(model)
+	tkm, fallbackEncoding, err := getEncodingForChatModel(model)
 
 	if err != nil {
 		// the method above was deprecated, use the recall method instead
@@ -77,6 +96,10 @@ func NumTokensFromMessages(messages []globals.Message, model string, responseTyp
 	}
 
 	if globals.DebugMode {
+		if fallbackEncoding != "" {
+			globals.Debug(fmt.Sprintf("[tiktoken] num tokens from messages: %d (tokens per message: %d, model: %s, fallback encoding: %s)", tokens, tokensPerMessage, model, fallbackEncoding))
+			return tokens
+		}
 		globals.Debug(fmt.Sprintf("[tiktoken] num tokens from messages: %d (tokens per message: %d, model: %s)", tokens, tokensPerMessage, model))
 	}
 	return tokens

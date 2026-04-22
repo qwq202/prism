@@ -194,9 +194,15 @@ function upsertToolCall(
   const next = current ? [...current] : [];
   const id = incoming.id?.trim() || "";
   const name = incoming.name.trim();
-  const hitIndex = next.findIndex(
-    (item) => (id && item.id === id) || (!id && item.function.name === name),
-  );
+  let hitIndex = -1;
+
+  if (id) {
+    hitIndex = next.findIndex((item) => item.id === id);
+  }
+
+  if (hitIndex < 0) {
+    hitIndex = next.findIndex((item) => item.function.name === name);
+  }
 
   const base: MessageToolCall =
     hitIndex >= 0
@@ -237,6 +243,27 @@ function upsertToolCall(
   }
 
   return next;
+}
+
+function finalizePendingToolCalls(
+  current: MessageToolCall[] | undefined,
+): MessageToolCall[] | undefined {
+  if (!current || current.length === 0) return current;
+
+  let changed = false;
+  const next = current.map((toolCall) => {
+    if (toolCall.status !== "start" && toolCall.status !== "executing") {
+      return toolCall;
+    }
+
+    changed = true;
+    return {
+      ...toolCall,
+      status: toolCall.error ? "error" : "success",
+    } as MessageToolCall;
+  });
+
+  return changed ? next : current;
 }
 
 export const stack = new ConnectionStack();
@@ -329,7 +356,10 @@ const chatSlice = createSlice({
           message.tool_call,
         );
       }
-      if (message.end) instance.end = message.end;
+      if (message.end) {
+        instance.end = message.end;
+        instance.tool_calls = finalizePendingToolCalls(instance.tool_calls);
+      }
       instance.plan = message.plan;
     },
     removeMessage: (state, action) => {
