@@ -27,10 +27,8 @@ func formatQuotaValue(value float32) string {
 		return "0.0000"
 	case abs < 0.0001:
 		return "<0.0001"
-	case abs < 0.01:
-		return fmt.Sprintf("%.4f", value)
 	default:
-		return fmt.Sprintf("%.2f", value)
+		return fmt.Sprintf("%.4f", value)
 	}
 }
 
