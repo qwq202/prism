@@ -133,11 +133,17 @@ export const ChannelInfos: Record<string, ChannelInfo> = {
   xai: {
     endpoint: "https://api.x.ai",
     format: "<api-key>",
-    models: ["grok-4.20-reasoning", "grok-4.20-mini", "grok-4-1-fast"],
+    models: [
+      "grok-4.20-reasoning",
+      "grok-4.20-mini",
+      "grok-4-1-fast-reasoning",
+      "grok-4-1-fast",
+    ],
     description:
       "> xAI 渠道基于 **OpenAI Responses API** 兼容格式，请将接入点填写为 *https://api.x.ai* 或其反代地址，系统会自动请求 */v1/responses*。 \n" +
-      "> 已内置适配 xAI 原生 **Web Search** 与 **X Search** 两个独立开关，用户可在聊天界面分别控制是否开启。 \n" +
-      "> 常用模型可填写如 **grok-4.20-reasoning**、**grok-4-1-fast** 等 Grok 模型。\n",
+      "> 系统已按 xAI 当前文档改为将 **system prompt** 保留在 `input` 中，而不是使用 xAI 暂不支持的 `instructions` 字段。 \n" +
+      "> 已内置适配 xAI 原生 **Web Search** 与 **X Search** 两个独立开关，并会按官方方式自动开启 **view_image / view_x_video** 所需的图像与视频理解能力。 \n" +
+      "> 常用模型可填写如 **grok-4.20-reasoning**、**grok-4-1-fast-reasoning**、**grok-4-1-fast** 等 Grok 模型。\n",
   },
   azure: {
     endpoint: "2023-12-01-preview",

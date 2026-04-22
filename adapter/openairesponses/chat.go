@@ -15,7 +15,7 @@ func (c *ChatInstance) GetChatEndpoint() string {
 
 func normalizeRole(role string) string {
 	switch role {
-	case globals.User, globals.Assistant:
+	case globals.System, globals.User, globals.Assistant:
 		return role
 	default:
 		return globals.User
@@ -98,9 +98,10 @@ func formatMessages(props *adaptercommon.ChatProps) ([]InputMessage, *string, bo
 	input := make([]InputMessage, 0, len(props.Message))
 	instructions := make([]string, 0)
 	hasImages := false
+	useInstructions := props == nil || props.ChannelType != globals.XAIChannelType
 
 	for _, message := range props.Message {
-		if message.Role == globals.System {
+		if useInstructions && message.Role == globals.System {
 			text := strings.TrimSpace(getMessageText(message))
 			if text != "" {
 				instructions = append(instructions, text)
@@ -136,11 +137,19 @@ func getResponseTools(props *adaptercommon.ChatProps) []ResponseTool {
 	tools := make([]ResponseTool, 0)
 
 	if props != nil && props.ChannelType == globals.XAIChannelType {
+		enabled := utils.ToPtr(true)
 		if props.EnableWebSearch {
-			tools = append(tools, ResponseTool{Type: "web_search"})
+			tools = append(tools, ResponseTool{
+				Type:                     "web_search",
+				EnableImageUnderstanding: enabled,
+			})
 		}
 		if props.EnableXSearch {
-			tools = append(tools, ResponseTool{Type: "x_search"})
+			tools = append(tools, ResponseTool{
+				Type:                     "x_search",
+				EnableImageUnderstanding: enabled,
+				EnableVideoUnderstanding: enabled,
+			})
 		}
 	}
 
@@ -164,12 +173,21 @@ func getResponseTools(props *adaptercommon.ChatProps) []ResponseTool {
 	return tools
 }
 
-func (c *ChatInstance) GetChatBody(props *adaptercommon.ChatProps) ResponseRequest {
+func getResponseInclude(props *adaptercommon.ChatProps, stream bool, tools []ResponseTool) []string {
+	if props == nil || props.ChannelType != globals.XAIChannelType || !stream || len(tools) == 0 {
+		return nil
+	}
+
+	return []string{"verbose_streaming"}
+}
+
+func (c *ChatInstance) GetChatBody(props *adaptercommon.ChatProps, stream bool) ResponseRequest {
 	input, instructions, hasImages := formatMessages(props)
 	var store *bool
 	if props != nil && props.ChannelType == globals.XAIChannelType && hasImages {
 		store = utils.ToPtr(false)
 	}
+	tools := getResponseTools(props)
 
 	return ResponseRequest{
 		Model:           props.Model,
@@ -178,10 +196,12 @@ func (c *ChatInstance) GetChatBody(props *adaptercommon.ChatProps) ResponseReque
 		MaxOutputTokens: props.MaxTokens,
 		Temperature:     props.Temperature,
 		TopP:            props.TopP,
-		Tools:           getResponseTools(props),
+		Tools:           tools,
 		ToolChoice:      props.ToolChoice,
+		ResponseFormat:  props.ResponseFormat,
+		Include:         getResponseInclude(props, stream, tools),
 		Store:           store,
-		Stream:          false,
+		Stream:          stream,
 	}
 }
 
@@ -274,23 +294,13 @@ func (c *ChatInstance) CreateXAIStreamChatRequest(props *adaptercommon.ChatProps
 	reasoningStarted := false
 	reasoningClosed := false
 	ticks := 0
-	body := c.GetChatBody(props)
+	body := c.GetChatBody(props, true)
 
 	err := utils.EventScanner(&utils.EventScannerProps{
 		Method:  "POST",
 		Uri:     c.GetChatEndpoint(),
 		Headers: c.GetHeader(),
-		Body: ResponseRequest{
-			Model:           body.Model,
-			Instructions:    body.Instructions,
-			Input:           body.Input,
-			MaxOutputTokens: body.MaxOutputTokens,
-			Temperature:     body.Temperature,
-			TopP:            body.TopP,
-			Tools:           body.Tools,
-			ToolChoice:      body.ToolChoice,
-			Stream:          true,
-		},
+		Body:    body,
 		Callback: func(data string) error {
 			event, parseErr := parseStreamEvent(data)
 			if parseErr != nil {
@@ -348,7 +358,7 @@ func (c *ChatInstance) CreateStreamChatRequest(props *adaptercommon.ChatProps, c
 		return c.CreateXAIStreamChatRequest(props, callback)
 	}
 
-	body := c.GetChatBody(props)
+	body := c.GetChatBody(props, false)
 	raw, err := utils.PostRaw(
 		c.GetChatEndpoint(),
 		c.GetHeader(),
