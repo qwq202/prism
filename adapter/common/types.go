@@ -221,7 +221,7 @@ func buildCurrentModelPrompt(model string) string {
 	}
 
 	return fmt.Sprintf(
-		"%s\n- The user is currently chatting with model: %s.\n- If the user asks which model is being used right now, rely on this value for the current turn.\n- If the model changes in a later turn, use the updated model reference from that turn instead of any prior assumption.",
+		"%s\n- The user is currently chatting with model: %s.\n- This value is the authoritative current-turn model identity.\n- If older assistant messages in this conversation mention a different model, provider, self-introduction, or identity, treat them as stale outputs from an earlier model selection rather than the current identity.\n- If the user asks who you are or which model/provider is being used right now, answer only with the current model above.\n- Do not explain identity conflicts by inventing hidden training identities, self-learned identities, or similar internal narratives.\n- Do not manually emit <think> or </think> tags in normal response text; those tags are reserved for system-native reasoning channels.\n- If the model changes in a later turn, use the updated model reference from that turn instead of any prior assumption.",
 		currentModelPromptPrefix,
 		model,
 	)

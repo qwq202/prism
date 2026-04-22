@@ -186,6 +186,18 @@ func TestCreateChatPropsInjectsCurrentModelReference(t *testing.T) {
 	if !strings.Contains(content, "The user is currently chatting with model: grok-4-1-fast-reasoning.") {
 		t.Fatalf("expected current model name to be injected, got %q", content)
 	}
+
+	if !strings.Contains(content, "authoritative current-turn model identity") {
+		t.Fatalf("expected authoritative current model guidance, got %q", content)
+	}
+
+	if !strings.Contains(content, "treat them as stale outputs from an earlier model selection") {
+		t.Fatalf("expected stale identity guidance, got %q", content)
+	}
+
+	if !strings.Contains(content, "Do not manually emit <think> or </think> tags") {
+		t.Fatalf("expected manual think-tag ban, got %q", content)
+	}
 }
 
 func TestCreateChatPropsUpdatesExistingCurrentModelReference(t *testing.T) {
@@ -212,6 +224,10 @@ func TestCreateChatPropsUpdatesExistingCurrentModelReference(t *testing.T) {
 
 	if !strings.Contains(content, "The user is currently chatting with model: deepseek-chat.") {
 		t.Fatalf("expected updated current model reference, got %q", content)
+	}
+
+	if !strings.Contains(content, "answer only with the current model above") {
+		t.Fatalf("expected current-model-only guidance, got %q", content)
 	}
 }
 
