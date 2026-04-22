@@ -207,6 +207,10 @@ func logToolArgumentDiagnostics(callID, arguments string) {
 	))
 }
 
+func parseToolInput(arguments string) (ToolInput, error) {
+	return utils.UnmarshalString[ToolInput](arguments)
+}
+
 func toolResultMessage(callID string, result ToolResult) globals.Message {
 	return globals.Message{
 		Role:       globals.Tool,
@@ -238,8 +242,8 @@ func executeToolCall(db *sql.DB, user *auth.User, call globals.ToolCall) globals
 	))
 	logToolArgumentDiagnostics(call.Id, call.Function.Arguments)
 
-	var input ToolInput
-	if _, err := utils.UnmarshalString[ToolInput](call.Function.Arguments); err != nil {
+	input, err := parseToolInput(call.Function.Arguments)
+	if err != nil {
 		globals.Warn(fmt.Sprintf(
 			"[memory] invalid tool arguments for call %s: %s (raw=%s parsed=%s)",
 			call.Id,
