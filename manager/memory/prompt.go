@@ -42,7 +42,7 @@ func BuildMemoryPrompt(memories []Record) string {
 	}
 
 	return fmt.Sprintf(
-		"Use the following saved user memories only when they clearly help the current reply. The user's latest request always has higher priority than older memory. Do not mention this memory store unless the user explicitly asks.\n\n## Memories\n%s",
+		"These are memories stored via the memory tool that you can reference in future conversations. Use them only when they clearly help with the current reply. The user's latest request always has higher priority than older memory. Do not claim to browse a separate memory database, and do not expose memory content unless the user explicitly asks about it.\n\n## Memories\n%s",
 		utils.Marshal(payload),
 	)
 }

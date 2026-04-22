@@ -156,6 +156,14 @@ func TestCreateChatPropsInjectsMemoryCapabilityState(t *testing.T) {
 	if !strings.Contains(content, "current conversation context") {
 		t.Fatalf("expected current conversation clarification, got %q", content)
 	}
+
+	if !strings.Contains(content, "you may use them to answer questions about the user's long-term preferences") {
+		t.Fatalf("expected saved memory usage guidance, got %q", content)
+	}
+
+	if !strings.Contains(content, "Do not claim that you cannot access saved memories") {
+		t.Fatalf("expected no-false-denial guidance, got %q", content)
+	}
 }
 
 func TestCreateChatPropsAvoidsDuplicateMemoryCapabilityInjection(t *testing.T) {

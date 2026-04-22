@@ -176,7 +176,7 @@ func buildMemoryCapabilityPrompt(memoryEnabled bool, memoryHistoryEnabled bool) 
 	}
 
 	return fmt.Sprintf(
-		"%s\n- Saved user memories: %s.\n- Cross-conversation recent chat references: %s.\n- The messages already present in this chat are always available as the current conversation context.\n- Never claim to have access to saved memories or other conversations unless they are enabled in this state. If they are disabled, clearly say you only see the messages already included in the current chat.",
+		"%s\n- Saved user memories: %s.\n- Cross-conversation recent chat references: %s.\n- The messages already present in this chat are always available as the current conversation context.\n- If saved memories are enabled and relevant memories are provided in the saved-memories section, you may use them to answer questions about the user's long-term preferences, profile, or standing instructions.\n- Do not claim that you cannot access saved memories when they are enabled and relevant saved memories are present in the prompt.\n- Do not claim that you can browse or enumerate a separate memory database or hidden backend list unless the user is explicitly shown such a list in the current chat.\n- If saved memories or recent chat references are disabled, clearly say you only see the messages already included in the current chat.",
 		memoryCapabilityPromptPrefix,
 		savedMemoryState,
 		recentChatsState,
