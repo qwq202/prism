@@ -39,6 +39,8 @@ type ChatProps struct {
 	CustomInstruction    string                 `json:"custom_instruction,omitempty"`
 	MemoryPrompt         string                 `json:"memory_prompt,omitempty"`
 	RecentChatsPrompt    string                 `json:"recent_chats_prompt,omitempty"`
+	MemoryEnabled        bool                   `json:"memory_enabled,omitempty"`
+	MemoryHistoryEnabled bool                   `json:"memory_history_enabled,omitempty"`
 	MaxTokens            *int                   `json:"max_tokens,omitempty"`
 	PresencePenalty      *float32               `json:"presence_penalty,omitempty"`
 	FrequencyPenalty     *float32               `json:"frequency_penalty,omitempty"`
@@ -68,6 +70,7 @@ type ChatProps struct {
 const currentDateTimePromptPrefix = "Current date and time reference:"
 const clientContextPromptPrefix = "Current client device reference:"
 const personalizationPromptPrefix = "User personalization preferences:"
+const memoryCapabilityPromptPrefix = "Memory capability state:"
 const memoryPromptPrefix = "Saved user memories:"
 const recentChatsPromptPrefix = "Recent conversation references:"
 
@@ -161,6 +164,55 @@ func injectPersonalization(messages []globals.Message, customInstruction string)
 	}, cloned...)
 }
 
+func buildMemoryCapabilityPrompt(memoryEnabled bool, memoryHistoryEnabled bool) string {
+	savedMemoryState := "disabled"
+	if memoryEnabled {
+		savedMemoryState = "enabled"
+	}
+
+	recentChatsState := "disabled"
+	if memoryHistoryEnabled {
+		recentChatsState = "enabled"
+	}
+
+	return fmt.Sprintf(
+		"%s\n- Saved user memories: %s.\n- Cross-conversation recent chat references: %s.\n- The messages already present in this chat are always available as the current conversation context.\n- Never claim to have access to saved memories or other conversations unless they are enabled in this state. If they are disabled, clearly say you only see the messages already included in the current chat.",
+		memoryCapabilityPromptPrefix,
+		savedMemoryState,
+		recentChatsState,
+	)
+}
+
+func injectMemoryCapabilities(messages []globals.Message, memoryEnabled bool, memoryHistoryEnabled bool) []globals.Message {
+	cloned := utils.DeepCopy[[]globals.Message](messages)
+	prompt := buildMemoryCapabilityPrompt(memoryEnabled, memoryHistoryEnabled)
+
+	for i := range cloned {
+		if cloned[i].Role != globals.System {
+			continue
+		}
+
+		content := strings.TrimSpace(cloned[i].Content)
+		if strings.Contains(content, memoryCapabilityPromptPrefix) {
+			return cloned
+		}
+
+		if content == "" {
+			cloned[i].Content = prompt
+		} else {
+			cloned[i].Content = fmt.Sprintf("%s\n\n%s", content, prompt)
+		}
+		return cloned
+	}
+
+	return append([]globals.Message{
+		{
+			Role:    globals.System,
+			Content: prompt,
+		},
+	}, cloned...)
+}
+
 func appendPromptSection(content string, prefix string, prompt string) string {
 	content = strings.TrimSpace(content)
 	prompt = strings.TrimSpace(prompt)
@@ -212,6 +264,7 @@ func injectReferencePrompts(messages []globals.Message, memoryPrompt string, rec
 func (c *ChatProps) SetupBuffer(buf *utils.Buffer) {
 	c.Message = injectCurrentDateTime(c.Message, c.ClientContext)
 	c.Message = injectPersonalization(c.Message, c.CustomInstruction)
+	c.Message = injectMemoryCapabilities(c.Message, c.MemoryEnabled, c.MemoryHistoryEnabled)
 	c.Message = injectReferencePrompts(c.Message, c.MemoryPrompt, c.RecentChatsPrompt)
 	if buf == nil {
 		return

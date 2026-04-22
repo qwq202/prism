@@ -98,6 +98,8 @@ func buildChatProps(
 		CustomInstruction:    instance.GetCustomInstruction(),
 		MemoryPrompt:         memoryPrompt,
 		RecentChatsPrompt:    recentChatsPrompt,
+		MemoryEnabled:        instance.IsMemoryEnabled(),
+		MemoryHistoryEnabled: instance.IsMemoryHistoryEnabled(),
 		Tools:                tools,
 		ToolChoice:           toolChoice,
 		EnableWeb:            instance.IsEnableWeb(),

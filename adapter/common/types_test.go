@@ -125,3 +125,55 @@ func TestCreateChatPropsAvoidsDuplicatePersonalizationInjection(t *testing.T) {
 		t.Fatalf("expected personalization prompt prefix to appear once, got %q", props.Message[0].Content)
 	}
 }
+
+func TestCreateChatPropsInjectsMemoryCapabilityState(t *testing.T) {
+	props := CreateChatProps(&ChatProps{
+		Model:                "grok-4-1-fast-reasoning",
+		MemoryEnabled:        false,
+		MemoryHistoryEnabled: false,
+		Message: []globals.Message{
+			{Role: globals.User, Content: "Can you see my memories?"},
+		},
+	}, nil)
+
+	if len(props.Message) != 2 {
+		t.Fatalf("expected injected system message, got %d messages", len(props.Message))
+	}
+
+	content := props.Message[0].Content
+	if !strings.Contains(content, memoryCapabilityPromptPrefix) {
+		t.Fatalf("expected memory capability prompt prefix, got %q", content)
+	}
+
+	if !strings.Contains(content, "Saved user memories: disabled.") {
+		t.Fatalf("expected saved memory state to be disabled, got %q", content)
+	}
+
+	if !strings.Contains(content, "Cross-conversation recent chat references: disabled.") {
+		t.Fatalf("expected recent chat state to be disabled, got %q", content)
+	}
+
+	if !strings.Contains(content, "current conversation context") {
+		t.Fatalf("expected current conversation clarification, got %q", content)
+	}
+}
+
+func TestCreateChatPropsAvoidsDuplicateMemoryCapabilityInjection(t *testing.T) {
+	props := CreateChatProps(&ChatProps{
+		Model:                "grok-4-1-fast-reasoning",
+		MemoryEnabled:        true,
+		MemoryHistoryEnabled: false,
+		Message: []globals.Message{
+			{
+				Role: globals.System,
+				Content: currentDateTimePromptPrefix + " 2026-04-20 23:30:00 (Asia/Shanghai).\n\n" +
+					memoryCapabilityPromptPrefix + "\n- Saved user memories: enabled.",
+			},
+			{Role: globals.User, Content: "hello"},
+		},
+	}, nil)
+
+	if strings.Count(props.Message[0].Content, memoryCapabilityPromptPrefix) != 1 {
+		t.Fatalf("expected memory capability prompt prefix to appear once, got %q", props.Message[0].Content)
+	}
+}
