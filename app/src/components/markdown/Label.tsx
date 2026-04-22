@@ -35,6 +35,7 @@ function QuotaExceededForm({
   const { t } = useTranslation();
   const supportModels = useSelector(selectSupportModels);
   const modelInfo = supportModels.find((m) => m.id === model);
+  const displayModelName = modelInfo?.name ?? model;
 
   return (
     <div className={`flex flex-col items-center pt-4 pb-1`}>
@@ -52,7 +53,10 @@ function QuotaExceededForm({
           <Package className={`h-4 w-4 mr-1`} />
           {t("model")}
           <div className={`grow`} />
-          <div className={`!mb-0 flex flex-row items-center space-x-1`}>
+          <div
+            className={`!mb-0 flex min-w-0 max-w-[58%] flex-row items-center space-x-1`}
+            title={displayModelName}
+          >
             <ModelAvatar
               size={24}
               model={
@@ -62,7 +66,7 @@ function QuotaExceededForm({
                 }
               }
             />
-            <p className={`!mb-0`}>{modelInfo?.name ?? model}</p>
+            <p className={`!mb-0 min-w-0 truncate`}>{displayModelName}</p>
           </div>
         </div>
         <div
