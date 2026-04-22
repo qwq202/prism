@@ -18,6 +18,7 @@ var writableToolChannelTypes = map[string]struct{}{
 	globals.MiniMaxTokenPlanCNChannelType: {},
 	globals.PalmChannelType:               {},
 	globals.DeepseekChannelType:           {},
+	globals.XAIChannelType:                {},
 }
 
 func BuildToolDefinition() *globals.FunctionTools {

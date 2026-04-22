@@ -12,6 +12,12 @@ type InputMessage struct {
 	Content []InputMessageContent `json:"content"`
 }
 
+type FunctionCallOutputInput struct {
+	Type   string `json:"type"`
+	CallID string `json:"call_id"`
+	Output string `json:"output"`
+}
+
 type ResponseTool struct {
 	Type                     string      `json:"type"`
 	Name                     string      `json:"name,omitempty"`
@@ -29,7 +35,7 @@ type ResponseTool struct {
 type ResponseRequest struct {
 	Model              string         `json:"model"`
 	Instructions       *string        `json:"instructions,omitempty"`
-	Input              []InputMessage `json:"input"`
+	Input              interface{}    `json:"input"`
 	MaxOutputTokens    *int           `json:"max_output_tokens,omitempty"`
 	Temperature        *float32       `json:"temperature,omitempty"`
 	TopP               *float32       `json:"top_p,omitempty"`
@@ -49,9 +55,12 @@ type OutputContent struct {
 }
 
 type OutputItem struct {
-	Type    string          `json:"type"`
-	Role    string          `json:"role,omitempty"`
-	Content []OutputContent `json:"content,omitempty"`
+	Type      string          `json:"type"`
+	Role      string          `json:"role,omitempty"`
+	Content   []OutputContent `json:"content,omitempty"`
+	Name      string          `json:"name,omitempty"`
+	Arguments string          `json:"arguments,omitempty"`
+	CallID    string          `json:"call_id,omitempty"`
 }
 
 type ResponseResponse struct {
@@ -66,8 +75,9 @@ type ResponseResponse struct {
 }
 
 type ResponseStreamEvent struct {
-	Type  string `json:"type"`
-	Delta string `json:"delta,omitempty"`
+	Type  string      `json:"type"`
+	Delta string      `json:"delta,omitempty"`
+	Item  *OutputItem `json:"item,omitempty"`
 	Error struct {
 		Message string `json:"message"`
 		Type    string `json:"type"`

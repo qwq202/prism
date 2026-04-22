@@ -94,8 +94,38 @@ func formatInputMessage(props *adaptercommon.ChatProps, message globals.Message)
 	}
 }
 
-func formatMessages(props *adaptercommon.ChatProps) ([]InputMessage, *string, bool) {
-	input := make([]InputMessage, 0, len(props.Message))
+func formatReplayFunctionCalls(message globals.Message) []interface{} {
+	if message.ToolCalls == nil || len(*message.ToolCalls) == 0 {
+		return nil
+	}
+
+	items := make([]interface{}, 0, len(*message.ToolCalls))
+	for _, toolCall := range *message.ToolCalls {
+		items = append(items, OutputItem{
+			Type:      "function_call",
+			Name:      toolCall.Function.Name,
+			Arguments: toolCall.Function.Arguments,
+			CallID:    toolCall.Id,
+		})
+	}
+
+	return items
+}
+
+func formatFunctionCallOutput(message globals.Message) *FunctionCallOutputInput {
+	if message.ToolCallId == nil || strings.TrimSpace(*message.ToolCallId) == "" {
+		return nil
+	}
+
+	return &FunctionCallOutputInput{
+		Type:   "function_call_output",
+		CallID: strings.TrimSpace(*message.ToolCallId),
+		Output: message.Content,
+	}
+}
+
+func formatMessages(props *adaptercommon.ChatProps) ([]interface{}, *string, bool) {
+	input := make([]interface{}, 0, len(props.Message))
 	instructions := make([]string, 0)
 	hasImages := false
 	useInstructions := props == nil || props.ChannelType != globals.XAIChannelType
@@ -107,6 +137,27 @@ func formatMessages(props *adaptercommon.ChatProps) ([]InputMessage, *string, bo
 				instructions = append(instructions, text)
 			}
 			continue
+		}
+
+		if props != nil && props.ChannelType == globals.XAIChannelType {
+			if message.Role == globals.Tool {
+				if output := formatFunctionCallOutput(message); output != nil {
+					input = append(input, *output)
+				}
+				continue
+			}
+
+			if message.Role == globals.Assistant && message.ToolCalls != nil && len(*message.ToolCalls) > 0 {
+				if strings.TrimSpace(message.Content) != "" {
+					formatted := formatInputMessage(props, message)
+					if formatted != nil {
+						input = append(input, *formatted)
+					}
+				}
+
+				input = append(input, formatReplayFunctionCalls(message)...)
+				continue
+			}
 		}
 
 		formatted := formatInputMessage(props, message)
@@ -226,6 +277,48 @@ func extractOutputText(form *ResponseResponse) string {
 	return strings.Join(chunks, "")
 }
 
+func extractToolCalls(items []OutputItem) *globals.ToolCalls {
+	toolCalls := make(globals.ToolCalls, 0)
+	for idx, item := range items {
+		if item.Type != "function_call" || strings.TrimSpace(item.Name) == "" {
+			continue
+		}
+
+		toolCalls = append(toolCalls, globals.ToolCall{
+			Index: utils.ToPtr(idx),
+			Type:  "function",
+			Id:    item.CallID,
+			Function: globals.ToolCallFunction{
+				Name:      item.Name,
+				Arguments: item.Arguments,
+			},
+		})
+	}
+
+	if len(toolCalls) == 0 {
+		return nil
+	}
+
+	return &toolCalls
+}
+
+func buildResponseChunk(form *ResponseResponse) *globals.Chunk {
+	if form == nil {
+		return &globals.Chunk{}
+	}
+
+	content := extractOutputText(form)
+	toolCalls := extractToolCalls(form.Output)
+	if content == "" && toolCalls == nil {
+		return &globals.Chunk{}
+	}
+
+	return &globals.Chunk{
+		Content:  content,
+		ToolCall: toolCalls,
+	}
+}
+
 func parseResponse(data string) (*ResponseResponse, error) {
 	form := utils.UnmarshalForm[ResponseResponse](data)
 	if form == nil {
@@ -290,6 +383,28 @@ func emitOutputText(delta string, reasoningStarted *bool, reasoningClosed *bool)
 	}
 }
 
+func emitFunctionCallEvent(item *OutputItem) *globals.Chunk {
+	if item == nil || item.Type != "function_call" || strings.TrimSpace(item.Name) == "" {
+		return nil
+	}
+
+	toolCalls := globals.ToolCalls{
+		{
+			Index: utils.ToPtr(0),
+			Type:  "function",
+			Id:    item.CallID,
+			Function: globals.ToolCallFunction{
+				Name:      item.Name,
+				Arguments: item.Arguments,
+			},
+		},
+	}
+
+	return &globals.Chunk{
+		ToolCall: &toolCalls,
+	}
+}
+
 func (c *ChatInstance) CreateXAIStreamChatRequest(props *adaptercommon.ChatProps, callback globals.Hook) error {
 	reasoningStarted := false
 	reasoningClosed := false
@@ -313,6 +428,8 @@ func (c *ChatInstance) CreateXAIStreamChatRequest(props *adaptercommon.ChatProps
 				chunk = emitReasoningSummary(event.Delta, &reasoningStarted)
 			case "response.output_text.delta":
 				chunk = emitOutputText(event.Delta, &reasoningStarted, &reasoningClosed)
+			case "response.output_item.done":
+				chunk = emitFunctionCallEvent(event.Item)
 			default:
 				return nil
 			}
@@ -374,12 +491,10 @@ func (c *ChatInstance) CreateStreamChatRequest(props *adaptercommon.ChatProps, c
 		return fmt.Errorf("openai responses error: %s", parseErr.Error())
 	}
 
-	content := extractOutputText(form)
-	if content == "" {
+	chunk := buildResponseChunk(form)
+	if chunk.IsEmpty() {
 		return errors.New("openai responses error: empty response")
 	}
 
-	return callback(&globals.Chunk{
-		Content: content,
-	})
+	return callback(chunk)
 }
