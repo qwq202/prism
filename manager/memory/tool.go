@@ -6,9 +6,13 @@ import (
 	"chat/globals"
 	"chat/utils"
 	"database/sql"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
+	"unicode/utf8"
 )
 
 var writableToolChannelTypes = map[string]struct{}{
@@ -126,6 +130,83 @@ func summarizeToolArguments(arguments string) string {
 	return arguments[:240] + "..."
 }
 
+func summarizeQuotedArguments(arguments string) string {
+	quoted := fmt.Sprintf("%q", arguments)
+	if len(quoted) <= 320 {
+		return quoted
+	}
+
+	return quoted[:320] + "..."
+}
+
+func summarizeArgumentBytes(arguments string) string {
+	bytes := []byte(arguments)
+	limit := len(bytes)
+	if limit > 96 {
+		limit = 96
+	}
+
+	hexText := hex.EncodeToString(bytes[:limit])
+	if len(bytes) > limit {
+		return hexText + "..."
+	}
+
+	return hexText
+}
+
+func summarizeParsedToolMap(arguments string) string {
+	var raw map[string]any
+	if err := json.Unmarshal([]byte(arguments), &raw); err != nil {
+		return "unmarshal_map_error=" + err.Error()
+	}
+
+	keys := make([]string, 0, len(raw))
+	for key := range raw {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
+	action, _ := raw["action"].(string)
+	category, _ := raw["category"].(string)
+	content, _ := raw["content"].(string)
+	reason, _ := raw["reason"].(string)
+
+	memoryIDSummary := "missing"
+	if value, ok := raw["memory_id"]; ok {
+		memoryIDSummary = fmt.Sprintf("%T:%v", value, value)
+	}
+
+	return fmt.Sprintf(
+		"keys=%v action=%q category=%q content_len=%d reason_len=%d memory_id=%s",
+		keys,
+		action,
+		category,
+		len(strings.TrimSpace(content)),
+		len(strings.TrimSpace(reason)),
+		memoryIDSummary,
+	)
+}
+
+func logToolArgumentDiagnostics(callID, arguments string) {
+	trimmed := strings.TrimSpace(arguments)
+	globals.Debug(fmt.Sprintf(
+		"[memory] tool call %s diagnostics len=%d trimmed_len=%d utf8_valid=%v json_valid=%v quoted=%s bytes=%s",
+		callID,
+		len(arguments),
+		len(trimmed),
+		utf8.ValidString(arguments),
+		json.Valid([]byte(trimmed)),
+		summarizeQuotedArguments(arguments),
+		summarizeArgumentBytes(arguments),
+	))
+
+	globals.Debug(fmt.Sprintf(
+		"[memory] tool call %s map diagnostics %s",
+		callID,
+		summarizeParsedToolMap(trimmed),
+	))
+}
+
 func toolResultMessage(callID string, result ToolResult) globals.Message {
 	return globals.Message{
 		Role:       globals.Tool,
@@ -155,14 +236,16 @@ func executeToolCall(db *sql.DB, user *auth.User, call globals.ToolCall) globals
 		call.Id,
 		summarizeToolArguments(call.Function.Arguments),
 	))
+	logToolArgumentDiagnostics(call.Id, call.Function.Arguments)
 
 	var input ToolInput
 	if _, err := utils.UnmarshalString[ToolInput](call.Function.Arguments); err != nil {
 		globals.Warn(fmt.Sprintf(
-			"[memory] invalid tool arguments for call %s: %s (raw=%s)",
+			"[memory] invalid tool arguments for call %s: %s (raw=%s parsed=%s)",
 			call.Id,
 			err.Error(),
 			summarizeToolArguments(call.Function.Arguments),
+			summarizeParsedToolMap(strings.TrimSpace(call.Function.Arguments)),
 		))
 		result.Error = "invalid tool arguments"
 		return toolResultMessage(call.Id, result)
@@ -184,11 +267,26 @@ func executeToolCall(db *sql.DB, user *auth.User, call globals.ToolCall) globals
 		len(input.Reason),
 	))
 
-	if input.Reason == "" {
+	if strings.TrimSpace(call.Function.Arguments) != "" &&
+		input.Action == "" &&
+		input.MemoryID == nil &&
+		input.Category == "" &&
+		input.Content == "" &&
+		input.Reason == "" {
 		globals.Warn(fmt.Sprintf(
-			"[memory] missing reason for call %s after parsing (raw=%s)",
+			"[memory] suspicious empty tool parse for call %s raw=%s parsed=%s",
 			call.Id,
 			summarizeToolArguments(call.Function.Arguments),
+			summarizeParsedToolMap(strings.TrimSpace(call.Function.Arguments)),
+		))
+	}
+
+	if input.Reason == "" {
+		globals.Warn(fmt.Sprintf(
+			"[memory] missing reason for call %s after parsing (raw=%s parsed=%s)",
+			call.Id,
+			summarizeToolArguments(call.Function.Arguments),
+			summarizeParsedToolMap(strings.TrimSpace(call.Function.Arguments)),
 		))
 		result.Error = "reason is required"
 		return toolResultMessage(call.Id, result)
