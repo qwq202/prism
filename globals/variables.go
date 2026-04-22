@@ -83,7 +83,7 @@ func OriginIsAllowed(uri string) bool {
 }
 
 func OriginIsOpen(c *gin.Context) bool {
-	return strings.HasPrefix(c.Request.URL.Path, "/v1") || strings.HasPrefix(c.Request.URL.Path, "/dashboard") || strings.HasPrefix(c.Request.URL.Path, "/mj")
+	return strings.HasPrefix(c.Request.URL.Path, "/v1") || strings.HasPrefix(c.Request.URL.Path, "/dashboard")
 }
 
 const (
@@ -148,9 +148,6 @@ const (
 	Gemini3ProImagePreview       = "gemini-3-pro-image-preview"
 	GeminiExp1206                = "gemini-exp-1206"
 	GoogleImagen002              = "imagen-3.0-generate-002"
-	Midjourney                   = "midjourney"
-	MidjourneyFast               = "midjourney-fast"
-	MidjourneyTurbo              = "midjourney-turbo"
 	DeepseekV3                   = "deepseek-chat"
 	DeepseekR1                   = "deepseek-reasoner"
 )

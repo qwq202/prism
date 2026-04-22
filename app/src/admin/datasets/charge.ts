@@ -135,24 +135,6 @@ export const pricing: PricingDataset = [
     output: 0.075,
   },
   {
-    models: ["midjourney"],
-    output: 0.1,
-    currency: Currency.CNY,
-    billing_type: timesBilling,
-  },
-  {
-    models: ["midjourney-fast"],
-    output: 0.2,
-    currency: Currency.CNY,
-    billing_type: timesBilling,
-  },
-  {
-    models: ["midjourney-turbo"],
-    output: 0.5,
-    currency: Currency.CNY,
-    billing_type: timesBilling,
-  },
-  {
     models: ["chat-bison-001"], // free marked as $0.001
     output: 0.001,
   },

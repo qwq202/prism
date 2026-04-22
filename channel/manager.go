@@ -245,7 +245,8 @@ func isRemovedChannelType(channelType string) bool {
 		"moonshot",
 		"groq",
 		"coze",
-		"dify":
+		"dify",
+		"midjourney":
 		return true
 	default:
 		return false

@@ -5,7 +5,6 @@ import (
 	"chat/adapter/claude"
 	adaptercommon "chat/adapter/common"
 	"chat/adapter/deepseek"
-	"chat/adapter/midjourney"
 	"chat/adapter/minimaxtokenplan"
 	"chat/adapter/openai"
 	"chat/adapter/openairesponses"
@@ -23,7 +22,6 @@ var channelFactories = map[string]adaptercommon.FactoryCreator{
 	globals.GLMCodingPlanCNChannelType:    claude.NewChatInstanceFromConfig, // anthropic-compatible
 	globals.MiniMaxTokenPlanCNChannelType: minimaxtokenplan.NewChatInstanceFromConfig,
 	globals.PalmChannelType:               palm2.NewChatInstanceFromConfig,
-	globals.MidjourneyChannelType:         midjourney.NewChatInstanceFromConfig,
 	globals.DeepseekChannelType:           deepseek.NewChatInstanceFromConfig,
 }
 

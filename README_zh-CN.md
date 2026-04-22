@@ -17,12 +17,12 @@
 </div>
 
 ## 📝 功能
-1. 🤖️ **丰富模型支持**: 多模型服务商支持 (OpenAI / Anthropic / Gemini / Midjourney 等十余种格式兼容 & 私有化 LLM 支持)
+1. 🤖️ **丰富模型支持**: 多模型服务商支持 (OpenAI / Anthropic / Gemini 等十余种格式兼容 & 私有化 LLM 支持)
 2. 🤯 **美观 UI 设计**: UI 兼容 PC / Pad / 移动三端，遵循 [Shadcn UI](https://ui.shadcn.com) & [Tremor Charts](https://blocks.tremor.so) 设计规范，丰富美观的界面设计和后台仪表盘
 3. 🎃 **完整 Markdown 支持**: 支持 **LaTeX 公式** / **Mermaid 思维导图** / 表格渲染 / 代码高亮 / 图表绘制 / 进度条等进阶 Markdown 语法支持
 4. 👀 **多主题支持**: 支持多种主题切换，包含亮色主题的**明亮模式**和暗色主题的**深色模式**。 👉 [自定义配色](https://github.com/coaidev/coai/blob/main/app/src/assets/globals.less)
 5. 📚 **国际化支持**: 支持国际化，支持多语言切换 🇨🇳 🇺🇸 🇯🇵 🇷🇺 👉 欢迎贡献翻译 [Pull Request](https://github.com/coaidev/coai/pulls) 
-6. 🎨 **文生图支持**: 支持多种文生图模型: **OpenAI DALL-E**✅ & **Midjourney** (支持 **U/V/R** 操作)✅ & Stable Diffusion✅ 等
+6. 🎨 **文生图支持**: 支持多种文生图模型: **OpenAI DALL-E**✅ & Stable Diffusion✅ 等
 7. 📡 **强大对话同步**: **用户 0 成本对话跨端同步支持**，支持**对话分享** (支持链接分享 & 保存为图片 & 分享管理), **无需 WebDav / WebRTC 等依赖和复杂学习成本**
 8. 🎈 **模型市场 & 预设系统**: 支持后台可自定义的模型市场, 可提供模型介绍、标签等参数, 站长可根据情况自定义模型简介。同时支持预设系统，包含 **自定义预设** 和 **云端同步** 功能。
 9. 📖 **丰富文件解析**: **开箱即用**, 支持**所有模型**的文件解析 (PDF / Docx / Pptx / Excel / 图片等格式解析), **支持更多云端图片存储方案** (S3 / R2 / MinIO 等), **支持 OCR 图片识别** 👉 详情参见项目 [CoAI.Dev Blob Service](https://github.com/coaidev/blob-service) (支持 Vercel / Docker 一键部署)
@@ -60,9 +60,8 @@
 1. OpenAI & Azure OpenAI *(✅ Vision ✅ Function Calling)*
 2. Anthropic Claude *(✅ Vision ✅ Function Calling)*
 3. Google Gemini & PaLM2 *(✅ Vision)*
-4. Midjourney *(✅ Mode Toggling ✅ U/V/R Actions)*
-5. 深度求索 DeepSeek AI (👉 OpenAI)
-6. LocalAI / Ollama (👉 OpenAI)
+4. 深度求索 DeepSeek AI (👉 OpenAI)
+5. LocalAI / Ollama (👉 OpenAI)
 
 ## 👻 中转 OpenAI 兼容 API
    - [x] Chat Completions _(/v1/chat/completions)_
@@ -188,31 +187,26 @@ nohup ./chatnio > output.log & # using nohup to run in background
    - 聊天等此类功能通过 websocket 进行通信, 请确保你的服务支持 websocket。 (Tip: 中转通过 Http 实现, 无需 websocket 支持)
    - 如果你使用了 Nginx, Apache 等反向代理, 请确保已配置 websocket 支持。
    - 如果使用了端口映射, 端口转发, CDN, API Gateway 等服务, 请确保你的服务支持并开启 websocket。
-2. **我配置的 Midjourney Proxy 格式的渠道一直转圈或报错 `please provide available notify url`**
-   - 若为转圈，请确保你的 Midjourney Proxy 服务已正常运行, 并且已配置正确的上游地址。
-   - **Midjourney 要填渠道类型要用 Midjourney 而不是 OpenAI (不知道为什么很多人填成了 OpenAI 类型格式然后过来反馈为什么empty response, mj-chat 类除外)**
-   - 排查完这些问题后, 请查看你的系统设置中的**后端域名**是否已经配置并配置正确。如果不配置, 将导致 Midjourney Proxy 服务无法正常回调。
-3. **此项目有什么外部依赖？**
+2. **此项目有什么外部依赖？**
    - MySQL: 存储用户信息, 对话记录, 管理员信息等持久化数据。
    - Redis: 存储用户快速鉴权信息, IP 速率限制, 订阅配额, 邮箱验证码等数据。
    - 环境未配置好的情况下, 会导致服务无法正常运行, 请确保你的 MySQL 和 Redis 服务已正常运行 (Docker 部署, 编译部署需自行搭建外部服务)。
-4. **我的机器为 ARM 架构, 该项目支持 ARM 架构吗？**
+3. **我的机器为 ARM 架构, 该项目支持 ARM 架构吗？**
    - 支持。CoAI.Dev 项目使用 BuildX 构建多架构镜像, 你可以直接使用 docker-compose 或 docker 运行, 无需额外配置。
    - 如果你使用编译安装, 直接在 ARM 机器上编译即可, 无需欸外配置。如果你使用 x86 机器编译, 请使用 `GOARCH=arm64 go build -o chatnio` 进行交叉编译并上传至 ARM 机器上运行。
-5. **如何修改 Root 默认密码？**
+4. **如何修改 Root 默认密码？**
    - 请点击右上角头像或侧边栏底部用户框进入后台管理, 点击系统设置下常规设置操作栏的 修改 Root 密码 进行修改。或者选择在 用户管理 中选定 root 用户进行修改密码操作。
-6. **系统设置中的后端域名是什么？**
+5. **系统设置中的后端域名是什么？**
    - 后端域名是指后端 API 服务的地址, 默认为你访问站点后加 `/api` 的地址, 如 `https://example.com/api` 。
    - 如果设置为非 *SERVE_STATIC* 模式, 开启前后端分离部署, 请将后端域名设置为你的后端 API 服务地址, 如 `https://api.example.com`。
-   - 后端域名此处用于 Midjourney Proxy 服务的后端回调地址, 如无需使用 Midjourney Proxy 服务, 请忽略此设置。
-7. **如何配置支付方式？**
+6. **如何配置支付方式？**
    - CoAI.Dev 开源版支持发卡模式, 设置系统设置中的购买链接为你的发卡地址即可。卡密可通过用户管理中兑换码管理中批量生成。
-8. **礼品码和兑换码有什么区别？**
+7. **礼品码和兑换码有什么区别？**
    - 礼品码一种类型只能一个用户只能绑定一次, 而非 aff code, 发福利等方式可使用礼品码, 可在头像下拉菜单中的礼品码中兑换。
    - 兑换码一种类型可以多个用户绑定, 可作为正常购买和发卡使用, 可在用户管理中的兑换码管理中批量生成, 在头像下拉菜单的点数（菜单第一个）内输入兑换码进行兑换。
    - 一个例子：比如我发了一个类型为 *新年快乐* 的福利, 此时推荐使用礼品码, 假设发放 100 个 66 点数, 如果为兑换码, 手快的一个用户就批量把所有兑换码的 6600 点数都用完了, 而礼品码则可以保证每个用户只能使用一次 (获得 66 点数)。
    - 而搭建发卡的时, 如果用礼品码, 因为一个类型只能兑换一次, 购买多个礼品码会导致兑换失败, 而兑换码则可以在此场景下使用。
-9. **该项目支持 Vercel 部署吗？**
+8. **该项目支持 Vercel 部署吗？**
    - CoAI.Dev 本身并不支持 Vercel 部署, 但是你可以使用前后端分离模式,  Vercel 部署前端部分, 后端部分使用 Docker 部署或编译部署。
 10. **前后端分离部署模式是什么？**
     - 正常情况下, 前后端在同一服务内, 后端地址为 `/api`。前后端分离部署指前端和后端分别部署在不同的服务上, 前端服务为静态文件服务, 后端服务为 API 服务。

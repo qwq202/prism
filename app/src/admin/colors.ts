@@ -20,11 +20,6 @@ export const modelColorMapper: Record<string, string> = {
   anthropic: "orange-400",
   minimax: "emerald-500",
 
-  // Midjourney
-  midjourney: "indigo-600",
-  "mid-journey": "indigo-600",
-  niji: "indigo-600",
-
   // Stable Diffusion
   "stable-diffusion": "gray-400",
   stablediffusion: "gray-400",

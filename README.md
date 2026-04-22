@@ -18,12 +18,12 @@ English · [简体中文](./README_zh-CN.md) · [日本語](./README_ja-JP.md) �
 </div>
 
 ## 📝 Features
-1. 🤖️ **Rich Model Support**: Multi-model service provider support (OpenAI / Anthropic / Gemini / Midjourney and more than ten compatible formats & private LLM support)
+1. 🤖️ **Rich Model Support**: Multi-model service provider support (OpenAI / Anthropic / Gemini and more than ten compatible formats & private LLM support)
 2. 🤯 **Beautiful UI Design**: UI compatible with PC / Pad / Mobile, following [Shadcn UI](https://ui.shadcn.com) & [Tremor Charts](https://blocks.tremor.so) design standards, rich and beautiful interface design and backend dashboard
 3. 🎃 **Complete Markdown Support**: Support for **LaTeX formulas** / **Mermaid mind maps** / table rendering / code highlighting / chart drawing / progress bars and other advanced Markdown syntax support
 4. 👀 **Multi-theme Support**: Support for multiple theme switching, including **Light Mode** for light themes and **Dark Mode** for dark themes. 👉 [Custom Color Scheme](https://github.com/coaidev/coai/blob/main/app/src/assets/globals.less)
 5. 📚 **Internationalization Support**: Support for internationalization, multi-language switching 🇨🇳 🇺🇸 🇯🇵 🇷🇺 👉 Welcome to contribute translations [Pull Request](https://github.com/coaidev/coai/pulls)
-6. 🎨 **Text-to-Image Support**: Support for multiple text-to-image models: **OpenAI DALL-E**✅ & **Midjourney** (support for **U/V/R** operations)✅ & Stable Diffusion✅ etc.
+6. 🎨 **Text-to-Image Support**: Support for multiple text-to-image models: **OpenAI DALL-E**✅ & Stable Diffusion✅ etc.
 7. 📡 **Powerful Conversation Sync**: **Zero-cost cross-device conversation sync support for users**, support for **conversation sharing** (link sharing & save as image & share management), **no need for WebDav / WebRTC and other dependencies and complex learning costs**
 8. 🎈 **Model Market & Preset System**: Support for customizable model market in the backend, providing model introductions, tags, and other parameters. Site owners can customize model introductions according to the situation. Also supports a preset system, including **custom presets** and **cloud synchronization** functions.
 9. 📖 **Rich File Parsing**: **Out-of-the-box**, supports file parsing for **all models** (PDF / Docx / Pptx / Excel / image formats parsing), **supports more cloud image storage solutions** (S3 / R2 / MinIO etc.), **supports OCR image recognition** 👉 See project [CoAI.Dev Blob Service](https://github.com/coaidev/blob-service) for details (supports Vercel / Docker one-click deployment)
@@ -62,9 +62,8 @@ English · [简体中文](./README_zh-CN.md) · [日本語](./README_ja-JP.md) �
 1. OpenAI & Azure OpenAI *(✅ Vision ✅ Function Calling)*
 2. Anthropic Claude *(✅ Vision ✅ Function Calling)*
 3. Google Gemini & PaLM2 *(✅ Vision)*
-4. Midjourney *(✅ Mode Toggling ✅ U/V/R Actions)*
-5. DeepSeek AI (👉 OpenAI)
-6. LocalAI / Ollama (👉 OpenAI)
+4. DeepSeek AI (👉 OpenAI)
+5. LocalAI / Ollama (👉 OpenAI)
 
 ## 👻 OpenAI Compatible API Proxy
    - [x] Chat Completions _(/v1/chat/completions)_

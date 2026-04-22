@@ -60,7 +60,6 @@ export const ChannelTypes: Record<string, string> = {
   "glm-coding-plan-cn": "GLM Coding Plan（CN）",
   "minimax-token-plan-cn": "MiniMax Token Plan（CN）",
   palm: "Google Gemini",
-  midjourney: "Midjourney Proxy",
   deepseek: "深度求索 DeepSeek",
 };
 
@@ -73,7 +72,6 @@ export const ShortChannelTypes: Record<string, string> = {
   "glm-coding-plan-cn": "GLM Coding",
   "minimax-token-plan-cn": "MiniMax",
   palm: "Gemini",
-  midjourney: "Midjourney",
   deepseek: "DeepSeek",
 };
 
@@ -241,18 +239,6 @@ export const ChannelInfos: Record<string, ChannelInfo> = {
       "> Gemini 2.5 系列使用 `thinkingBudget`，Gemini 3 系列使用官方推荐的 `thinkingLevel` 参数，系统会按模型自动选择。 \n" +
       "> 为兼容官方稳定版与预览版模型，系统会自动在 `v1` 与 `v1beta` 之间选择合适的 Gemini API 版本。 \n" +
       "> Google 对请求 IP 地域有限制，可能出现 **User Location Is Not Supported** 的错误，可通过可用地区 IP 或反代接入解决。\n",
-  },
-  midjourney: {
-    endpoint: "https://your.midjourney.proxy",
-    format: "<mj-api-secret>|<white-list>",
-    models: ["midjourney", "midjourney-fast", "midjourney-turbo"],
-    description:
-      "> 请参考 [midjourney-proxy](https://github.com/novicezk/midjourney-proxy) 项目填入参数，可设置白名单 *white-list* 以限制回调 IP \n" +
-      "> 密钥举例： password|localhost,127.0.0.1,196.128.0.31\n" +
-      "> 密钥即为 *mj-api-secret* （如果没有设置 secret 请填 `null` ） \n" +
-      "> 白名单即为 *white-list*（如果没有回调 IP 白名单默认接收所有 IP 的回调，不需要加 | 以及后面的内容） \n" +
-      "> 接入点填写你的 Midjourney Proxy 的部署地址，如 *http://localhost:8080*, *https://example.com* \n" +
-      "> 注意：**请在系统设置中设置后端的公网 IP / 域名，否则无法接收回调报错 please provide available notify url** \n",
   },
   deepseek: {
     endpoint: "https://api.deepseek.com",

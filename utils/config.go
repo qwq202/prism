@@ -20,7 +20,6 @@ var configMutex sync.Mutex
 
 var redirectRoutes = []string{
 	"/v1",
-	"/mj",
 	"/attachments",
 }
 

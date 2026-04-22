@@ -22,7 +22,6 @@ export const deprecatedModelImages = [
   "llama2.webp",
   "llamacode.webp",
   "dalle.jpeg",
-  "midjourney.jpg",
   "palm2.webp",
   "gemini.jpeg",
 ];

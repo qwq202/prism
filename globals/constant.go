@@ -17,7 +17,6 @@ const (
 	GLMCodingPlanCNChannelType    = "glm-coding-plan-cn"
 	MiniMaxTokenPlanCNChannelType = "minimax-token-plan-cn"
 	PalmChannelType               = "palm"
-	MidjourneyChannelType         = "midjourney"
 	DeepseekChannelType           = "deepseek"
 )
 

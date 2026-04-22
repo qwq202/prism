@@ -7,7 +7,6 @@ import {
   Gemma,
   OpenAI,
   Meta,
-  Midjourney,
   Stability,
   LLaVA,
   DeepSeek,
@@ -59,8 +58,6 @@ const builtinAvatars: Record<string, React.ExoticComponent<IconAvatarProps>> = {
 
   meta: Meta.Avatar,
   llama: Meta.Avatar,
-
-  midjourney: Midjourney.Avatar,
 
   stability: Stability.Avatar,
   "stable-diffusion": Stability.Avatar,
