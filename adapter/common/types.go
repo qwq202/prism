@@ -37,6 +37,8 @@ type ChatProps struct {
 
 	Message              []globals.Message      `json:"messages,omitempty"`
 	CustomInstruction    string                 `json:"custom_instruction,omitempty"`
+	MemoryPrompt         string                 `json:"memory_prompt,omitempty"`
+	RecentChatsPrompt    string                 `json:"recent_chats_prompt,omitempty"`
 	MaxTokens            *int                   `json:"max_tokens,omitempty"`
 	PresencePenalty      *float32               `json:"presence_penalty,omitempty"`
 	FrequencyPenalty     *float32               `json:"frequency_penalty,omitempty"`
@@ -53,12 +55,15 @@ type ChatProps struct {
 	GeminiThinkingBudget *int                   `json:"-"`
 	ChannelType          string                 `json:"-"`
 	ClientContext        string                 `json:"-"`
+	DisableCache         bool                   `json:"-"`
 	Buffer               *utils.Buffer          `json:"-"`
 }
 
 const currentDateTimePromptPrefix = "Current date and time reference:"
 const clientContextPromptPrefix = "Current client device reference:"
 const personalizationPromptPrefix = "User personalization preferences:"
+const memoryPromptPrefix = "Saved user memories:"
+const recentChatsPromptPrefix = "Recent conversation references:"
 
 func buildCurrentDateTimePrompt(clientContext string) string {
 	now := time.Now()
@@ -150,9 +155,58 @@ func injectPersonalization(messages []globals.Message, customInstruction string)
 	}, cloned...)
 }
 
+func appendPromptSection(content string, prefix string, prompt string) string {
+	content = strings.TrimSpace(content)
+	prompt = strings.TrimSpace(prompt)
+
+	if prompt == "" {
+		return content
+	}
+
+	if strings.Contains(content, prefix) {
+		return content
+	}
+
+	section := fmt.Sprintf("%s\n%s", prefix, prompt)
+	if content == "" {
+		return section
+	}
+
+	return fmt.Sprintf("%s\n\n%s", content, section)
+}
+
+func injectReferencePrompts(messages []globals.Message, memoryPrompt string, recentChatsPrompt string) []globals.Message {
+	memoryPrompt = strings.TrimSpace(memoryPrompt)
+	recentChatsPrompt = strings.TrimSpace(recentChatsPrompt)
+	if memoryPrompt == "" && recentChatsPrompt == "" {
+		return messages
+	}
+
+	cloned := utils.DeepCopy[[]globals.Message](messages)
+	for i := range cloned {
+		if cloned[i].Role != globals.System {
+			continue
+		}
+
+		cloned[i].Content = appendPromptSection(cloned[i].Content, memoryPromptPrefix, memoryPrompt)
+		cloned[i].Content = appendPromptSection(cloned[i].Content, recentChatsPromptPrefix, recentChatsPrompt)
+		return cloned
+	}
+
+	content := appendPromptSection("", memoryPromptPrefix, memoryPrompt)
+	content = appendPromptSection(content, recentChatsPromptPrefix, recentChatsPrompt)
+	return append([]globals.Message{
+		{
+			Role:    globals.System,
+			Content: content,
+		},
+	}, cloned...)
+}
+
 func (c *ChatProps) SetupBuffer(buf *utils.Buffer) {
 	c.Message = injectCurrentDateTime(c.Message, c.ClientContext)
 	c.Message = injectPersonalization(c.Message, c.CustomInstruction)
+	c.Message = injectReferencePrompts(c.Message, c.MemoryPrompt, c.RecentChatsPrompt)
 	if buf == nil {
 		return
 	}

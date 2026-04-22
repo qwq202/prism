@@ -36,6 +36,8 @@ export const initialSettings = {
   persona_nickname: "",
   persona_occupation: "",
   persona_about_user: "",
+  memory_enabled: true,
+  memory_history_enabled: true,
 };
 
 export type PersonalizationSettings = {
@@ -162,6 +164,14 @@ export const settingsSlice = createSlice({
       "persona_about_user",
       initialSettings.persona_about_user,
     ),
+    memory_enabled: getBooleanMemory(
+      "memory_enabled",
+      initialSettings.memory_enabled,
+    ),
+    memory_history_enabled: getBooleanMemory(
+      "memory_history_enabled",
+      initialSettings.memory_history_enabled,
+    ),
   },
   reducers: {
     toggleDialog: (state) => {
@@ -272,6 +282,14 @@ export const settingsSlice = createSlice({
       state.persona_about_user = action.payload as string;
       setMemory("persona_about_user", action.payload);
     },
+    setMemoryEnabled: (state, action) => {
+      state.memory_enabled = action.payload as boolean;
+      setBooleanMemory("memory_enabled", action.payload);
+    },
+    setMemoryHistoryEnabled: (state, action) => {
+      state.memory_history_enabled = action.payload as boolean;
+      setBooleanMemory("memory_history_enabled", action.payload);
+    },
     resetSettings: (state) => {
       state.context = initialSettings.context;
       state.align = initialSettings.align;
@@ -298,6 +316,8 @@ export const settingsSlice = createSlice({
       state.persona_nickname = initialSettings.persona_nickname;
       state.persona_occupation = initialSettings.persona_occupation;
       state.persona_about_user = initialSettings.persona_about_user;
+      state.memory_enabled = initialSettings.memory_enabled;
+      state.memory_history_enabled = initialSettings.memory_history_enabled;
 
       setBooleanMemory("context", initialSettings.context);
       setBooleanMemory("align", initialSettings.align);
@@ -326,6 +346,11 @@ export const settingsSlice = createSlice({
       setMemory("persona_nickname", initialSettings.persona_nickname);
       setMemory("persona_occupation", initialSettings.persona_occupation);
       setMemory("persona_about_user", initialSettings.persona_about_user);
+      setBooleanMemory("memory_enabled", initialSettings.memory_enabled);
+      setBooleanMemory(
+        "memory_history_enabled",
+        initialSettings.memory_history_enabled,
+      );
     },
   },
 });
@@ -360,6 +385,8 @@ export const {
   setPersonaNickname,
   setPersonaOccupation,
   setPersonaAboutUser,
+  setMemoryEnabled,
+  setMemoryHistoryEnabled,
 } = settingsSlice.actions;
 export default settingsSlice.reducer;
 
@@ -411,3 +438,7 @@ export const personaOccupationSelector = (state: RootState): string =>
   state.settings.persona_occupation;
 export const personaAboutUserSelector = (state: RootState): string =>
   state.settings.persona_about_user;
+export const memoryEnabledSelector = (state: RootState): boolean =>
+  state.settings.memory_enabled;
+export const memoryHistoryEnabledSelector = (state: RootState): boolean =>
+  state.settings.memory_history_enabled;

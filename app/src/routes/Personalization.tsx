@@ -1,7 +1,13 @@
-import "@/assets/pages/personalization-page.less";
 import { useTranslation } from "react-i18next";
 import { useDispatch, useSelector } from "react-redux";
 import * as settings from "@/store/settings.ts";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog.tsx";
 import {
   Select,
   SelectContent,
@@ -12,12 +18,172 @@ import {
 import { Input } from "@/components/ui/input.tsx";
 import { Textarea } from "@/components/ui/textarea.tsx";
 import { ScrollArea } from "@/components/ui/scroll-area.tsx";
+import { Switch } from "@/components/ui/switch.tsx";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu.tsx";
+import { cn } from "@/components/ui/lib/utils.ts";
+import Icon from "@/components/utils/Icon.tsx";
+import { deleteMemory, listMemories, type MemoryRecord } from "@/api/memory.ts";
+import { motion } from "framer-motion";
+import {
+  Bot,
+  Brain,
+  Palette,
+  UserRound,
+  HelpCircle,
+  Search,
+  MoreHorizontal,
+  Trash2,
+} from "lucide-react";
+import React, { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 
 type SelectOption = {
   value: string;
   label: string;
   desc?: string;
 };
+
+type MemoryItem = {
+  id: number;
+  content: string;
+  date: string;
+  source: string;
+};
+
+function formatMemoryDate(value?: string) {
+  if (!value) return "刚刚";
+
+  const parsed = new Date(value.replace(" ", "T"));
+  if (Number.isNaN(parsed.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat("zh-CN", {
+    month: "short",
+    day: "numeric",
+  }).format(parsed);
+}
+
+function MemoryDialog({
+  open,
+  onOpenChange,
+  memories,
+  loading,
+  onDelete,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  memories: MemoryRecord[];
+  loading: boolean;
+  onDelete: (id: number) => Promise<void>;
+}) {
+  const [search, setSearch] = useState("");
+  const filteredMemories: MemoryItem[] = useMemo(
+    () =>
+      memories
+        .filter((item) =>
+          item.content.toLowerCase().includes(search.trim().toLowerCase()),
+        )
+        .map((item) => ({
+          id: item.id,
+          content: item.content,
+          date: formatMemoryDate(item.updated_at || item.created_at),
+          source: item.source || "聊天",
+        })),
+    [memories, search],
+  );
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl p-0 overflow-hidden gap-0">
+        <DialogHeader className="p-6 pb-2">
+          <DialogTitle className="text-xl font-semibold">保存的记忆</DialogTitle>
+          <DialogDescription className="text-sm mt-1">
+            ChatGPT 会记住并自动管理聊天中的有用信息，以提升回复的个性化程度和相关性。
+            <a href="#" className="text-primary hover:underline ml-1">
+              了解更多
+            </a>
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="px-6 py-4 flex items-center gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="搜索记忆"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9 h-10 bg-muted/30 border-none rounded-full"
+            />
+          </div>
+        </div>
+
+        <div className="border-t">
+          <ScrollArea className="h-[400px]">
+            <div className="flex flex-col">
+              {loading && (
+                <div className="px-6 py-8 text-sm text-muted-foreground">
+                  正在加载记忆...
+                </div>
+              )}
+              {!loading && filteredMemories.length === 0 && (
+                <div className="px-6 py-8 text-sm text-muted-foreground">
+                  还没有保存的记忆。
+                </div>
+              )}
+              {filteredMemories.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex items-start justify-between p-6 hover:bg-muted/30 transition-colors border-b last:border-0"
+                >
+                  <p className="text-sm leading-relaxed flex-1 pr-4 min-w-0">
+                    {item.content}
+                  </p>
+                  <div className="flex shrink-0">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          type="button"
+                          className="p-1.5 rounded-md transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          aria-label="更多"
+                        >
+                          <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-52 p-1.5">
+                        <DropdownMenuItem
+                          onClick={() => void onDelete(item.id)}
+                          className="text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer"
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          删除
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <div className="px-2 py-1.5 text-[10px] text-muted-foreground leading-relaxed">
+                          保存日期：{item.date}；保存来源：
+                          <span className="underline cursor-pointer">
+                            {item.source}
+                          </span>
+                          。
+                        </div>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 type InlineSelectItemProps = {
   label: string;
@@ -35,15 +201,15 @@ function InlineSelectItem({
   onChange,
 }: InlineSelectItemProps) {
   return (
-    <div className="pz-item">
-      <div className="pz-item-copy">
-        <span className="pz-item-label">{label}</span>
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between py-3 gap-2">
+      <div className="flex flex-col gap-1 pr-4">
+        <span className="text-sm font-medium text-foreground">{label}</span>
         {description && (
-          <span className="pz-item-description">{description}</span>
+          <span className="text-xs text-muted-foreground">{description}</span>
         )}
       </div>
       <Select value={value} onValueChange={onChange}>
-        <SelectTrigger className="pz-select">
+        <SelectTrigger className="w-full sm:w-[180px] shrink-0 h-9 text-sm [&_[data-desc]]:hidden">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -54,9 +220,11 @@ function InlineSelectItem({
               textValue={opt.label}
             >
               {opt.desc ? (
-                <div className="pz-option">
-                  <span className="pz-option-label">{opt.label}</span>
-                  <span className="pz-option-desc">{opt.desc}</span>
+                <div className="flex flex-col gap-0.5 py-0.5">
+                  <span className="text-sm">{opt.label}</span>
+                  <span data-desc className="text-xs text-muted-foreground hidden sm:inline-block">
+                    {opt.desc}
+                  </span>
                 </div>
               ) : (
                 opt.label
@@ -65,6 +233,87 @@ function InlineSelectItem({
           ))}
         </SelectContent>
       </Select>
+    </div>
+  );
+}
+
+type InlineSwitchItemProps = {
+  label: string;
+  description?: string;
+  checked: boolean;
+  onCheckedChange: (checked: boolean) => void;
+};
+
+function InlineSwitchItem({
+  label,
+  description,
+  checked,
+  onCheckedChange,
+}: InlineSwitchItemProps) {
+  return (
+    <div className="flex items-center justify-between py-3 gap-4">
+      <div className="flex flex-col gap-1">
+        <span className="text-sm font-medium text-foreground">{label}</span>
+        {description && (
+          <span className="text-xs text-muted-foreground">{description}</span>
+        )}
+      </div>
+      <Switch checked={checked} onCheckedChange={onCheckedChange} />
+    </div>
+  );
+}
+
+type PersonalizationCardProps = {
+  title: string;
+  description?: string;
+  icon?: React.ReactElement;
+  children: React.ReactNode;
+  className?: string;
+  headerAction?: React.ReactNode;
+};
+
+function PersonalizationCard({
+  title,
+  description,
+  icon,
+  children,
+  className,
+  headerAction,
+}: PersonalizationCardProps) {
+  return (
+    <div
+      className={cn(
+        "flex flex-col bg-background rounded-lg shadow border overflow-hidden",
+        className
+      )}
+    >
+      <div className="select-none inline-flex flex-row items-center justify-between h-fit w-full border-b px-4 py-3 bg-muted/20">
+        <div className="flex flex-row items-center">
+          <div className="flex items-center mr-3">
+            {icon && (
+              <Icon
+                icon={icon}
+                className="w-8 h-8 p-2 rounded-lg bg-muted text-secondary"
+              />
+            )}
+          </div>
+          <div className="flex flex-col">
+            <div className="flex items-center gap-1.5">
+              <p className="text-sm font-medium">{title}</p>
+              {title === "记忆" && (
+                <HelpCircle className="w-3.5 h-3.5 text-muted-foreground cursor-help" />
+              )}
+            </div>
+            {description && (
+              <p className="text-xs text-secondary mt-0.5">{description}</p>
+            )}
+          </div>
+        </div>
+        {headerAction}
+      </div>
+      <div className="p-4 sm:p-5 flex flex-col gap-4">
+        {children}
+      </div>
     </div>
   );
 }
@@ -84,6 +333,38 @@ function Personalization() {
   const personaNickname = useSelector(settings.personaNicknameSelector);
   const personaOccupation = useSelector(settings.personaOccupationSelector);
   const personaAboutUser = useSelector(settings.personaAboutUserSelector);
+  const memoryEnabled = useSelector(settings.memoryEnabledSelector);
+  const historyEnabled = useSelector(settings.memoryHistoryEnabledSelector);
+
+  const [memoryDialogOpen, setMemoryDialogOpen] = useState(false);
+  const [memories, setMemories] = useState<MemoryRecord[]>([]);
+  const [memoryLoading, setMemoryLoading] = useState(false);
+
+  const loadMemories = async (query?: string) => {
+    setMemoryLoading(true);
+    try {
+      setMemories(await listMemories(query));
+    } finally {
+      setMemoryLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!memoryDialogOpen) return;
+    void loadMemories();
+  }, [memoryDialogOpen]);
+
+  const handleDeleteMemory = async (id: number) => {
+    const resp = await deleteMemory(id);
+    if (!resp.status) {
+      toast.error("删除失败", {
+        description: resp.message || "无法删除这条记忆",
+      });
+      return;
+    }
+
+    setMemories((current) => current.filter((item) => item.id !== id));
+  };
 
   const styleOptions: SelectOption[] = [
     {
@@ -201,138 +482,196 @@ function Personalization() {
     },
   ];
 
+  const pageVariants = {
+    hidden: { opacity: 0, y: 18 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.35,
+        ease: "easeOut",
+        when: "beforeChildren",
+        staggerChildren: 0.08,
+      },
+    },
+  };
+
+  const cardVariants = {
+    hidden: { opacity: 0, y: 22 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.4, ease: "easeOut" },
+    },
+  };
+
   return (
-    <ScrollArea className="pz-page">
-      <div className="pz-content">
-        {/* ── 基本风格和语调 ── */}
-        <div className="pz-card">
-          <InlineSelectItem
-            label={t("settings.personalization.base-style")}
+    <ScrollArea className="relative w-full h-full flex flex-col bg-background">
+      <MemoryDialog
+        open={memoryDialogOpen}
+        onOpenChange={setMemoryDialogOpen}
+        memories={memories}
+        loading={memoryLoading}
+        onDelete={handleDeleteMemory}
+      />
+      <motion.div
+        className="px-4 py-6 md:py-12 lg:py-16 h-full flex flex-col w-full max-w-3xl mx-auto space-y-6"
+        variants={pageVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        <motion.div variants={cardVariants}>
+          <PersonalizationCard
+            icon={<Brain />}
+            title="记忆"
+            headerAction={
+              <button
+                className="text-xs font-medium px-3 py-1 rounded-full border bg-background hover:bg-muted transition-colors"
+                onClick={() => setMemoryDialogOpen(true)}
+              >
+                管理
+              </button>
+            }
+          >
+            <div className="flex flex-col divide-y divide-border/50">
+              <InlineSwitchItem
+                label="参考保存的记忆"
+                description="让 AI 保存记忆并在回复时使用记忆。"
+                checked={memoryEnabled}
+                onCheckedChange={(checked) =>
+                  dispatch(settings.setMemoryEnabled(checked))
+                }
+              />
+              <InlineSwitchItem
+                label="参考历史聊天记录"
+                description="让 AI 在回复时参考所有以前的对话。"
+                checked={historyEnabled}
+                onCheckedChange={(checked) =>
+                  dispatch(settings.setMemoryHistoryEnabled(checked))
+                }
+              />
+            </div>
+            <div className="pt-2">
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                AI 可使用记忆库，通过搜索提供商进行个性化查询。
+                <a href="#" className="text-primary hover:underline ml-1">了解更多</a>
+              </p>
+            </div>
+          </PersonalizationCard>
+        </motion.div>
+
+        <motion.div variants={cardVariants}>
+          <PersonalizationCard
+            icon={<Palette />}
+            title={t("settings.personalization.base-style")}
             description={t("settings.personalization.base-style-tip")}
-            value={personaStyle}
-            options={styleOptions}
-            onChange={(v) => dispatch(settings.setPersonaStyle(v))}
-          />
+          >
+            <div className="flex flex-col divide-y divide-border/50">
+              <InlineSelectItem
+                label={t("settings.personalization.base-style")}
+                value={personaStyle}
+                options={styleOptions}
+                onChange={(v) => dispatch(settings.setPersonaStyle(v))}
+              />
+              <InlineSelectItem
+                label={t("settings.personalization.warmth")}
+                value={personaWarmth}
+                options={warmthOptions}
+                onChange={(v) => dispatch(settings.setPersonaWarmth(v))}
+              />
+              <InlineSelectItem
+                label={t("settings.personalization.enthusiasm")}
+                value={personaEnthusiasm}
+                options={enthusiasmOptions}
+                onChange={(v) => dispatch(settings.setPersonaEnthusiasm(v))}
+              />
+              <InlineSelectItem
+                label={t("settings.personalization.headings-lists")}
+                value={personaLists}
+                options={listOptions}
+                onChange={(v) => dispatch(settings.setPersonaLists(v))}
+              />
+              <InlineSelectItem
+                label={t("settings.personalization.emoji")}
+                value={personaEmoji}
+                options={emojiOptions}
+                onChange={(v) => dispatch(settings.setPersonaEmoji(v))}
+              />
+            </div>
+          </PersonalizationCard>
+        </motion.div>
 
-          {/* ── 特征 ── */}
-          <div className="pz-divider" />
-          <div className="pz-section-header">
-            <span className="pz-section-title">
-              {t("settings.personalization.traits")}
-            </span>
-            <span className="pz-section-note">
-              {t("settings.personalization.traits-tip")}
-            </span>
-          </div>
+        <motion.div variants={cardVariants}>
+          <PersonalizationCard
+            icon={<Bot />}
+            title={t("settings.personalization.custom-instruction")}
+            description={t("settings.personalization.custom-instruction-placeholder")}
+          >
+            <div className="flex flex-col gap-2">
+              <Textarea
+                rows={4}
+                value={personaCustomInstruction}
+                placeholder={t("settings.personalization.custom-instruction-placeholder")}
+                className="resize-y min-h-[100px] text-sm"
+                onChange={(e) =>
+                  dispatch(settings.setPersonaCustomInstruction(e.target.value))
+                }
+              />
+            </div>
+          </PersonalizationCard>
+        </motion.div>
 
-          <InlineSelectItem
-            label={t("settings.personalization.warmth")}
-            value={personaWarmth}
-            options={warmthOptions}
-            onChange={(v) => dispatch(settings.setPersonaWarmth(v))}
-          />
-          <InlineSelectItem
-            label={t("settings.personalization.enthusiasm")}
-            value={personaEnthusiasm}
-            options={enthusiasmOptions}
-            onChange={(v) => dispatch(settings.setPersonaEnthusiasm(v))}
-          />
-          <InlineSelectItem
-            label={t("settings.personalization.headings-lists")}
-            value={personaLists}
-            options={listOptions}
-            onChange={(v) => dispatch(settings.setPersonaLists(v))}
-          />
-          <InlineSelectItem
-            label={t("settings.personalization.emoji")}
-            value={personaEmoji}
-            options={emojiOptions}
-            onChange={(v) => dispatch(settings.setPersonaEmoji(v))}
-          />
-
-          {/* ── 自定义指令 ── */}
-          <div className="pz-divider" />
-          <div className="pz-field">
-            <span className="pz-field-label">
-              {t("settings.personalization.custom-instruction")}
-            </span>
-            <Textarea
-              rows={3}
-              value={personaCustomInstruction}
-              placeholder={t(
-                "settings.personalization.custom-instruction-placeholder",
-              )}
-              className="pz-textarea"
-              onChange={(e) =>
-                dispatch(settings.setPersonaCustomInstruction(e.target.value))
-              }
-            />
-          </div>
-        </div>
-
-        {/* ── 关于你 ── */}
-        <div className="pz-card">
-          <div className="pz-section-header pz-section-header-top">
-            <span className="pz-section-title">
-              {t("settings.personalization.about-you")}
-            </span>
-          </div>
-
-          <div className="pz-field">
-            <span className="pz-field-label">
-              {t("settings.personalization.nickname")}
-            </span>
-            <Input
-              value={personaNickname}
-              placeholder={t(
-                "settings.personalization.nickname-placeholder",
-              )}
-              className="pz-input"
-              onChange={(e) =>
-                dispatch(settings.setPersonaNickname(e.target.value))
-              }
-            />
-          </div>
-
-          <div className="pz-field">
-            <span className="pz-field-label">
-              {t("settings.personalization.occupation")}
-            </span>
-            <Input
-              value={personaOccupation}
-              placeholder={t(
-                "settings.personalization.occupation-placeholder",
-              )}
-              className="pz-input"
-              onChange={(e) =>
-                dispatch(settings.setPersonaOccupation(e.target.value))
-              }
-            />
-          </div>
-
-          <div className="pz-field">
-            <div className="pz-field-copy">
-              <span className="pz-field-label">
+        <motion.div variants={cardVariants}>
+          <PersonalizationCard
+            icon={<UserRound />}
+            title={t("settings.personalization.about-you")}
+            description={t("settings.personalization.about-user-tip")}
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-2">
+                <span className="text-sm font-medium text-foreground">
+                  {t("settings.personalization.nickname")}
+                </span>
+                <Input
+                  value={personaNickname}
+                  placeholder={t("settings.personalization.nickname-placeholder")}
+                  className="h-9 text-sm"
+                  onChange={(e) =>
+                    dispatch(settings.setPersonaNickname(e.target.value))
+                  }
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <span className="text-sm font-medium text-foreground">
+                  {t("settings.personalization.occupation")}
+                </span>
+                <Input
+                  value={personaOccupation}
+                  placeholder={t("settings.personalization.occupation-placeholder")}
+                  className="h-9 text-sm"
+                  onChange={(e) =>
+                    dispatch(settings.setPersonaOccupation(e.target.value))
+                  }
+                />
+              </div>
+            </div>
+            <div className="flex flex-col gap-2 mt-2">
+              <span className="text-sm font-medium text-foreground">
                 {t("settings.personalization.about-user")}
               </span>
-              <span className="pz-field-note">
-                {t("settings.personalization.about-user-tip")}
-              </span>
+              <Textarea
+                rows={4}
+                value={personaAboutUser}
+                placeholder={t("settings.personalization.about-user-placeholder")}
+                className="resize-y min-h-[100px] text-sm"
+                onChange={(e) =>
+                  dispatch(settings.setPersonaAboutUser(e.target.value))
+                }
+              />
             </div>
-            <Textarea
-              rows={4}
-              value={personaAboutUser}
-              placeholder={t(
-                "settings.personalization.about-user-placeholder",
-              )}
-              className="pz-textarea"
-              onChange={(e) =>
-                dispatch(settings.setPersonaAboutUser(e.target.value))
-              }
-            />
-          </div>
-        </div>
-      </div>
+          </PersonalizationCard>
+        </motion.div>
+      </motion.div>
     </ScrollArea>
   );
 }

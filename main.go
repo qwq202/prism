@@ -12,6 +12,7 @@ import (
 	"chat/globals"
 	"chat/manager"
 	"chat/manager/conversation"
+	"chat/manager/memory"
 	"chat/middleware"
 	"chat/utils"
 	"fmt"
@@ -51,6 +52,7 @@ func registerApiRouter(engine *gin.Engine) {
 		manager.Register(app)
 		addition.Register(app)
 		conversation.Register(app)
+		memory.Register(app)
 		billing.Register(app)
 	}
 }

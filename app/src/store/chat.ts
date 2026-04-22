@@ -41,6 +41,8 @@ import {
   frequencyPenaltySelector,
   historySelector,
   maxTokensSelector,
+  memoryEnabledSelector,
+  memoryHistoryEnabledSelector,
   personaAboutUserSelector,
   personaCustomInstructionSelector,
   personaEmojiSelector,
@@ -626,6 +628,8 @@ export function useMessageActions() {
   const persona_nickname = useSelector(personaNicknameSelector);
   const persona_occupation = useSelector(personaOccupationSelector);
   const persona_about_user = useSelector(personaAboutUserSelector);
+  const memory_enabled = useSelector(memoryEnabledSelector);
+  const memory_history_enabled = useSelector(memoryHistoryEnabledSelector);
 
   const personalizationInstruction = buildPersonalizationInstruction({
     persona_style,
@@ -681,6 +685,8 @@ export function useMessageActions() {
         context: history,
         ignore_context: !context,
         custom_instruction: personalizationInstruction || undefined,
+        memory_enabled,
+        memory_history_enabled,
         max_tokens: max_tokens > 0 ? max_tokens : undefined,
         temperature,
         top_p,
@@ -735,6 +741,8 @@ export function useMessageActions() {
         context: history,
         ignore_context: !context,
         custom_instruction: personalizationInstruction || undefined,
+        memory_enabled,
+        memory_history_enabled,
         max_tokens: max_tokens > 0 ? max_tokens : undefined,
         temperature,
         top_p,

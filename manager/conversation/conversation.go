@@ -28,6 +28,8 @@ type Conversation struct {
 	Shared               bool              `json:"shared"`
 	Context              int               `json:"context"`
 	CustomInstruction    string            `json:"custom_instruction,omitempty"`
+	MemoryEnabled        bool              `json:"memory_enabled"`
+	MemoryHistoryEnabled bool              `json:"memory_history_enabled"`
 
 	MaxTokens         *int     `json:"max_tokens,omitempty"`
 	Temperature       *float32 `json:"temperature,omitempty"`
@@ -50,6 +52,8 @@ type FormMessage struct {
 	IgnoreContext        bool   `json:"ignore_context"`
 	Context              int    `json:"context"`
 	CustomInstruction    string `json:"custom_instruction,omitempty"`
+	MemoryEnabled        bool   `json:"memory_enabled"`
+	MemoryHistoryEnabled bool   `json:"memory_history_enabled"`
 
 	// request params
 	MaxTokens         *int     `json:"max_tokens,omitempty"`
@@ -244,6 +248,22 @@ func (c *Conversation) SetCustomInstruction(customInstruction string) {
 	c.CustomInstruction = strings.TrimSpace(customInstruction)
 }
 
+func (c *Conversation) IsMemoryEnabled() bool {
+	return c.MemoryEnabled
+}
+
+func (c *Conversation) SetMemoryEnabled(enabled bool) {
+	c.MemoryEnabled = enabled
+}
+
+func (c *Conversation) IsMemoryHistoryEnabled() bool {
+	return c.MemoryHistoryEnabled
+}
+
+func (c *Conversation) SetMemoryHistoryEnabled(enabled bool) {
+	c.MemoryHistoryEnabled = enabled
+}
+
 func (c *Conversation) GetName() string {
 	return c.Name
 }
@@ -376,6 +396,8 @@ func (c *Conversation) ApplyParam(form *FormMessage) {
 	c.SetGeminiThinkingBudget(form.GeminiThinkingBudget)
 	c.SetContextLength(form.Context, form.IgnoreContext)
 	c.SetCustomInstruction(form.CustomInstruction)
+	c.SetMemoryEnabled(form.MemoryEnabled)
+	c.SetMemoryHistoryEnabled(form.MemoryHistoryEnabled)
 
 	c.SetMaxTokens(form.MaxTokens)
 	c.SetTemperature(form.Temperature)

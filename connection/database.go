@@ -92,6 +92,7 @@ func ConnectDatabase() *sql.DB {
 	CreateBroadcastTable(db)
 	CreateBillingTable(db)
 	CreatePaymentOrdersTable(db)
+	CreateMemoryTable(db)
 
 	if err := doMigration(db); err != nil {
 		fmt.Println(fmt.Sprintf("migration error: %s", err))
@@ -190,6 +191,30 @@ func CreateConversationTable(db *sql.DB) {
 		  task_id VARCHAR(255) NULL,
 		  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		  UNIQUE KEY (user_id, conversation_id)
+		);
+	`)
+	if err != nil {
+		fmt.Println(err)
+	}
+}
+
+func CreateMemoryTable(db *sql.DB) {
+	_, err := globals.ExecDb(db, `
+		CREATE TABLE IF NOT EXISTS memories (
+		  id INT PRIMARY KEY AUTO_INCREMENT,
+		  user_id INT NOT NULL,
+		  scope_type VARCHAR(32) NOT NULL DEFAULT 'user',
+		  scope_id VARCHAR(128) NOT NULL,
+		  content TEXT NOT NULL,
+		  source VARCHAR(32) NULL,
+		  confidence FLOAT NULL,
+		  pinned BOOLEAN NOT NULL DEFAULT FALSE,
+		  category VARCHAR(64) NULL,
+		  last_used_at DATETIME NULL,
+		  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		  is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+		  FOREIGN KEY (user_id) REFERENCES auth(id)
 		);
 	`)
 	if err != nil {

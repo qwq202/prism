@@ -62,6 +62,8 @@ export type ChatProps = {
   context?: number;
   ignore_context?: boolean;
   custom_instruction?: string;
+  memory_enabled?: boolean;
+  memory_history_enabled?: boolean;
 
   // mcp related fields
   enable_mcp?: boolean;
