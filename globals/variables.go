@@ -208,7 +208,7 @@ func IsOpenAIResponsesNativeWebModel(model string) bool {
 	}
 
 	switch {
-	case strings.HasPrefix(normalized, "gpt-5.4") && !strings.Contains(normalized, "pro"):
+	case strings.HasPrefix(normalized, "gpt-5.4"):
 		return true
 	case normalized == "gpt-5.3-chat-latest":
 		return true
@@ -237,13 +237,29 @@ func IsOpenAIGPT54Model(model string) bool {
 func GetOpenAIResponsesReasoningEfforts(model string) []string {
 	normalized := strings.TrimSpace(strings.ToLower(model))
 	switch {
-	case strings.HasPrefix(normalized, "gpt-5.4") && !strings.Contains(normalized, "pro"):
+	case strings.HasPrefix(normalized, "gpt-5.4-pro"):
+		return []string{"medium", "high", "xhigh"}
+	case strings.HasPrefix(normalized, "gpt-5.4-mini"):
+		return nil
+	case strings.HasPrefix(normalized, "gpt-5.4-nano"):
+		return nil
+	case strings.HasPrefix(normalized, "gpt-5.4"):
 		return []string{"none", "low", "medium", "high", "xhigh"}
+	case normalized == "gpt-5.2-pro" || strings.HasPrefix(normalized, "gpt-5.2-pro-"):
+		return []string{"medium", "high", "xhigh"}
+	case normalized == "gpt-5.2-chat-latest":
+		return nil
 	case strings.HasPrefix(normalized, "gpt-5.2"):
 		return []string{"none", "low", "medium", "high", "xhigh"}
 	case strings.HasPrefix(normalized, "gpt-5.1"):
 		return []string{"none", "low", "medium", "high"}
-	case normalized == "gpt-5" || strings.HasPrefix(normalized, "gpt-5-"):
+	case normalized == "gpt-5-pro" || strings.HasPrefix(normalized, "gpt-5-pro-"):
+		return []string{"high"}
+	case normalized == "gpt-5-mini" || strings.HasPrefix(normalized, "gpt-5-mini-"):
+		return nil
+	case normalized == "gpt-5-nano" || strings.HasPrefix(normalized, "gpt-5-nano-"):
+		return nil
+	case normalized == "gpt-5":
 		return []string{"minimal", "low", "medium", "high"}
 	case normalized == "o3" || strings.HasPrefix(normalized, "o3-"):
 		return []string{"low", "medium", "high"}

@@ -174,7 +174,40 @@ export function getOpenAIResponsesCapabilities(
   }
 
   const normalized = model.trim().toLowerCase();
-  if (normalized.startsWith("gpt-5.4") && !normalized.includes("pro")) {
+  if (normalized.startsWith("gpt-5.4-pro")) {
+    return {
+      nativeWeb: true,
+      reasoningEfforts: ["medium", "high", "xhigh"],
+    };
+  }
+  if (normalized.startsWith("gpt-5.4-mini")) {
+    return { nativeWeb: true, reasoningEfforts: [] };
+  }
+  if (normalized.startsWith("gpt-5.4-nano")) {
+    return { nativeWeb: true, reasoningEfforts: [] };
+  }
+  if (normalized === "gpt-5.2-pro" || normalized.startsWith("gpt-5.2-pro-")) {
+    return {
+      nativeWeb: true,
+      reasoningEfforts: ["medium", "high", "xhigh"],
+    };
+  }
+  if (normalized === "gpt-5.2-chat-latest") {
+    return { nativeWeb: true, reasoningEfforts: [] };
+  }
+  if (normalized === "gpt-5-pro" || normalized.startsWith("gpt-5-pro-")) {
+    return {
+      nativeWeb: true,
+      reasoningEfforts: ["high"],
+    };
+  }
+  if (normalized === "gpt-5-mini" || normalized.startsWith("gpt-5-mini-")) {
+    return { nativeWeb: true, reasoningEfforts: [] };
+  }
+  if (normalized === "gpt-5-nano" || normalized.startsWith("gpt-5-nano-")) {
+    return { nativeWeb: true, reasoningEfforts: [] };
+  }
+  if (normalized.startsWith("gpt-5.4")) {
     return {
       nativeWeb: true,
       reasoningEfforts: ["none", "low", "medium", "high", "xhigh"],
@@ -192,7 +225,7 @@ export function getOpenAIResponsesCapabilities(
       reasoningEfforts: ["none", "low", "medium", "high"],
     };
   }
-  if (normalized === "gpt-5" || normalized.startsWith("gpt-5-")) {
+  if (normalized === "gpt-5") {
     return {
       nativeWeb: true,
       reasoningEfforts: ["minimal", "low", "medium", "high"],

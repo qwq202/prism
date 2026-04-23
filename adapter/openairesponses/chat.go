@@ -231,11 +231,15 @@ func getResponseSamplingConfig(
 	normalized := strings.TrimSpace(strings.ToLower(model))
 
 	switch {
+	case strings.HasPrefix(normalized, "gpt-5.4-pro"):
+		return nil, nil
+	case normalized == "gpt-5.2-pro" || strings.HasPrefix(normalized, "gpt-5.2-pro-"):
+		return nil, nil
 	case globals.IsOpenAIGPT54Model(model), strings.HasPrefix(normalized, "gpt-5.2"):
 		if effort != "" && effort != "none" {
 			return nil, nil
 		}
-	case normalized == "gpt-5" || strings.HasPrefix(normalized, "gpt-5-"):
+	case normalized == "gpt-5" || normalized == "gpt-5-pro" || strings.HasPrefix(normalized, "gpt-5-pro-"):
 		return nil, nil
 	}
 

@@ -95,6 +95,25 @@ func TestGetChatBodyDropsSamplingForGPT5Reasoning(t *testing.T) {
 	}
 }
 
+func TestGetChatBodyDropsSamplingForGPT54Pro(t *testing.T) {
+	instance := &ChatInstance{}
+	temperature := float32(0.2)
+	topP := float32(0.8)
+	props := &adaptercommon.ChatProps{
+		Model:       "gpt-5.4-pro",
+		Temperature: &temperature,
+		TopP:        &topP,
+		Message: []globals.Message{
+			{Role: globals.User, Content: "你好"},
+		},
+	}
+
+	body := instance.GetChatBody(props, false)
+	if body.Temperature != nil || body.TopP != nil {
+		t.Fatalf("expected sampling params to be stripped for gpt-5.4-pro, got temp=%#v topP=%#v", body.Temperature, body.TopP)
+	}
+}
+
 func TestGetChatBodyReplaysFunctionCallAndOutput(t *testing.T) {
 	instance := &ChatInstance{}
 	toolCalls := globals.ToolCalls{
