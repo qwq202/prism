@@ -59,6 +59,42 @@ func TestGetChatBodyMapsResponseFormatToTextFormat(t *testing.T) {
 	}
 }
 
+func TestGetChatBodySkipsNativeWebToolForUnsupportedModel(t *testing.T) {
+	instance := &ChatInstance{}
+	props := &adaptercommon.ChatProps{
+		Model:           "o1",
+		EnableWebSearch: true,
+		Message: []globals.Message{
+			{Role: globals.User, Content: "你好"},
+		},
+	}
+
+	body := instance.GetChatBody(props, false)
+	if len(body.Tools) != 0 {
+		t.Fatalf("expected no builtin web_search tool for unsupported model, got %#v", body.Tools)
+	}
+}
+
+func TestGetChatBodyDropsSamplingForGPT5Reasoning(t *testing.T) {
+	instance := &ChatInstance{}
+	temperature := float32(0.2)
+	topP := float32(0.8)
+	props := &adaptercommon.ChatProps{
+		Model:       "gpt-5",
+		Temperature: &temperature,
+		TopP:        &topP,
+		Thinking:    map[string]interface{}{"effort": "low"},
+		Message: []globals.Message{
+			{Role: globals.User, Content: "你好"},
+		},
+	}
+
+	body := instance.GetChatBody(props, false)
+	if body.Temperature != nil || body.TopP != nil {
+		t.Fatalf("expected sampling params to be stripped for gpt-5 reasoning, got temp=%#v topP=%#v", body.Temperature, body.TopP)
+	}
+}
+
 func TestGetChatBodyReplaysFunctionCallAndOutput(t *testing.T) {
 	instance := &ChatInstance{}
 	toolCalls := globals.ToolCalls{

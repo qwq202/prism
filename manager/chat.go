@@ -95,18 +95,22 @@ func buildThinkingConfig(instance *conversation.Conversation, model string) inte
 		return nil
 	}
 
-	if globals.IsOpenAIGPT54Model(model) {
-		effort := instance.GetOpenAIReasoningEffort()
-		if effort == "" {
-			return nil
-		}
-
-		return map[string]interface{}{
-			"effort": effort,
-		}
+	if !globals.SupportOpenAIResponsesReasoningControl(model) {
+		return nil
 	}
 
-	return nil
+	effort := globals.NormalizeOpenAIResponsesReasoningEffort(
+		model,
+		instance.GetOpenAIReasoningEffort(),
+		instance.IsEnableWebSearch(),
+	)
+	if effort == "" {
+		return nil
+	}
+
+	return map[string]interface{}{
+		"effort": effort,
+	}
 }
 
 func sendToolCallEvents(conn *Connection, calls *globals.ToolCalls, status string, quota float32, plan bool) error {

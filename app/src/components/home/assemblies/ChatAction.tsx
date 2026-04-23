@@ -1,6 +1,7 @@
 import {
+  getOpenAIResponsesCapabilities,
   isGeminiModelId,
-  isOpenAIResponsesGPT54Model,
+  isOpenAIResponsesNativeWebModel,
   isXAIModelId,
   selectOpenAIReasoningEffort,
   selectOpenAIResponsesWebSearch,
@@ -56,14 +57,6 @@ const geminiThinkingPresets = [
   { label: "medium", budget: 4096 },
   { label: "high", budget: 8192 },
 ];
-
-const openAIReasoningEffortPresets = [
-  "none",
-  "low",
-  "medium",
-  "high",
-  "xhigh",
-] as const;
 
 type ChatActionProps = {
   style?: React.CSSProperties;
@@ -135,17 +128,18 @@ export function WebAction() {
   const xaiWebSearch = useSelector(selectXAIWebSearch);
   const xaiXSearch = useSelector(selectXAIXSearch);
   const openAIResponsesWebSearch = useSelector(selectOpenAIResponsesWebSearch);
+  const openAIReasoningEffort = useSelector(selectOpenAIReasoningEffort);
   const webSearchEnabled = useSelector(infoWebSearchSelector);
 
   const isGeminiModel = isGeminiModelId(model);
   const isXAIModel = isXAIModelId(model);
-  const isOpenAIGPT54Model = isOpenAIResponsesGPT54Model(supportModels, model);
+  const isOpenAIWebModel = isOpenAIResponsesNativeWebModel(supportModels, model);
 
   const geminiWebEnabled = geminiGoogleSearch || geminiURLContext;
   const xaiSearchEnabled = xaiWebSearch || xaiXSearch;
   const openAIWebEnabled = openAIResponsesWebSearch;
 
-  if (!webSearchEnabled && !isGeminiModel && !isXAIModel && !isOpenAIGPT54Model) {
+  if (!webSearchEnabled && !isGeminiModel && !isXAIModel && !isOpenAIWebModel) {
     return null;
   }
 
@@ -154,13 +148,13 @@ export function WebAction() {
       <PopoverTrigger asChild>
         <div>
           <ChatAction
-            active={isGeminiModel ? geminiWebEnabled : isXAIModel ? xaiSearchEnabled : isOpenAIGPT54Model ? openAIWebEnabled : web}
-            text={isGeminiModel ? t("chat.gemini-web") : isXAIModel ? t("chat.xai-web") : isOpenAIGPT54Model ? t("chat.openai-web") : t("chat.web")}
+            active={isGeminiModel ? geminiWebEnabled : isXAIModel ? xaiSearchEnabled : isOpenAIWebModel ? openAIWebEnabled : web}
+            text={isGeminiModel ? t("chat.gemini-web") : isXAIModel ? t("chat.xai-web") : isOpenAIWebModel ? t("chat.openai-web") : t("chat.web")}
           >
             <Globe
               className={cn(
                 "h-4 w-4 web",
-                (isGeminiModel ? geminiWebEnabled : isXAIModel ? xaiSearchEnabled : isOpenAIGPT54Model ? openAIWebEnabled : web) && "enable",
+                (isGeminiModel ? geminiWebEnabled : isXAIModel ? xaiSearchEnabled : isOpenAIWebModel ? openAIWebEnabled : web) && "enable",
               )}
             />
           </ChatAction>
@@ -242,7 +236,7 @@ export function WebAction() {
                 </div>
               </div>
             </>
-          ) : isOpenAIGPT54Model ? (
+          ) : isOpenAIWebModel ? (
             <>
               <div className="flex items-center justify-between">
                 <Label htmlFor="openai-web-search-toggle" className="text-sm">
@@ -252,6 +246,18 @@ export function WebAction() {
                   id="openai-web-search-toggle"
                   checked={openAIResponsesWebSearch}
                   onCheckedChange={(state) => {
+                    const capabilities = getOpenAIResponsesCapabilities(
+                      supportModels,
+                      model,
+                    );
+                    if (
+                      state &&
+                      model.trim().toLowerCase() === "gpt-5" &&
+                      openAIReasoningEffort === "minimal" &&
+                      capabilities.reasoningEfforts.includes("low")
+                    ) {
+                      dispatch(setOpenAIReasoningEffort("low"));
+                    }
                     dispatch(setOpenAIResponsesWebSearch(state));
                   }}
                 />
@@ -410,18 +416,27 @@ export function OpenAIReasoningAction() {
   const model = useSelector(selectModel);
   const supportModels = useSelector(selectSupportModels);
   const openAIReasoningEffort = useSelector(selectOpenAIReasoningEffort);
+  const openAIResponsesWebSearch = useSelector(selectOpenAIResponsesWebSearch);
+  const capabilities = getOpenAIResponsesCapabilities(supportModels, model);
 
-  if (!isOpenAIResponsesGPT54Model(supportModels, model)) {
+  if (capabilities.reasoningEfforts.length === 0) {
     return null;
   }
 
+  const availableEfforts =
+    model.trim().toLowerCase() === "gpt-5" && openAIResponsesWebSearch
+      ? capabilities.reasoningEfforts.filter((item) => item !== "minimal")
+      : capabilities.reasoningEfforts;
   const enabled = openAIReasoningEffort !== "none";
-  const levelIndex = Math.max(
-    1,
-    openAIReasoningEffortPresets.findIndex(
-      (item) => item === openAIReasoningEffort,
-    ),
-  );
+  const fallbackEffort = availableEfforts.includes("medium")
+    ? "medium"
+    : availableEfforts[0];
+  const currentEffort = enabled
+    ? availableEfforts.includes(openAIReasoningEffort)
+      ? openAIReasoningEffort
+      : fallbackEffort
+    : "none";
+  const levelIndex = Math.max(0, availableEfforts.indexOf(currentEffort));
 
   return (
     <Popover>
@@ -449,7 +464,7 @@ export function OpenAIReasoningAction() {
               checked={enabled}
               onCheckedChange={(state) => {
                 dispatch(
-                  setOpenAIReasoningEffort(state ? "medium" : "none"),
+                  setOpenAIReasoningEffort(state ? fallbackEffort : "none"),
                 );
               }}
             />
@@ -460,7 +475,7 @@ export function OpenAIReasoningAction() {
               <span>{t("chat.openai-reasoning-depth")}</span>
               <span>
                 {enabled
-                  ? t(`chat.openai-reasoning-level-${openAIReasoningEffortPresets[levelIndex]}`)
+                  ? t(`chat.openai-reasoning-level-${currentEffort}`)
                   : t("chat.openai-reasoning-level-none")}
               </span>
             </div>
@@ -468,20 +483,19 @@ export function OpenAIReasoningAction() {
             <Slider
               disabled={!enabled}
               value={[levelIndex]}
-              min={1}
-              max={4}
+              min={0}
+              max={Math.max(availableEfforts.length - 1, 0)}
               step={1}
               onValueChange={(value) => {
-                const next = openAIReasoningEffortPresets[value[0]];
+                const next = availableEfforts[value[0]];
                 next && dispatch(setOpenAIReasoningEffort(next));
               }}
             />
 
             <div className="flex justify-between text-[11px] text-muted-foreground">
-              <span>{t("chat.openai-reasoning-level-low")}</span>
-              <span>{t("chat.openai-reasoning-level-medium")}</span>
-              <span>{t("chat.openai-reasoning-level-high")}</span>
-              <span>{t("chat.openai-reasoning-level-xhigh")}</span>
+              {availableEfforts.map((effort) => (
+                <span key={effort}>{t(`chat.openai-reasoning-level-${effort}`)}</span>
+              ))}
             </div>
           </div>
 

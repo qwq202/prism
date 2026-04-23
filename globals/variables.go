@@ -201,6 +201,30 @@ func IsXAIModel(model string) bool {
 	return strings.HasPrefix(strings.TrimSpace(strings.ToLower(model)), "grok")
 }
 
+func IsOpenAIResponsesNativeWebModel(model string) bool {
+	normalized := strings.TrimSpace(strings.ToLower(model))
+	if normalized == "" {
+		return false
+	}
+
+	switch {
+	case strings.HasPrefix(normalized, "gpt-5.4") && !strings.Contains(normalized, "pro"):
+		return true
+	case normalized == "gpt-5.3-chat-latest":
+		return true
+	case strings.HasPrefix(normalized, "gpt-5.2"):
+		return true
+	case strings.HasPrefix(normalized, "gpt-5.1"):
+		return true
+	case normalized == "gpt-5" || strings.HasPrefix(normalized, "gpt-5-"):
+		return true
+	case normalized == "o3" || strings.HasPrefix(normalized, "o3-"):
+		return true
+	default:
+		return false
+	}
+}
+
 func IsOpenAIGPT54Model(model string) bool {
 	normalized := strings.TrimSpace(strings.ToLower(model))
 	if normalized == "" {
@@ -208,6 +232,52 @@ func IsOpenAIGPT54Model(model string) bool {
 	}
 
 	return strings.HasPrefix(normalized, "gpt-5.4") && !strings.Contains(normalized, "pro")
+}
+
+func GetOpenAIResponsesReasoningEfforts(model string) []string {
+	normalized := strings.TrimSpace(strings.ToLower(model))
+	switch {
+	case strings.HasPrefix(normalized, "gpt-5.4") && !strings.Contains(normalized, "pro"):
+		return []string{"none", "low", "medium", "high", "xhigh"}
+	case strings.HasPrefix(normalized, "gpt-5.2"):
+		return []string{"none", "low", "medium", "high", "xhigh"}
+	case strings.HasPrefix(normalized, "gpt-5.1"):
+		return []string{"none", "low", "medium", "high"}
+	case normalized == "gpt-5" || strings.HasPrefix(normalized, "gpt-5-"):
+		return []string{"minimal", "low", "medium", "high"}
+	case normalized == "o3" || strings.HasPrefix(normalized, "o3-"):
+		return []string{"low", "medium", "high"}
+	case normalized == "o1" || strings.HasPrefix(normalized, "o1-"):
+		return []string{"low", "medium", "high"}
+	default:
+		return nil
+	}
+}
+
+func SupportOpenAIResponsesReasoningControl(model string) bool {
+	return len(GetOpenAIResponsesReasoningEfforts(model)) > 0
+}
+
+func NormalizeOpenAIResponsesReasoningEffort(model string, effort string, nativeWebEnabled bool) string {
+	normalized := strings.TrimSpace(strings.ToLower(effort))
+	if normalized == "" {
+		return ""
+	}
+
+	supported := GetOpenAIResponsesReasoningEfforts(model)
+	for _, item := range supported {
+		if item != normalized {
+			continue
+		}
+
+		if nativeWebEnabled && strings.TrimSpace(strings.ToLower(model)) == "gpt-5" && normalized == "minimal" {
+			return "low"
+		}
+
+		return normalized
+	}
+
+	return ""
 }
 
 func IsGeminiNoThinkingModel(model string) bool {

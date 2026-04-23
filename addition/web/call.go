@@ -32,7 +32,7 @@ func ToChatSearched(instance *conversation.Conversation, restart bool, group str
 	if instance.IsEnableWeb() &&
 		!globals.IsGeminiModel(instance.GetModel()) &&
 		!globals.IsXAIModel(instance.GetModel()) &&
-		!globals.IsOpenAIGPT54Model(instance.GetModel()) {
+		!globals.IsOpenAIResponsesNativeWebModel(instance.GetModel()) {
 		segment = toWebSearchingMessage(segment, group, cache)
 	}
 
@@ -43,7 +43,7 @@ func ToSearched(enable bool, model string, message []globals.Message, group stri
 	if enable &&
 		!globals.IsGeminiModel(model) &&
 		!globals.IsXAIModel(model) &&
-		!globals.IsOpenAIGPT54Model(model) {
+		!globals.IsOpenAIResponsesNativeWebModel(model) {
 		return toWebSearchingMessage(message, group, cache)
 	}
 

@@ -168,7 +168,7 @@ func getResponseTools(props *adaptercommon.ChatProps) []ResponseTool {
 		return tools
 	}
 
-	if props.EnableWebSearch {
+	if props.EnableWebSearch && globals.IsOpenAIResponsesNativeWebModel(props.Model) {
 		tools = append(tools, ResponseTool{
 			Type: "web_search",
 		})
@@ -204,17 +204,61 @@ func getResponseTextConfig(props *adaptercommon.ChatProps) interface{} {
 	}
 }
 
+func getReasoningEffort(thinking interface{}) string {
+	if thinking == nil {
+		return ""
+	}
+
+	switch value := thinking.(type) {
+	case map[string]interface{}:
+		if effort, ok := value["effort"].(string); ok {
+			return strings.TrimSpace(strings.ToLower(effort))
+		}
+	case map[string]string:
+		return strings.TrimSpace(strings.ToLower(value["effort"]))
+	}
+
+	return ""
+}
+
+func getResponseSamplingConfig(
+	model string,
+	thinking interface{},
+	temperature *float32,
+	topP *float32,
+) (*float32, *float32) {
+	effort := getReasoningEffort(thinking)
+	normalized := strings.TrimSpace(strings.ToLower(model))
+
+	switch {
+	case globals.IsOpenAIGPT54Model(model), strings.HasPrefix(normalized, "gpt-5.2"):
+		if effort != "" && effort != "none" {
+			return nil, nil
+		}
+	case normalized == "gpt-5" || strings.HasPrefix(normalized, "gpt-5-"):
+		return nil, nil
+	}
+
+	return temperature, topP
+}
+
 func (c *ChatInstance) GetChatBody(props *adaptercommon.ChatProps, stream bool) ResponseRequest {
 	input, instructions := formatMessages(props)
 	tools := getResponseTools(props)
+	temperature, topP := getResponseSamplingConfig(
+		props.Model,
+		props.Thinking,
+		props.Temperature,
+		props.TopP,
+	)
 
 	return ResponseRequest{
 		Model:              props.Model,
 		Instructions:       instructions,
 		Input:              input,
 		MaxOutputTokens:    props.MaxTokens,
-		Temperature:        props.Temperature,
-		TopP:               props.TopP,
+		Temperature:        temperature,
+		TopP:               topP,
 		Tools:              tools,
 		ToolChoice:         props.ToolChoice,
 		ParallelToolCalls:  props.ParallelToolCalls,

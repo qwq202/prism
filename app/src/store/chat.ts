@@ -60,6 +60,30 @@ import {
   topPSelector,
 } from "@/store/settings.ts";
 
+function resolveOpenAIReasoningEffortForRequest(
+  supportModels: Model[],
+  model: string,
+  effort: string,
+  nativeWebEnabled: boolean,
+): string | undefined {
+  const normalized = normalizeOpenAIResponsesReasoningEffort(
+    supportModels,
+    model,
+    effort,
+  );
+  if (!normalized) return undefined;
+
+  if (
+    nativeWebEnabled &&
+    model.trim().toLowerCase() === "gpt-5" &&
+    normalized === "minimal"
+  ) {
+    return "low";
+  }
+
+  return normalized;
+}
+
 export type ConversationSerialized = {
   model?: string;
   messages: Message[];
@@ -129,18 +153,93 @@ export function isXAIModelId(model: string | undefined | null): boolean {
   return !!model && model.toLowerCase().startsWith("grok");
 }
 
-export function isOpenAIResponsesGPT54Model(
+export type OpenAIResponsesCapabilities = {
+  nativeWeb: boolean;
+  reasoningEfforts: string[];
+};
+
+export function getOpenAIResponsesCapabilities(
   supportModels: Model[],
   model: string | undefined | null,
-): boolean {
-  if (!model) return false;
+): OpenAIResponsesCapabilities {
+  if (!model) {
+    return { nativeWeb: false, reasoningEfforts: [] };
+  }
   const current = supportModels.find((item) => item.id === model);
-  if (!current || (current.channel_type || "").toLowerCase() !== "openai-responses") {
-    return false;
+  if (
+    !current ||
+    (current.channel_type || "").toLowerCase() !== "openai-responses"
+  ) {
+    return { nativeWeb: false, reasoningEfforts: [] };
   }
 
   const normalized = model.trim().toLowerCase();
-  return normalized.startsWith("gpt-5.4") && !normalized.includes("pro");
+  if (normalized.startsWith("gpt-5.4") && !normalized.includes("pro")) {
+    return {
+      nativeWeb: true,
+      reasoningEfforts: ["none", "low", "medium", "high", "xhigh"],
+    };
+  }
+  if (normalized.startsWith("gpt-5.2")) {
+    return {
+      nativeWeb: true,
+      reasoningEfforts: ["none", "low", "medium", "high", "xhigh"],
+    };
+  }
+  if (normalized.startsWith("gpt-5.1")) {
+    return {
+      nativeWeb: true,
+      reasoningEfforts: ["none", "low", "medium", "high"],
+    };
+  }
+  if (normalized === "gpt-5" || normalized.startsWith("gpt-5-")) {
+    return {
+      nativeWeb: true,
+      reasoningEfforts: ["minimal", "low", "medium", "high"],
+    };
+  }
+  if (normalized === "gpt-5.3-chat-latest") {
+    return { nativeWeb: true, reasoningEfforts: [] };
+  }
+  if (normalized === "o3" || normalized.startsWith("o3-")) {
+    return { nativeWeb: true, reasoningEfforts: ["low", "medium", "high"] };
+  }
+  if (normalized === "o1" || normalized.startsWith("o1-")) {
+    return { nativeWeb: false, reasoningEfforts: ["low", "medium", "high"] };
+  }
+  if (normalized.startsWith("gpt-4.5")) {
+    return { nativeWeb: false, reasoningEfforts: [] };
+  }
+
+  return { nativeWeb: false, reasoningEfforts: [] };
+}
+
+export function isOpenAIResponsesNativeWebModel(
+  supportModels: Model[],
+  model: string | undefined | null,
+): boolean {
+  return getOpenAIResponsesCapabilities(supportModels, model).nativeWeb;
+}
+
+export function supportsOpenAIResponsesReasoningControl(
+  supportModels: Model[],
+  model: string | undefined | null,
+): boolean {
+  return (
+    getOpenAIResponsesCapabilities(supportModels, model).reasoningEfforts.length >
+    0
+  );
+}
+
+export function normalizeOpenAIResponsesReasoningEffort(
+  supportModels: Model[],
+  model: string | undefined | null,
+  effort: string | undefined | null,
+): string | undefined {
+  const capabilities = getOpenAIResponsesCapabilities(supportModels, model);
+  const normalized = (effort || "").trim().toLowerCase();
+  if (!normalized) return undefined;
+  return capabilities.reasoningEfforts.includes(normalized) ? normalized : undefined;
 }
 
 export function isGeminiNoThinkingModel(
@@ -808,9 +907,17 @@ export function useMessageActions() {
       const targetModel = using_model || model;
       const enableGeminiNativeWeb = isGeminiModelId(targetModel);
       const enableXAINativeWeb = isXAIModelId(targetModel);
-      const enableOpenAINativeWeb = isOpenAIResponsesGPT54Model(
+      const enableOpenAINativeWeb = isOpenAIResponsesNativeWebModel(
         support_models,
         targetModel,
+      );
+      const enableOpenAIReasoningControl =
+        supportsOpenAIResponsesReasoningControl(support_models, targetModel);
+      const openAIReasoningEffortForRequest = resolveOpenAIReasoningEffortForRequest(
+        support_models,
+        targetModel,
+        openai_reasoning_effort,
+        enableOpenAINativeWeb && openai_responses_web_search,
       );
 
       if (current === -1 && conversations[-1].messages.length === 0) {
@@ -849,8 +956,8 @@ export function useMessageActions() {
         gemini_thinking_budget: supportsGeminiThinkingBudgetControl(targetModel)
           ? gemini_thinking_budget
           : undefined,
-        openai_reasoning_effort: enableOpenAINativeWeb
-          ? openai_reasoning_effort
+        openai_reasoning_effort: enableOpenAIReasoningControl
+          ? openAIReasoningEffortForRequest
           : undefined,
         model: targetModel,
         context: history,
@@ -889,9 +996,17 @@ export function useMessageActions() {
     restart: () => {
       const enableGeminiNativeWeb = isGeminiModelId(model);
       const enableXAINativeWeb = isXAIModelId(model);
-      const enableOpenAINativeWeb = isOpenAIResponsesGPT54Model(
+      const enableOpenAINativeWeb = isOpenAIResponsesNativeWebModel(
         support_models,
         model,
+      );
+      const enableOpenAIReasoningControl =
+        supportsOpenAIResponsesReasoningControl(support_models, model);
+      const openAIReasoningEffortForRequest = resolveOpenAIReasoningEffortForRequest(
+        support_models,
+        model,
+        openai_reasoning_effort,
+        enableOpenAINativeWeb && openai_responses_web_search,
       );
       if (!stack.hasConnection(current)) {
         stack.createConnection(current);
@@ -916,8 +1031,8 @@ export function useMessageActions() {
         gemini_thinking_budget: supportsGeminiThinkingBudgetControl(model)
           ? gemini_thinking_budget
           : undefined,
-        openai_reasoning_effort: enableOpenAINativeWeb
-          ? openai_reasoning_effort
+        openai_reasoning_effort: enableOpenAIReasoningControl
+          ? openAIReasoningEffortForRequest
           : undefined,
         model,
         context: history,
