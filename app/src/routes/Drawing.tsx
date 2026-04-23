@@ -1,12 +1,11 @@
 import { useState } from "react";
 import {
+  ArrowUp,
   Wand2,
   Settings,
   Sparkles,
   Plus,
   Image as ImageIcon,
-  Languages,
-  SlidersHorizontal,
   History,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -17,7 +16,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupText,
+  InputGroupTextarea,
+} from "@/components/ui/input-group";
 
 type Mode = "generate" | "edit";
 
@@ -79,7 +84,10 @@ function Drawing() {
       </aside>
 
       {/* Main Canvas Area */}
-      <main className="relative flex min-h-0 min-w-0 flex-1 flex-col bg-muted/30">
+      <main className="relative flex min-h-0 min-w-0 flex-1 flex-col bg-background overflow-hidden">
+        {/* Subtle grid background for the entire main area */}
+        <div className="absolute inset-0 bg-[radial-gradient(hsl(var(--muted-foreground))_1px,transparent_1px)] [background-size:24px_24px] opacity-[0.05]"></div>
+
         {/* Top Controls - Floating */}
         <div className="absolute top-6 left-1/2 -translate-x-1/2 z-20">
           <div className="relative grid grid-cols-2 items-center rounded-full border border-border/80 bg-background/90 p-1.5 shadow-sm backdrop-blur-xl">
@@ -113,38 +121,56 @@ function Drawing() {
           </div>
         </div>
 
-        {/* Canvas */}
-        <div className="flex-1 flex items-center justify-center p-8 lg:p-12 pb-40">
-          <div className="w-full max-w-3xl aspect-square bg-background rounded-[2rem] shadow-sm border border-border flex flex-col items-center justify-center overflow-hidden relative group transition-all duration-500 hover:shadow-md">
-            <div className="w-16 h-16 bg-muted rounded-2xl flex items-center justify-center mb-4 border border-border">
+        {/* Canvas (No square box) */}
+        <div className="flex-1 flex flex-col items-center justify-center pb-32 relative z-10">
+          <div className="flex flex-col items-center justify-center gap-5">
+            <div className="w-20 h-20 bg-muted/30 rounded-[2rem] flex items-center justify-center border border-border/50 shadow-sm backdrop-blur-md">
               <Sparkles className="w-8 h-8 text-muted-foreground/50" />
             </div>
-            <span className="text-muted-foreground font-medium tracking-wide">暂无图片</span>
+            <div className="flex flex-col items-center gap-1.5">
+              <span className="text-foreground/80 font-medium tracking-wide text-base">开始你的创作</span>
+              <span className="text-muted-foreground/60 text-sm">在下方输入描述，AI 将为你生成精美图片</span>
+            </div>
           </div>
         </div>
 
         {/* Input Area - Floating Bottom */}
         <div className="absolute bottom-8 left-0 right-0 px-8 flex justify-center z-20 pointer-events-none">
-          <div className="w-full max-w-3xl bg-background/90 backdrop-blur-2xl border border-border rounded-2xl shadow-lg overflow-hidden flex flex-col transition-all duration-300 focus-within:border-primary/50 pointer-events-auto">
-            <Textarea
-              className="w-full p-5 pb-2 resize-none outline-none border-0 focus-visible:ring-0 text-foreground bg-transparent text-base leading-relaxed min-h-[100px]"
-              placeholder='输入你的图片描述，文本绘制用 "双引号" 包裹'
+          <InputGroup className="pointer-events-auto w-full max-w-3xl overflow-hidden rounded-[24px] border border-border/80 bg-background shadow-lg transition-all duration-300 has-[[data-slot=input-group-control]:focus-visible]:border-primary/40 has-[[data-slot=input-group-control]:focus-visible]:shadow-xl">
+            <InputGroupTextarea
+              className="min-h-[84px] px-5 pt-4 pb-3 text-[15px] leading-6 placeholder:text-muted-foreground/75"
+              placeholder="Ask, Search or Chat..."
             />
-            <div className="flex justify-between items-center px-4 py-3 bg-muted/30 border-t border-border">
-              <div className="flex items-center gap-1">
-                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary">
-                  <Languages className="w-4.5 h-4.5" />
-                </Button>
-                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary">
-                  <SlidersHorizontal className="w-4.5 h-4.5" />
-                </Button>
+            <InputGroupAddon
+              align="block-end"
+              className="justify-between border-t border-border/60 bg-muted/15 px-4 py-3"
+            >
+              <div className="flex items-center gap-2">
+                <InputGroupButton
+                  size="icon-sm"
+                  className="rounded-full border border-border/80 bg-background text-muted-foreground hover:bg-muted"
+                  aria-label="Add"
+                >
+                  <Plus />
+                </InputGroupButton>
+                <InputGroupText className="text-sm font-medium text-foreground/80">
+                  Auto
+                </InputGroupText>
               </div>
-              <Button className="h-10 px-6 rounded-xl font-medium">
-                <Sparkles className="w-4 h-4 mr-2" />
-                生成图片
-              </Button>
-            </div>
-          </div>
+              <div className="flex items-center gap-3">
+                <InputGroupText className="text-sm font-medium text-muted-foreground">
+                  52% used
+                </InputGroupText>
+                <InputGroupButton
+                  size="icon-sm"
+                  className="rounded-full bg-foreground text-background hover:bg-foreground/90"
+                  aria-label="Send"
+                >
+                  <ArrowUp />
+                </InputGroupButton>
+              </div>
+            </InputGroupAddon>
+          </InputGroup>
         </div>
       </main>
 
