@@ -57,6 +57,7 @@ export type ChatProps = {
   url_context?: boolean;
   x_search?: boolean;
   gemini_thinking_budget?: number;
+  openai_reasoning_effort?: string;
   web_search_mode?: "quick" | "detailed";
   web_page_summary?: boolean;
   think?: boolean;

@@ -90,6 +90,25 @@ func buildToolResultEvent(call globals.ToolCall, toolMessage globals.Message) *g
 	return event
 }
 
+func buildThinkingConfig(instance *conversation.Conversation, model string) interface{} {
+	if instance == nil {
+		return nil
+	}
+
+	if globals.IsOpenAIGPT54Model(model) {
+		effort := instance.GetOpenAIReasoningEffort()
+		if effort == "" {
+			return nil
+		}
+
+		return map[string]interface{}{
+			"effort": effort,
+		}
+	}
+
+	return nil
+}
+
 func sendToolCallEvents(conn *Connection, calls *globals.ToolCalls, status string, quota float32, plan bool) error {
 	if calls == nil || len(*calls) == 0 {
 		return nil
@@ -237,6 +256,7 @@ func buildChatProps(
 		EnableURLContext:     instance.IsEnableURLContext(),
 		EnableXSearch:        instance.IsEnableXSearch(),
 		GeminiThinkingBudget: instance.GetGeminiThinkingBudget(),
+		Thinking:             buildThinkingConfig(instance, model),
 		MaxTokens:            instance.GetMaxTokens(),
 		Temperature:          instance.GetTemperature(),
 		TopP:                 instance.GetTopP(),

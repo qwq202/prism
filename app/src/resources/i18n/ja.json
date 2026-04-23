@@ -166,7 +166,19 @@
     "gemini-thinking-level-low": "浅い",
     "gemini-thinking-level-medium": "標準",
     "gemini-thinking-level-high": "深              さ",
-    "gemini-thinking-tip": "現在のモデルは、Geminiネイティブ思考の予算管理をサポートしています。オフにすると、思考は無効になります。オンにすると、ジェミニの思考サマリーに戻り、選択した思考の深さに応じてより多くのトークンを消費します。"
+    "gemini-thinking-tip": "現在のモデルは、Geminiネイティブ思考の予算管理をサポートしています。オフにすると、思考は無効になります。オンにすると、ジェミニの思考サマリーに戻り、選択した思考の深さに応じてより多くのトークンを消費します。",
+    "openai-web": "GPT-5.4ネットワーキング",
+    "openai-web-search": "ウェブ検索",
+    "openai-reasoning": "GPT-5.4思考",
+    "openai-reasoning-enable": "GPT-5.4思考を有効にする",
+    "openai-reasoning-depth": "思考レベル",
+    "openai-reasoning-level-none": "オフ",
+    "openai-reasoning-level-low": "低",
+    "openai-reasoning-level-medium": "中",
+    "openai-reasoning-level-high": "高い",
+    "openai-reasoning-level-xhigh": "非常に高い",
+    "openai-web-enable-tip": "OpenAIネイティブWeb検索を使用すると、追加のツールコール料金またはトークンが消費されます。",
+    "openai-reasoning-tip": "GPT-5.4は、none、low、medium、high、およびxhigh.effortの5つの理由をサポートしています。思考レベルが高いほど、速度が遅くなり、コストが高くなります。"
   },
   "message": {
     "copy": "メッセージをコピー",

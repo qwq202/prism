@@ -201,6 +201,15 @@ func IsXAIModel(model string) bool {
 	return strings.HasPrefix(strings.TrimSpace(strings.ToLower(model)), "grok")
 }
 
+func IsOpenAIGPT54Model(model string) bool {
+	normalized := strings.TrimSpace(strings.ToLower(model))
+	if normalized == "" {
+		return false
+	}
+
+	return strings.HasPrefix(normalized, "gpt-5.4") && !strings.Contains(normalized, "pro")
+}
+
 func IsGeminiNoThinkingModel(model string) bool {
 	return strings.HasSuffix(strings.TrimSpace(model), "-nothinking")
 }

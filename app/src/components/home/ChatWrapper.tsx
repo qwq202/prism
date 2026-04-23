@@ -21,6 +21,7 @@ import { FileArray } from "@/api/file.ts";
 import {
   GeminiThinkingAction,
   NewConversationAction,
+  OpenAIReasoningAction,
   WebAction,
 } from "@/components/home/assemblies/ChatAction.tsx";
 import ChatSpace from "@/components/home/ChatSpace.tsx";
@@ -195,6 +196,15 @@ function ChatWrapper() {
                 transition={{ duration: 0.3, delay: 0.2 }}
               >
                 <GeminiThinkingAction />
+              </motion.div>
+              <motion.div
+                key="openai-reasoning-action"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                transition={{ duration: 0.3, delay: 0.25 }}
+              >
+                <OpenAIReasoningAction />
               </motion.div>
               <motion.div
                 key="file-action"

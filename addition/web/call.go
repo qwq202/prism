@@ -29,7 +29,10 @@ func toWebSearchingMessage(message []globals.Message, group string, cache *redis
 func ToChatSearched(instance *conversation.Conversation, restart bool, group string, cache *redis.Client) []globals.Message {
 	segment := conversation.CopyMessage(instance.GetChatMessage(restart))
 
-	if instance.IsEnableWeb() && !globals.IsGeminiModel(instance.GetModel()) && !globals.IsXAIModel(instance.GetModel()) {
+	if instance.IsEnableWeb() &&
+		!globals.IsGeminiModel(instance.GetModel()) &&
+		!globals.IsXAIModel(instance.GetModel()) &&
+		!globals.IsOpenAIGPT54Model(instance.GetModel()) {
 		segment = toWebSearchingMessage(segment, group, cache)
 	}
 
@@ -37,7 +40,10 @@ func ToChatSearched(instance *conversation.Conversation, restart bool, group str
 }
 
 func ToSearched(enable bool, model string, message []globals.Message, group string, cache *redis.Client) []globals.Message {
-	if enable && !globals.IsGeminiModel(model) && !globals.IsXAIModel(model) {
+	if enable &&
+		!globals.IsGeminiModel(model) &&
+		!globals.IsXAIModel(model) &&
+		!globals.IsOpenAIGPT54Model(model) {
 		return toWebSearchingMessage(message, group, cache)
 	}
 

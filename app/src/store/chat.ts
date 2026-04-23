@@ -81,7 +81,9 @@ type initialStateType = {
   gemini_url_context: boolean;
   xai_web_search: boolean;
   xai_x_search: boolean;
+  openai_responses_web_search: boolean;
   gemini_thinking_budget: number;
+  openai_reasoning_effort: string;
   current: number;
   model_list: string[];
   market: boolean;
@@ -125,6 +127,20 @@ export function isGeminiModelId(model: string | undefined | null): boolean {
 
 export function isXAIModelId(model: string | undefined | null): boolean {
   return !!model && model.toLowerCase().startsWith("grok");
+}
+
+export function isOpenAIResponsesGPT54Model(
+  supportModels: Model[],
+  model: string | undefined | null,
+): boolean {
+  if (!model) return false;
+  const current = supportModels.find((item) => item.id === model);
+  if (!current || (current.channel_type || "").toLowerCase() !== "openai-responses") {
+    return false;
+  }
+
+  const normalized = model.trim().toLowerCase();
+  return normalized.startsWith("gpt-5.4") && !normalized.includes("pro");
 }
 
 export function isGeminiNoThinkingModel(
@@ -281,7 +297,9 @@ const chatSlice = createSlice({
     gemini_url_context: getBooleanMemory("gemini_url_context", false),
     xai_web_search: getBooleanMemory("xai_web_search", false),
     xai_x_search: getBooleanMemory("xai_x_search", false),
+    openai_responses_web_search: getBooleanMemory("openai_responses_web_search", false),
     gemini_thinking_budget: getNumberMemory("gemini_thinking_budget", 0),
+    openai_reasoning_effort: getMemory("openai_reasoning_effort") || "none",
     current: -1,
     model: getModel(offline, getMemory("model")),
     model_list: getModelList(offline, getArrayMemory("model_mark_list")),
@@ -507,9 +525,17 @@ const chatSlice = createSlice({
       setMemory("xai_x_search", action.payload ? "true" : "false");
       state.xai_x_search = action.payload as boolean;
     },
+    setOpenAIResponsesWebSearch: (state, action) => {
+      setMemory("openai_responses_web_search", action.payload ? "true" : "false");
+      state.openai_responses_web_search = action.payload as boolean;
+    },
     setGeminiThinkingBudget: (state, action) => {
       setNumberMemory("gemini_thinking_budget", action.payload as number);
       state.gemini_thinking_budget = action.payload as number;
+    },
+    setOpenAIReasoningEffort: (state, action) => {
+      setMemory("openai_reasoning_effort", action.payload as string);
+      state.openai_reasoning_effort = action.payload as string;
     },
     setCurrent: (state, action) => {
       const current = action.payload as number;
@@ -586,7 +612,9 @@ export const {
   setGeminiURLContext,
   setXAIWebSearch,
   setXAIXSearch,
+  setOpenAIResponsesWebSearch,
   setGeminiThinkingBudget,
+  setOpenAIReasoningEffort,
   setModelList,
   addModelList,
   removeModelList,
@@ -622,8 +650,12 @@ export const selectXAIWebSearch = (state: RootState): boolean =>
   state.chat.xai_web_search;
 export const selectXAIXSearch = (state: RootState): boolean =>
   state.chat.xai_x_search;
+export const selectOpenAIResponsesWebSearch = (state: RootState): boolean =>
+  state.chat.openai_responses_web_search;
 export const selectGeminiThinkingBudget = (state: RootState): number =>
   state.chat.gemini_thinking_budget;
+export const selectOpenAIReasoningEffort = (state: RootState): string =>
+  state.chat.openai_reasoning_effort;
 export const selectCurrent = (state: RootState): number => state.chat.current;
 export const selectModelList = (state: RootState): string[] =>
   state.chat.model_list;
@@ -732,7 +764,10 @@ export function useMessageActions() {
   const gemini_url_context = useSelector(selectGeminiURLContext);
   const xai_web_search = useSelector(selectXAIWebSearch);
   const xai_x_search = useSelector(selectXAIXSearch);
+  const openai_responses_web_search = useSelector(selectOpenAIResponsesWebSearch);
   const gemini_thinking_budget = useSelector(selectGeminiThinkingBudget);
+  const openai_reasoning_effort = useSelector(selectOpenAIReasoningEffort);
+  const support_models = useSelector(selectSupportModels);
   const history = useSelector(historySelector);
   const context = useSelector(contextSelector);
   const max_tokens = useSelector(maxTokensSelector);
@@ -773,6 +808,10 @@ export function useMessageActions() {
       const targetModel = using_model || model;
       const enableGeminiNativeWeb = isGeminiModelId(targetModel);
       const enableXAINativeWeb = isXAIModelId(targetModel);
+      const enableOpenAINativeWeb = isOpenAIResponsesGPT54Model(
+        support_models,
+        targetModel,
+      );
 
       if (current === -1 && conversations[-1].messages.length === 0) {
         // preflight history if it's a new conversation
@@ -795,16 +834,23 @@ export function useMessageActions() {
           ? gemini_google_search || gemini_url_context
           : enableXAINativeWeb
           ? xai_web_search || xai_x_search
+          : enableOpenAINativeWeb
+          ? openai_responses_web_search
           : web,
         web_search: enableGeminiNativeWeb
           ? gemini_google_search
           : enableXAINativeWeb
           ? xai_web_search
+          : enableOpenAINativeWeb
+          ? openai_responses_web_search
           : false,
         url_context: enableGeminiNativeWeb ? gemini_url_context : false,
         x_search: enableXAINativeWeb ? xai_x_search : false,
         gemini_thinking_budget: supportsGeminiThinkingBudgetControl(targetModel)
           ? gemini_thinking_budget
+          : undefined,
+        openai_reasoning_effort: enableOpenAINativeWeb
+          ? openai_reasoning_effort
           : undefined,
         model: targetModel,
         context: history,
@@ -843,6 +889,10 @@ export function useMessageActions() {
     restart: () => {
       const enableGeminiNativeWeb = isGeminiModelId(model);
       const enableXAINativeWeb = isXAIModelId(model);
+      const enableOpenAINativeWeb = isOpenAIResponsesGPT54Model(
+        support_models,
+        model,
+      );
       if (!stack.hasConnection(current)) {
         stack.createConnection(current);
       }
@@ -851,16 +901,23 @@ export function useMessageActions() {
           ? gemini_google_search || gemini_url_context
           : enableXAINativeWeb
           ? xai_web_search || xai_x_search
+          : enableOpenAINativeWeb
+          ? openai_responses_web_search
           : web,
         web_search: enableGeminiNativeWeb
           ? gemini_google_search
           : enableXAINativeWeb
           ? xai_web_search
+          : enableOpenAINativeWeb
+          ? openai_responses_web_search
           : false,
         url_context: enableGeminiNativeWeb ? gemini_url_context : false,
         x_search: enableXAINativeWeb ? xai_x_search : false,
         gemini_thinking_budget: supportsGeminiThinkingBudgetControl(model)
           ? gemini_thinking_budget
+          : undefined,
+        openai_reasoning_effort: enableOpenAINativeWeb
+          ? openai_reasoning_effort
           : undefined,
         model,
         context: history,

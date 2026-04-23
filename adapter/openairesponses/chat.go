@@ -164,7 +164,17 @@ func formatMessages(props *adaptercommon.ChatProps) ([]interface{}, *string) {
 
 func getResponseTools(props *adaptercommon.ChatProps) []ResponseTool {
 	tools := make([]ResponseTool, 0)
-	if props == nil || props.Tools == nil {
+	if props == nil {
+		return tools
+	}
+
+	if props.EnableWebSearch {
+		tools = append(tools, ResponseTool{
+			Type: "web_search",
+		})
+	}
+
+	if props.Tools == nil {
 		return tools
 	}
 

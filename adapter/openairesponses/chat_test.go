@@ -21,9 +21,10 @@ func requireInputItems(t *testing.T, input interface{}) []interface{} {
 func TestGetChatBodyMapsResponseFormatToTextFormat(t *testing.T) {
 	instance := &ChatInstance{}
 	props := &adaptercommon.ChatProps{
-		Model:          "gpt-5.4",
-		ResponseFormat: map[string]interface{}{"type": "json_schema", "name": "answer"},
-		Thinking:       map[string]interface{}{"effort": "medium"},
+		Model:           "gpt-5.4",
+		ResponseFormat:  map[string]interface{}{"type": "json_schema", "name": "answer"},
+		Thinking:        map[string]interface{}{"effort": "medium"},
+		EnableWebSearch: true,
 		ResponseInclude: []string{
 			"reasoning.encrypted_content",
 		},
@@ -46,6 +47,9 @@ func TestGetChatBodyMapsResponseFormatToTextFormat(t *testing.T) {
 	}
 	if body.Reasoning == nil {
 		t.Fatalf("expected reasoning config to pass through")
+	}
+	if len(body.Tools) != 1 || body.Tools[0].Type != "web_search" {
+		t.Fatalf("expected builtin web_search tool, got %#v", body.Tools)
 	}
 	if len(body.Include) != 1 || body.Include[0] != "reasoning.encrypted_content" {
 		t.Fatalf("expected include passthrough, got %#v", body.Include)
