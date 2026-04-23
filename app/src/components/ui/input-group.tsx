@@ -14,7 +14,7 @@ function InputGroup({ className, ...props }: React.ComponentProps<"div">) {
       data-slot="input-group"
       role="group"
       className={cn(
-        "group/input-group border-input shadow-xs relative flex w-full items-center rounded-md border bg-background outline-none transition-[color,box-shadow]",
+        "group/input-group border-input shadow-xs relative flex w-full min-w-0 items-center rounded-md border bg-background outline-none transition-[color,box-shadow]",
         "h-9 has-[>textarea]:h-auto",
         "has-[>[data-align=inline-start]]:[&>input]:pl-2",
         "has-[>[data-align=inline-end]]:[&>input]:pr-2",
@@ -102,6 +102,7 @@ function InputGroupButton({
       type={type}
       data-size={size}
       variant={variant}
+      unClickable
       className={cn(inputGroupButtonVariants({ size }), className)}
       {...props}
     />

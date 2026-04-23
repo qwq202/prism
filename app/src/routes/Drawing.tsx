@@ -136,34 +136,34 @@ function Drawing() {
 
         {/* Input Area - Floating Bottom */}
         <div className="absolute bottom-8 left-0 right-0 px-8 flex justify-center z-20 pointer-events-none">
-          <InputGroup className="pointer-events-auto w-full max-w-3xl overflow-hidden rounded-[24px] border border-border/80 bg-background shadow-lg transition-all duration-300 has-[[data-slot=input-group-control]:focus-visible]:border-primary/40 has-[[data-slot=input-group-control]:focus-visible]:shadow-xl">
+          <InputGroup className="pointer-events-auto h-auto w-full max-w-3xl flex-col items-stretch overflow-hidden rounded-[24px] border border-border/80 bg-background shadow-lg transition-all duration-300 has-[[data-slot=input-group-control]:focus-visible]:border-primary/40 has-[[data-slot=input-group-control]:focus-visible]:shadow-xl">
             <InputGroupTextarea
-              className="min-h-[84px] px-5 pt-4 pb-3 text-[15px] leading-6 placeholder:text-muted-foreground/75"
+              className="min-h-[84px] w-full px-5 pt-4 pb-3 text-[15px] leading-6 placeholder:text-muted-foreground/75"
               placeholder="Ask, Search or Chat..."
             />
             <InputGroupAddon
               align="block-end"
-              className="justify-between border-t border-border/60 bg-muted/15 px-4 py-3"
+              className="order-last w-full min-w-0 justify-between border-t border-border/60 px-4 py-3"
             >
-              <div className="flex items-center gap-2">
+              <div className="flex min-w-0 items-center gap-2">
                 <InputGroupButton
-                  size="icon-sm"
-                  className="rounded-full border border-border/80 bg-background text-muted-foreground hover:bg-muted"
+                  size="icon-xs"
+                  className="shrink-0 rounded-full border border-border/80 bg-background text-muted-foreground hover:bg-muted"
                   aria-label="Add"
                 >
                   <Plus />
                 </InputGroupButton>
-                <InputGroupText className="text-sm font-medium text-foreground/80">
+                <InputGroupText className="min-w-0 text-sm font-medium text-foreground/80">
                   Auto
                 </InputGroupText>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex shrink-0 items-center gap-3">
                 <InputGroupText className="text-sm font-medium text-muted-foreground">
                   52% used
                 </InputGroupText>
                 <InputGroupButton
-                  size="icon-sm"
-                  className="rounded-full bg-foreground text-background hover:bg-foreground/90"
+                  size="icon-xs"
+                  className="shrink-0 rounded-full bg-foreground text-background hover:bg-foreground/90"
                   aria-label="Send"
                 >
                   <ArrowUp />
