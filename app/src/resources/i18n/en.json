@@ -1553,6 +1553,7 @@
   "bar": {
     "chat": "Chat",
     "personalization": "Personalization",
+    "drawing": "Drawing",
     "model": "Model",
     "wallet": "Wallet",
     "log": "Log",
