@@ -43,6 +43,7 @@ export type MailState = {
 
 export type SearchState = {
   api_key: string;
+  engines: string[];
   crop: boolean;
   crop_len: number;
   max_results: number;
@@ -161,6 +162,12 @@ export type R2StorageState = {
   public_base_url: string;
 };
 
+export type GroupPricingState = {
+  buy_price: number;
+  consume_price: number;
+  description: string;
+};
+
 export type CommonState = {
   cache: string[];
   expire: number;
@@ -176,6 +183,7 @@ export type CommonState = {
   storage_mode: "local" | "s3" | "r2";
   s3: S3StorageState;
   r2: R2StorageState;
+  group: Record<string, GroupPricingState>;
 };
 
 export type SystemProps = {
@@ -242,6 +250,7 @@ export const initialSystemState: SystemProps = {
   },
   search: {
     api_key: "",
+    engines: [],
     crop: false,
     crop_len: 1000,
     max_results: 5,
@@ -278,6 +287,38 @@ export const initialSystemState: SystemProps = {
       access_key: "",
       secret_key: "",
       public_base_url: "",
+    },
+    group: {
+      anonymous: {
+        buy_price: 1,
+        consume_price: 1,
+        description: "",
+      },
+      normal: {
+        buy_price: 1,
+        consume_price: 1,
+        description: "",
+      },
+      basic: {
+        buy_price: 1,
+        consume_price: 1,
+        description: "",
+      },
+      standard: {
+        buy_price: 1,
+        consume_price: 1,
+        description: "",
+      },
+      pro: {
+        buy_price: 1,
+        consume_price: 1,
+        description: "",
+      },
+      admin: {
+        buy_price: 1,
+        consume_price: 1,
+        description: "",
+      },
     },
   },
   payment: {
