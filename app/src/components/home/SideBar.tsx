@@ -11,7 +11,7 @@ import React, { useMemo, useRef, useState } from "react";
 import { ConversationInstance } from "@/api/types.tsx";
 import { extractMessage, filterMessage } from "@/utils/processor.ts";
 import { copyClipboard } from "@/utils/dom.ts";
-import { useEffectAsync, useAnimation } from "@/utils/hook.ts";
+import { useEffectAsync, useAnimation as animateElement } from "@/utils/hook.ts";
 import { mobile, openWindow } from "@/utils/device.ts";
 import { Button } from "@/components/ui/button.tsx";
 import { selectMenu, setMenu } from "@/store/menu.ts";
@@ -164,7 +164,7 @@ function SidebarAction({
             id={`refresh`}
             ref={refreshRef}
             onClick={() => {
-              const hook = useAnimation(refreshRef, "active", 500);
+              const hook = animateElement(refreshRef, "active", 500);
               refreshAction().finally(hook);
             }}
           >

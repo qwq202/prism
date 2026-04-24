@@ -45,7 +45,7 @@ const DatePicker = ({
     const v = date ? format(date, "yyyy-MM-dd") : "";
     onValueChange && onValueChange(v);
     console.debug(`[calendar] value changed: [${v}]`);
-  }, [date]);
+  }, [date, onValueChange]);
 
   React.useEffect(() => {
     const date = parseDate(value);
@@ -86,7 +86,7 @@ const DatePicker = ({
       <PopoverContent className="w-auto p-0" align="start">
         <Calendar
           mode="single"
-          selected={date} //@ts-ignore
+          selected={date}
           onSelect={(date) => date && setDate(date)}
           initialFocus
           {...props}

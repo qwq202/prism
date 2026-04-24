@@ -26,7 +26,7 @@ type LinkProps = {
   children: React.ReactNode;
 };
 
-export default function ({ href, children }: LinkProps) {
+function Link({ href, children }: LinkProps) {
   const url: string = href?.toString() || "";
 
   if (url.startsWith("https://coai.virtual/reference::")) {
@@ -47,3 +47,5 @@ export default function ({ href, children }: LinkProps) {
     </a>
   );
 }
+
+export default Link;

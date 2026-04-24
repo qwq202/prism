@@ -1,4 +1,4 @@
-import { CustomMask, initialCustomMask } from "@/masks/types.ts";
+import { CustomMask } from "@/masks/types.ts";
 import { useTranslation } from "react-i18next";
 import { useDispatch, useSelector } from "react-redux";
 import { selectAuthenticated } from "@/store/auth.ts";
@@ -19,85 +19,16 @@ import {
 import EditorProvider from "@/components/EditorProvider.tsx";
 import Tips from "@/components/Tips.tsx";
 import { Button } from "@/components/ui/button.tsx";
-import Emoji, { getEmojiSource } from "@/components/Emoji.tsx";
+import Emoji from "@/components/Emoji.tsx";
+import { getEmojiSource } from "@/components/EmojiSource.ts";
 import EmojiPicker, { Theme } from "emoji-picker-react";
 import { Input } from "@/components/ui/input.tsx";
 import { FlexibleTextarea } from "@/components/ui/textarea.tsx";
 import { ChevronDown, ChevronUp, Pencil, Plus, Trash } from "lucide-react";
 import { cn } from "@/components/ui/lib/utils.ts";
-import { getRoleIcon, Roles, UserRole } from "@/api/types.tsx";
+import { getRoleIcon, Roles } from "@/api/types.tsx";
 import Icon from "@/components/utils/Icon.tsx";
-
-export function maskEditorReducer(state: CustomMask, action: any): CustomMask {
-  switch (action.type) {
-    case "update-avatar":
-      return { ...state, avatar: action.payload };
-    case "update-name":
-      return { ...state, name: action.payload };
-    case "update-description":
-      return { ...state, description: action.payload };
-    case "set-conversation":
-      return {
-        ...state,
-        context: action.payload,
-      };
-    case "new-message":
-      return {
-        ...state,
-        context: [...state.context, { role: UserRole, content: "" }],
-      };
-    case "new-message-below":
-      return {
-        ...state,
-        context: [
-          ...state.context.slice(0, action.index + 1),
-          { role: UserRole, content: "" },
-          ...state.context.slice(action.index + 1),
-        ],
-      };
-    case "update-message-role":
-      return {
-        ...state,
-        context: state.context.map((item, idx) => {
-          if (idx === action.index) return { ...item, role: action.payload };
-          return item;
-        }),
-      };
-    case "update-message-content":
-      return {
-        ...state,
-        context: state.context.map((item, idx) => {
-          if (idx === action.index) return { ...item, content: action.payload };
-          return item;
-        }),
-      };
-    case "change-index":
-      const { from, to } = action.payload;
-      const context = [...state.context];
-      const [removed] = context.splice(from, 1);
-      context.splice(to, 0, removed);
-      return { ...state, context };
-    case "remove-message":
-      return {
-        ...state,
-        context: state.context.filter((_, idx) => idx !== action.index),
-      };
-    case "reset":
-      return { ...initialCustomMask };
-    case "set-mask":
-      return {
-        ...action.payload,
-      };
-    case "import-mask":
-      return {
-        ...action.payload,
-        description: action.payload.description || "",
-        id: -1,
-      };
-    default:
-      return state;
-  }
-}
+import { MaskEditorAction } from "@/components/home/MaskEditorReducer.ts";
 
 type RoleActionProps = {
   role: string;
@@ -145,7 +76,7 @@ function MaskAction({ children, disabled, onClick }: MaskActionProps) {
 
 type CustomMaskDialogProps = {
   mask: CustomMask;
-  dispatch: (action: any) => void;
+  dispatch: React.Dispatch<MaskEditorAction>;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 };

@@ -15,7 +15,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 type SendButtonProps = {
   working: boolean;
-  onClick: () => any;
+  onClick: () => unknown;
 };
 
 function ActionButton({ onClick, working }: SendButtonProps) {

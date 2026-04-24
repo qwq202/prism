@@ -15,12 +15,12 @@ import { useClipboard } from "@/utils/dom.ts";
 import { Button } from "@/components/ui/button.tsx";
 import { openWindow } from "@/utils/device.ts";
 
-export enum ImageState {
-  Loading = "loading",
-  Loaded = "loaded",
-  Error = "error",
-}
-export type ImageStateType = (typeof ImageState)[keyof typeof ImageState];
+const ImageState = {
+  Loading: "loading",
+  Loaded: "loaded",
+  Error: "error",
+} as const;
+type ImageStateType = (typeof ImageState)[keyof typeof ImageState];
 
 export default function Image({
   src,

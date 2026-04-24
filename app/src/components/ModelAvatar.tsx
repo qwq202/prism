@@ -35,7 +35,9 @@ type ModelAvatarProps = {
   size?: number;
 };
 
-const builtinAvatars: Record<string, React.ExoticComponent<IconAvatarProps>> = {
+type AvatarComponent = React.ComponentType<IconAvatarProps & { type?: string }>;
+
+const builtinAvatars: Record<string, AvatarComponent> = {
   openai: OpenAI.Avatar,
   "gpt-3.5": OpenAI.Avatar,
   "gpt-4": OpenAI.Avatar,
@@ -138,7 +140,6 @@ function ModelAvatar({ model, className, size }: ModelAvatarProps) {
     <Avatar
       size={avatarSize}
       className={className}
-      // @ts-ignore
       type={getAvatarType(id)}
     />
   );

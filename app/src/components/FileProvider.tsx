@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useReducer, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import {
   Loader2,
   Paperclip,
@@ -26,7 +26,7 @@ import {
   DialogTitle,
 } from "./ui/dialog";
 import { useTranslation } from "react-i18next";
-import { useDraggableInput } from "@/utils/dom.ts";
+import { useDraggableInput as bindDraggableInput } from "@/utils/dom.ts";
 import { FileObject, FileArray, quickBlobParser } from "@/api/file.ts";
 import { useSelector } from "react-redux";
 import {
@@ -57,7 +57,15 @@ type FileTaskState = {
   tasks: FileTask[];
 };
 
-function fileTaskReducer(state: FileTaskState, action: any): FileTaskState {
+type FileTaskAction =
+  | { type: "add"; payload: FileTask }
+  | { type: "remove"; payload: number }
+  | { type: "update-progress"; payload: { id: number; progress: number } };
+
+function fileTaskReducer(
+  state: FileTaskState,
+  action: FileTaskAction,
+): FileTaskState {
   switch (action.type) {
     case "add":
       return { ...state, tasks: [...state.tasks, action.payload] };
@@ -82,7 +90,7 @@ function fileTaskReducer(state: FileTaskState, action: any): FileTaskState {
 
 type FileProviderProps = {
   files: FileArray;
-  dispatch: (action: Record<string, any>) => void;
+  dispatch: (action: { type: string; payload?: unknown }) => void;
 };
 
 function FileProvider({ files, dispatch }: FileProviderProps) {
@@ -108,33 +116,25 @@ function FileProvider({ files, dispatch }: FileProviderProps) {
   );
   const canUploadImage = supportsImageUpload(currentModelInfo);
 
-  useEffect(() => {
-    blobEvent.bind(async (file: File | File[]) => {
-      if (!canUploadImage) {
-        toast.info(t("file.vision-model-required"));
-        return;
-      }
-      setOpen?.(true);
-      await triggerFile(Array.isArray(file) ? file : [file]);
-    });
-  }, [canUploadImage, t]);
-
-  useEffect(() => {
-    if (canUploadImage) return;
-
-    if (open) {
-      setOpen(false);
-    }
-
-    if (files.length > 0) {
-      dispatch({ type: "clear" });
-      toast.info(t("file.files-cleared-on-model-switch"), {
-        description: t("file.vision-model-required"),
+  const addFile = useCallback((file: FileObject) => {
+    console.debug(
+      `[file] new file was added (filename: ${file.name}, size: ${file.size}, prompt: ${file.content.length})`,
+    );
+    if (
+      file.content.length > MaxPromptSize &&
+      !isHighContextModel(supportModels, model) &&
+      !isB64Image(file.content)
+    ) {
+      file.content = file.content.slice(0, MaxPromptSize);
+      toast(t("file.max-length"), {
+        description: t("file.max-length-prompt"),
       });
     }
-  }, [canUploadImage, open, files.length, dispatch, t]);
 
-  const triggerFile = async (files: (File | null)[]) => {
+    dispatch({ type: "add", payload: file });
+  }, [dispatch, model, supportModels, t]);
+
+  const triggerFile = useCallback(async (files: (File | null)[]) => {
     if (!canUploadImage) {
       toast.info(t("file.vision-model-required"));
       return;
@@ -197,25 +197,33 @@ function FileProvider({ files, dispatch }: FileProviderProps) {
       }
     }
     setLoading(false);
-  };
+  }, [addFile, canUploadImage, currentModelInfo, t]);
 
-  function addFile(file: FileObject) {
-    console.debug(
-      `[file] new file was added (filename: ${file.name}, size: ${file.size}, prompt: ${file.content.length})`,
-    );
-    if (
-      file.content.length > MaxPromptSize &&
-      !isHighContextModel(supportModels, model) &&
-      !isB64Image(file.content)
-    ) {
-      file.content = file.content.slice(0, MaxPromptSize);
-      toast(t("file.max-length"), {
-        description: t("file.max-length-prompt"),
-      });
+  useEffect(() => {
+    blobEvent.bind(async (file: File | File[]) => {
+      if (!canUploadImage) {
+        toast.info(t("file.vision-model-required"));
+        return;
+      }
+      setOpen?.(true);
+      await triggerFile(Array.isArray(file) ? file : [file]);
+    });
+  }, [canUploadImage, t, triggerFile]);
+
+  useEffect(() => {
+    if (canUploadImage) return;
+
+    if (open) {
+      setOpen(false);
     }
 
-    dispatch({ type: "add", payload: file });
-  }
+    if (files.length > 0) {
+      dispatch({ type: "clear" });
+      toast.info(t("file.files-cleared-on-model-switch"), {
+        description: t("file.vision-model-required"),
+      });
+    }
+  }, [canUploadImage, open, files.length, dispatch, t]);
 
   function removeFile(index: number) {
     dispatch({ type: "remove", payload: index });
@@ -552,8 +560,8 @@ function FileInput({ id, loading, className, handleEvent }: FileInputProps) {
   const ref = useRef(null);
 
   useEffect(() => {
-    return useDraggableInput(window.document.body, handleEvent);
-  }, []);
+    return bindDraggableInput(window.document.body, handleEvent);
+  }, [handleEvent]);
 
   return (
     <>

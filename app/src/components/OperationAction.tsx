@@ -16,7 +16,7 @@ import { cn } from "@/components/ui/lib/utils.ts";
 type ActionProps = ButtonProps & {
   tooltip?: string;
   children: React.ReactNode;
-  onClick?: () => any;
+  onClick?: () => unknown;
   native?: boolean;
   variant?:
     | "secondary"

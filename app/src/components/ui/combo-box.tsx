@@ -22,7 +22,7 @@ type ComboBoxProps = {
   onChange: (value: string) => void;
   list: string[];
   listTranslated?: string;
-  listFormatter?: (value: string) => any;
+  listFormatter?: (value: string) => React.ReactNode;
   placeholder?: string;
   defaultOpen?: boolean;
   className?: string;
@@ -53,7 +53,7 @@ export function Combobox({
     const seq = [...list, value ?? ""].filter((v) => v);
     const set = new Set(seq);
     return [...set];
-  }, [list]);
+  }, [list, value]);
 
   const formatter = React.useMemo(() => {
     if (listFormatter) {
@@ -62,7 +62,7 @@ export function Combobox({
 
     return (value: string) =>
       listTranslated ? t(`${listTranslated}.${value}`) : value;
-  }, [listFormatter, listTranslated]);
+  }, [listFormatter, listTranslated, t]);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>

@@ -40,7 +40,7 @@ const FlexibleTextarea = React.forwardRef<
 
     if (maxRows) return Math.min(res, maxRows);
     return res;
-  }, [props.value, rows, minRows]);
+  }, [props.value, rows, minRows, maxRows]);
 
   return (
     <Textarea

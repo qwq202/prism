@@ -1,8 +1,5 @@
 import { cn } from "@/components/ui/lib/utils.ts";
-
-export function getEmojiSource(emoji: string): string {
-  return `https://registry.npmmirror.com/@lobehub/fluent-emoji-3d/latest/files/assets/${emoji}.webp`;
-}
+import { getEmojiSource } from "@/components/EmojiSource.ts";
 
 type EmojiProps = {
   emoji: string;

@@ -59,7 +59,7 @@ export function MultiCombobox({
     const seq = [...list, ...(value ?? [])].filter((v) => v);
     const set = new Set(seq);
     return [...set];
-  }, [list]);
+  }, [list, value]);
 
   const v = value ?? [];
 

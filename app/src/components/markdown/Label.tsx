@@ -127,7 +127,7 @@ type LabelProps = {
   children: React.ReactNode;
 };
 
-export default function ({ children }: LabelProps) {
+function Label({ children }: LabelProps) {
   const { t } = useTranslation();
   const subscription = useSelector(subscriptionDataSelector);
   const content = (children ?? "").toString();
@@ -181,3 +181,5 @@ export default function ({ children }: LabelProps) {
 
   return <p>{children}</p>;
 }
+
+export default Label;

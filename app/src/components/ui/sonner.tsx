@@ -8,7 +8,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
   const { theme = "system" } = useTheme();
 
   return (
-    <Sonner //@ts-ignore
+    <Sonner
       theme={theme as ToasterProps["theme"]}
       className="toaster group"
       toastOptions={{

@@ -27,7 +27,7 @@ export type SelectItemProps = {
   name: string;
   value: string;
   badge?: SelectItemBadgeProps;
-  tag?: any;
+  tag?: React.ReactNode;
   icon?: React.ReactNode;
 };
 

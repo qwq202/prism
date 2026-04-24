@@ -38,9 +38,8 @@ export default function WarningButton({
   const [open, setOpen] = useState(false);
 
   const handleClick = onClick
-    ? async () => {
-        //@ts-ignore
-        await onClick?.();
+    ? async (event: React.MouseEvent<HTMLButtonElement>) => {
+        await onClick(event);
         setOpen(false);
       }
     : undefined;

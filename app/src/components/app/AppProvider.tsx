@@ -1,4 +1,4 @@
-import { ThemeProvider } from "@/components/ThemeProvider.tsx";
+import { ThemeProvider } from "@/components/ThemeProviderComponent.tsx";
 import DialogManager from "@/dialogs";
 import { useEffectAsync } from "@/utils/hook.ts";
 import { bindMarket, getApiPlans } from "@/api/v1.ts";
@@ -26,7 +26,7 @@ function AppProvider({ children }: { children?: React.ReactNode }) {
     stack.setCallback(async (id, message) => {
       await receive(id, message);
     });
-  }, []);
+  }, [dispatch, receive]);
 
   useEffectAsync(async () => {
     updateSupportModels(dispatch, await bindMarket());

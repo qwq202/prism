@@ -48,7 +48,7 @@ export function Mermaid({ children }: MermaidProps) {
   useEffect(() => {
     createRenderTask();
     setLoading(true);
-  }, [children]);
+  }, [children, createRenderTask]);
 
   return (
     <div className={`whitespace-pre-wrap markdown-syntax`}>

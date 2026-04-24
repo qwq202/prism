@@ -17,12 +17,12 @@ import { Button } from "@/components/ui/button.tsx";
 import { openWindow } from "@/utils/device.ts";
 import { RootState } from "@/store/index.ts";
 
-export enum VideoState {
-  Loading = "loading",
-  Loaded = "loaded",
-  Error = "error",
-}
-export type VideoStateType = (typeof VideoState)[keyof typeof VideoState];
+const VideoState = {
+  Loading: "loading",
+  Loaded: "loaded",
+  Error: "error",
+} as const;
+type VideoStateType = (typeof VideoState)[keyof typeof VideoState];
 
 type VideoProps = React.VideoHTMLAttributes<HTMLVideoElement> & {
   alt?: string;

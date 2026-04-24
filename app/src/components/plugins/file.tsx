@@ -31,7 +31,7 @@ export function MarkdownFile({ children, acceptDownload }: MarkdownFileProps) {
     // get image url from content (like: https://i.imgur.com/xxxxx.png)
     const match = content.match(/(https?:\/\/.*\.(?:png|jpg|jpeg|gif))/);
     return match ? match[0] : "";
-  }, [filename, content]);
+  }, [content]);
 
   const b64image = useMemo(() => {
     // get base64 image from content (like: data:image/png;base64,xxxxx)
@@ -39,7 +39,7 @@ export function MarkdownFile({ children, acceptDownload }: MarkdownFileProps) {
       /data:image\/([^;]+);base64,([a-zA-Z0-9+/=]+)/g,
     );
     return match ? match[0] : "";
-  }, [filename, content]);
+  }, [content]);
 
   return (
     <div

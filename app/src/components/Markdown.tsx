@@ -37,7 +37,9 @@ function MarkdownContent({
   }, [children]);
 
   const rehypePlugins = useMemo(() => {
-    const plugins = [rehypeKatex as any];
+    const plugins: NonNullable<
+      React.ComponentProps<typeof ReactMarkdown>["rehypePlugins"]
+    > = [rehypeKatex];
     return acceptHtml ? [...plugins, rehypeRaw] : plugins;
   }, [acceptHtml]);
 
@@ -61,7 +63,7 @@ function MarkdownContent({
         <Code {...props} loading={loading} codeStyle={codeStyle} />
       ),
     };
-  }, [codeStyle]);
+  }, [codeStyle, loading]);
 
   return (
     <ReactMarkdown
@@ -113,7 +115,7 @@ export function CodeMarkdown({
     const content = props.children.toString();
 
     return `\`\`\`${suffix}\n${content}\n\`\`\``;
-  }, [props.children]);
+  }, [props.children, suffix]);
 
   return <Markdown {...props}>{children}</Markdown>;
 }

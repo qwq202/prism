@@ -15,7 +15,6 @@ import { selectAuthenticated } from "@/store/auth.ts";
 import { Model, Plans } from "@/api/types.tsx";
 import { modelEvent } from "@/events/model.ts";
 import { levelSelector } from "@/store/subscription.ts";
-import { teenagerSelector } from "@/store/package.ts";
 import { useMemo } from "react";
 import {
   CloudOff,
@@ -83,7 +82,7 @@ function formatModel(
   level: number,
   t: (key: string) => string,
 ) {
-  let badge = [];
+  const badge = [];
   if (model.free) {
     badge.push({
       variant: "default",
@@ -124,12 +123,10 @@ export default function ModelFinder(props: ModelSelectorProps) {
   const model = useSelector(selectModel);
   const auth = useSelector(selectAuthenticated);
   const level = useSelector(levelSelector);
-  const student = useSelector(teenagerSelector);
   const list = useSelector(selectModelList);
   const currentConversationId = useSelector(selectCurrent);
 
   const supportModels = useSelector(selectSupportModels);
-  const modelList = useSelector(selectModelList);
   const subscriptionData = useSelector(subscriptionDataSelector);
 
   async function syncConversationModel(value: string) {
@@ -170,12 +167,12 @@ export default function ModelFinder(props: ModelSelectorProps) {
       } as Model);
 
     return raw.map((model) => formatModel(subscriptionData, model, level, t));
-  }, [supportModels, subscriptionData, level, student, modelList, t]);
+  }, [list, model, supportModels, subscriptionData, level, t]);
 
   const current = useMemo((): SelectItemProps => {
     const raw = models.find((item) => item.name === model);
     return raw || models[0];
-  }, [models, model, supportModels, modelList]);
+  }, [models, model]);
 
   return (
     <SelectGroup
@@ -219,7 +216,6 @@ export function ModelArea() {
   const model = useSelector(selectModel);
   const auth = useSelector(selectAuthenticated);
   const level = useSelector(levelSelector);
-  const student = useSelector(teenagerSelector);
   const currentConversationId = useSelector(selectCurrent);
 
   const supportModels = useSelector(selectSupportModels);
@@ -259,7 +255,7 @@ export function ModelArea() {
           ];
 
     return raw.map((model) => formatModel(subscriptionData, model, level, t));
-  }, [supportModels, subscriptionData, level, student, modelList, t]);
+  }, [supportModels, subscriptionData, level, t]);
 
   const starredModels = useMemo(() => {
     return models.filter((model) => modelList.includes(model.name));
@@ -274,7 +270,7 @@ export function ModelArea() {
   const current = useMemo((): SelectItemProps => {
     const raw = models.find((item) => item.name === model);
     return raw || models[0];
-  }, [models, model, supportModels, modelList]);
+  }, [models, model]);
 
   return (
     <Select

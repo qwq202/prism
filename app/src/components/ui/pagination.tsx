@@ -2,7 +2,8 @@ import * as React from "react";
 import { ChevronLeft, ChevronRight, MoreHorizontal } from "lucide-react";
 
 import { cn } from "@/components/ui/lib/utils";
-import { ButtonProps, buttonVariants } from "@/components/ui/button";
+import { ButtonProps } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 
 const Pagination = ({ ...props }: React.ComponentProps<"nav">) => (
   <nav role="navigation" aria-label="pagination" {...props} />
@@ -116,7 +117,6 @@ const PaginationAction = ({
   offset = false,
   className,
   onPageChange,
-  children,
   notCentered,
   ...props
 }: PaginationActionProps) => {

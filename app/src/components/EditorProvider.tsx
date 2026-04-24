@@ -11,7 +11,7 @@ import { useTranslation } from "react-i18next";
 import "@/assets/common/editor.less";
 import { Textarea } from "./ui/textarea.tsx";
 import Markdown from "./Markdown.tsx";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Toggle } from "./ui/toggle.tsx";
 import { mobile } from "@/utils/device.ts";
 import { Button } from "./ui/button.tsx";
@@ -59,7 +59,7 @@ function RichEditor({
     return isInvalid ? isInvalid(value) : false;
   }, [value, isInvalid]);
 
-  const handler = () => {
+  const handler = useCallback(() => {
     if (!input.current) return;
     const target = input.current as HTMLElement;
     const preview = target.parentElement?.querySelector(
@@ -82,8 +82,8 @@ function RichEditor({
     preview.style.height = `${target.clientHeight}px`;
 
     if (openInput) target.focus();
-  };
-  useEffect(handler, [input]);
+  }, [openInput]);
+  useEffect(handler, [handler]);
 
   return (
     <div className={`editor-container`}>

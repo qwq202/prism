@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Input, InputProps } from "@/components/ui/input.tsx";
 import { getNumber } from "@/utils/base.ts";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { cn } from "@/components/ui/lib/utils.ts";
 
 export interface NumberInputProps extends InputProps {
@@ -14,23 +14,26 @@ export interface NumberInputProps extends InputProps {
 }
 
 const NumberInput = React.forwardRef<HTMLInputElement, NumberInputProps>(
-  ({ className, type, onValueChange, ...props }, ref) => {
+  ({ className, onValueChange, ...props }, ref) => {
     const [value, setValue] = useState(props.value.toString());
-    useEffect(() => {
-      // fix life cycle: update value when props.value changed
-      if (getValue(value.toString()) !== props.value) {
-        setValue(props.value.toString());
-      }
-    }, [props.value]);
 
-    const getValue = (v: string) => {
+    const getValue = useCallback((v: string) => {
       const raw = getNumber(v, props.acceptNegative);
       let val = parseFloat(raw);
       if (isNaN(val) && !props.acceptNaN) val = 0;
       if (props.max !== undefined && val > props.max) val = props.max;
       else if (props.min !== undefined && val < props.min) val = props.min;
       return val;
-    };
+    }, [props.acceptNaN, props.acceptNegative, props.max, props.min]);
+
+    useEffect(() => {
+      // fix life cycle: update value when props.value changed
+      setValue((current) =>
+        getValue(current.toString()) !== props.value
+          ? props.value.toString()
+          : current,
+      );
+    }, [getValue, props.value]);
 
     const formatValue = (v: string) => {
       if (v.trim().length === 0) return v.trim();
@@ -47,7 +50,7 @@ const NumberInput = React.forwardRef<HTMLInputElement, NumberInputProps>(
       v = v.replace(exp, "");
 
       const raw = getNumber(v, props.acceptNegative);
-      let val = parseFloat(raw);
+      const val = parseFloat(raw);
       if (isNaN(val) && !props.acceptNaN) return (props.min ?? 0).toString();
       if (props.max !== undefined && val > props.max)
         return props.max.toString();
@@ -63,7 +66,7 @@ const NumberInput = React.forwardRef<HTMLInputElement, NumberInputProps>(
       if (props.max !== undefined && val > props.max) return false;
       else if (props.min !== undefined && val < props.min) return false;
       return true;
-    }, [value]);
+    }, [getValue, props.max, props.min, value]);
 
     return (
       <Input

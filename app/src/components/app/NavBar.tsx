@@ -23,7 +23,7 @@ import { refreshSubscription } from "@/store/subscription.ts";
 import { useEffectAsync } from "@/utils/hook.ts";
 import { AppDispatch, clearCronJobs, createCronJob } from "@/store";
 import { openDialog } from "@/store/settings.ts";
-import ThemeToggle from "@/components/ThemeProvider.tsx";
+import { ThemeToggle } from "@/components/ThemeProviderComponent.tsx";
 
 function NavMenu() {
   const username = useSelector(selectUsername);
@@ -49,7 +49,7 @@ function NavBar() {
   const dispatch: AppDispatch = useDispatch();
   useEffect(() => {
     validateToken(dispatch, getMemory(tokenField));
-  }, []);
+  }, [dispatch]);
   const auth = useSelector(selectAuthenticated);
   const init = useSelector(selectInit);
 

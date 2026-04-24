@@ -1,5 +1,5 @@
 import { ChevronsDown } from "lucide-react";
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 import { addEventListeners, scrollDown } from "@/utils/dom.ts";
 import { ChatAction } from "@/components/home/assemblies/ChatAction.tsx";
 import { useTranslation } from "react-i18next";
@@ -18,14 +18,14 @@ function ScrollAction(
   const { t } = useTranslation();
   const messages: Message[] = useMessages();
 
-  const scrollableHandler = () => {
+  const scrollableHandler = useCallback(() => {
     if (!target) return;
 
     const position = target.scrollTop + target.clientHeight;
     const height = target.scrollHeight;
     const diff = Math.abs(position - height);
     setVisibility(diff > 50);
-  };
+  }, [setVisibility, target]);
 
   useEffect(() => {
     if (!target) return;
@@ -34,7 +34,7 @@ function ScrollAction(
       ["scroll", "touchmove"],
       scrollableHandler,
     );
-  }, [target]);
+  }, [scrollableHandler, target]);
 
   useEffect(() => {
     if (!target) return;
@@ -42,7 +42,7 @@ function ScrollAction(
     if (target.scrollHeight <= target.clientHeight) {
       setVisibility(false);
     }
-  }, [messages]);
+  }, [messages, setVisibility, target]);
 
   return (
     <ChatAction

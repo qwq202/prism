@@ -59,9 +59,9 @@ function Tips({
     [content, children],
   );
 
-  const [drop, setDrop] = onOpenChange
-    ? [open, onOpenChange]
-    : React.useState(false);
+  const [internalDrop, setInternalDrop] = React.useState(false);
+  const drop = onOpenChange ? open : internalDrop;
+  const setDrop = onOpenChange ?? setInternalDrop;
   const [tooltip, setTooltip] = React.useState(false);
 
   const task = useRef<NodeJS.Timeout>();
@@ -71,14 +71,14 @@ function Tips({
     drop
       ? (task.current = setTimeout(() => setDrop(false), timeout))
       : clearTimeout(task.current);
-  }, [drop]);
+  }, [drop, notHide, setDrop, timeout]);
 
   useEffect(() => {
     if (!tooltip) return;
 
     setTooltip(false);
     !drop && setDrop(true);
-  }, [drop, tooltip]);
+  }, [drop, setDrop, tooltip]);
 
   return (
     <DropdownMenu

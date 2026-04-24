@@ -1,11 +1,18 @@
 import { deeptrainApiEndpoint, useDeeptrain } from "@/conf/env.ts";
-import { ImgHTMLAttributes, useMemo, useState, useEffect } from "react";
+import {
+  ImgHTMLAttributes,
+  useCallback,
+  useMemo,
+  useState,
+  useEffect,
+} from "react";
 import { cn } from "@/components/ui/lib/utils.ts";
 import { getUserInfo, UserInfo, initialUserInfo } from "@/api/auth.ts";
 import md5 from "crypto-js/md5";
 import { getConfig } from "@/admin/api/system";
 import { useSelector, useDispatch } from "react-redux";
 import { setAvatar } from "@/store/avatar";
+import { RootState } from "@/store";
 
 export interface AvatarProps extends ImgHTMLAttributes<HTMLElement> {
   username: string;
@@ -39,7 +46,7 @@ async function checkGravatar(
 function Avatar({ username, ...props }: AvatarProps) {
   const dispatch = useDispatch();
   const cachedAvatarBlob = useSelector(
-    (state: any) => state.avatar.avatars[username],
+    (state: RootState) => state.avatar.avatars[username],
   );
 
   const [userInfo, setUserInfo] = useState<UserInfo>(initialUserInfo);
@@ -63,24 +70,6 @@ function Avatar({ username, ...props }: AvatarProps) {
     });
   }, []);
 
-  useEffect(() => {
-    if (cachedAvatarBlob !== null) {
-      setHasAvatar(true);
-      return;
-    }
-    checkGravatar(gravatar_endpoint, userInfo.email).then((hasAvatar) => {
-      setHasAvatar(hasAvatar);
-      if (hasAvatar) {
-        const avatarUrl = getGravatarUrl(userInfo.email);
-        fetch(avatarUrl)
-          .then((response) => response.blob())
-          .then((blob) => {
-            dispatch(setAvatar({ username, blob }));
-          });
-      }
-    });
-  }, [gravatar_endpoint, userInfo]);
-
   const code = useMemo(
     () => (username?.length > 0 ? username[0].toUpperCase() : "A"),
     [username],
@@ -98,14 +87,39 @@ function Avatar({ username, ...props }: AvatarProps) {
     ];
     const index = code.charCodeAt(0) % colors.length;
     return colors[index];
-  }, [username]);
-  const getGravatarUrl = (email: string | undefined) => {
+  }, [code]);
+  const getGravatarUrl = useCallback((email: string | undefined) => {
     if (!email) return "";
     const trimmedEmail = email.trim().toLowerCase();
     const hash = md5(trimmedEmail).toString();
     if (!gravatar_endpoint) return "";
     return `${gravatar_endpoint}/avatar/${hash}?d=identicon`;
-  };
+  }, [gravatar_endpoint]);
+
+  useEffect(() => {
+    if (cachedAvatarBlob !== null) {
+      setHasAvatar(true);
+      return;
+    }
+    checkGravatar(gravatar_endpoint, userInfo.email).then((hasAvatar) => {
+      setHasAvatar(hasAvatar);
+      if (hasAvatar) {
+        const avatarUrl = getGravatarUrl(userInfo.email);
+        fetch(avatarUrl)
+          .then((response) => response.blob())
+          .then((blob) => {
+            dispatch(setAvatar({ username, blob }));
+          });
+      }
+    });
+  }, [
+    cachedAvatarBlob,
+    dispatch,
+    getGravatarUrl,
+    gravatar_endpoint,
+    userInfo.email,
+    username,
+  ]);
 
   const avatarSrc =
     useDeeptrain && username.length > 0

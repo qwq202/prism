@@ -34,6 +34,7 @@ function Code({
   codeStyle,
   ...props
 }: CodeProps) {
+  void loading;
   const [copied, setCopied] = React.useState(false);
   const match = /language-(\w+)/.exec(className || "");
   const language = match ? match[1].toLowerCase() : "unknown";
@@ -80,7 +81,7 @@ function Code({
   );
 }
 
-export default function ({
+function MemoizedCode({
   inline,
   className,
   children,
@@ -101,3 +102,5 @@ export default function ({
     );
   }, [inline, className, children, codeStyle, loading, props]);
 }
+
+export default MemoizedCode;

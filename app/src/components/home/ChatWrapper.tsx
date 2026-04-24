@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { useEffect, useMemo, useReducer, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import FileAction from "@/components/FileProvider.tsx";
 import { useSelector } from "react-redux";
 import { selectAuthenticated, selectInit } from "@/store/auth.ts";
@@ -48,7 +48,12 @@ function Interface(props: InterfaceProps) {
   return messages.length > 0 ? <ChatInterface {...props} /> : <ChatSpace />;
 }
 
-function fileReducer(state: FileArray, action: Record<string, any>): FileArray {
+type FileAction =
+  | { type: "add"; payload: FileArray[number] }
+  | { type: "remove"; payload: number }
+  | { type: "clear" };
+
+function fileReducer(state: FileArray, action: FileAction): FileArray {
   switch (action.type) {
     case "add":
       return [...state, action.payload];
@@ -80,7 +85,7 @@ function ChatWrapper() {
 
   const requireAuth = useMemo(
     (): boolean => !!getModelFromId(supportModels, model)?.auth,
-    [model],
+    [model, supportModels],
   );
 
   const [instance, setInstance] = useState<HTMLElement | null>(null);
@@ -89,7 +94,7 @@ function ChatWrapper() {
     fileDispatch({ type: "clear" });
   }
 
-  async function processSend(
+  const processSend = useCallback(async function processSend(
     data: string,
     passAuth?: boolean,
   ): Promise<boolean> {
@@ -115,7 +120,7 @@ function ChatWrapper() {
       }
     }
     return false;
-  }
+  }, [auth, files, requireAuth, sendAction, t, working]);
 
   async function handleSend() {
     // because of the function wrapper, we need to update the selector state using props.
@@ -140,7 +145,7 @@ function ChatWrapper() {
     const query = getQueryParam("q").trim();
     if (query.length > 0) processSend(query).then();
     clearHistoryState();
-  }, [init]);
+  }, [init, processSend]);
 
   useEffect(() => {
     const history: string = popMemory("history");
@@ -156,7 +161,7 @@ function ChatWrapper() {
         },
       });
     }
-  }, []);
+  }, [t]);
 
   return (
     <div className={`chat-container bg-muted/25 dark:bg-muted/10`}>

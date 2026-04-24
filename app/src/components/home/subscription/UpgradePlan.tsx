@@ -32,6 +32,7 @@ import { toast } from "sonner";
 import Icon from "@/components/utils/Icon";
 import { useCurrency } from "@/store/info";
 import Tips from "@/components/Tips";
+import { TFunction } from "i18next";
 
 function countPrice(data: Plans, base: number, month: number): number {
   const price = getPlanPrice(data, base) * month;
@@ -93,7 +94,7 @@ type UpgradeProps = {
 };
 
 async function callBuyAction(
-  t: any,
+  t: TFunction,
   month: number,
   level: number,
   current: number,
@@ -131,7 +132,7 @@ async function callBuyAction(
   return res.status;
 }
 
-async function callMigrateAction(t: any, level: number): Promise<boolean> {
+async function callMigrateAction(t: TFunction, level: number): Promise<boolean> {
   const res = await buySubscription(1, level);
   if (res.status) {
     toast.success(t("sub.migrate-success"), {
