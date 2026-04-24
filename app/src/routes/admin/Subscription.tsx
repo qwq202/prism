@@ -37,10 +37,8 @@ import { dispatchSubscriptionData } from "@/store/globals.ts";
 import { useDispatch } from "react-redux";
 import { cn } from "@/components/ui/lib/utils.ts";
 import { useAllModels } from "@/admin/hook.tsx";
-import PopupDialog, {
-  PopupAlertDialog,
-  popupTypes,
-} from "@/components/PopupDialog.tsx";
+import PopupDialog, { popupTypes } from "@/components/PopupDialog.tsx";
+import { PopupAlertDialog } from "@/components/PopupDialogComponent.tsx";
 import { getUniqueList } from "@/utils/base.ts";
 import Icon from "@/components/utils/Icon.tsx";
 
@@ -449,8 +447,10 @@ function PlanConfig() {
         setOpen={setSyncOpen}
         destructive={true}
         onSubmit={async () => {
+          if (!conf) return false;
+
           formDispatch({ type: "set", payload: conf });
-          conf && (await save(conf));
+          await save(conf);
 
           return true;
         }}

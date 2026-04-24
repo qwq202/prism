@@ -1091,7 +1091,9 @@ function Market() {
   const { supportModels, update: updateSuppportModels } = useSupportModels(
     (state, data) => {
       setStepSupport(!state);
-      state && dispatch({ type: "set", payload: data });
+      if (state && data) {
+        dispatch({ type: "set", payload: data });
+      }
     },
   );
 

@@ -43,6 +43,40 @@ import ModelAvatar from "@/components/ModelAvatar";
 import Icon from "@/components/utils/Icon";
 import Tips from "@/components/Tips";
 
+type SubscriptionUsageValue = {
+  used: number;
+  total: number;
+};
+
+function toSubscriptionUsage(
+  value: unknown,
+  fallbackTotal: number,
+): SubscriptionUsageValue | null {
+  if (typeof value === "number") {
+    return {
+      used: value,
+      total: fallbackTotal,
+    };
+  }
+
+  if (
+    value &&
+    typeof value === "object" &&
+    "used" in value &&
+    "total" in value
+  ) {
+    const usage = value as Record<"used" | "total", unknown>;
+    if (typeof usage.used === "number" && typeof usage.total === "number") {
+      return {
+        used: usage.used,
+        total: usage.total,
+      };
+    }
+  }
+
+  return null;
+}
+
 type PlanItemProps = {
   level: number;
   isYearly: boolean;
@@ -392,16 +426,22 @@ function WalletPlanBox() {
                   <div
                     className={`sub-items-wrapper p-2 px-4 pt-4 w-full h-fit grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2.5 md:gap-x-4`}
                   >
-                    {plan.items.map(
-                      (item, index) =>
-                        usage?.[item.id] && (
+                    {plan.items.map((item, index) => {
+                      const itemUsage = toSubscriptionUsage(
+                        usage?.[item.id],
+                        item.value,
+                      );
+
+                      return (
+                        itemUsage && (
                           <SubscriptionUsage
                             name={item.name}
-                            usage={usage?.[item.id]}
+                            usage={itemUsage}
                             key={index}
                           />
-                        ),
-                    )}
+                        )
+                      );
+                    })}
                   </div>
                 </AccordionContent>
               </AccordionItem>
