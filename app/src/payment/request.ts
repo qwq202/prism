@@ -89,7 +89,7 @@ export function usePaymentState(order: string): boolean {
     }, 2000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [order, t]);
 
   return state;
 }

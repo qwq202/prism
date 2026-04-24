@@ -13,7 +13,7 @@ function Admin() {
 
   useEffect(() => {
     if (init && !admin) router.navigate("/");
-  }, [init]);
+  }, [init, admin]);
 
   return (
     <div className={`home-page flex flex-row flex-1`}>

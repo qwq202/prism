@@ -22,7 +22,9 @@ import { toast } from "sonner";
 
 type CompProps = {
   form: RegisterForm;
-  dispatch: React.Dispatch<any>;
+  dispatch: React.Dispatch<
+    Parameters<ReturnType<typeof formReducer<RegisterForm>>>[1]
+  >;
   next: boolean;
   setNext: (next: boolean) => void;
 };

@@ -36,7 +36,6 @@ import {
   setModel,
 } from "@/store/chat.ts";
 import { levelSelector } from "@/store/subscription.ts";
-import { teenagerSelector } from "@/store/package.ts";
 import { selectAuthenticated } from "@/store/auth.ts";
 import { docsEndpoint } from "@/conf/env.ts";
 import { goAuth } from "@/utils/app.ts";
@@ -188,9 +187,9 @@ function SearchBar({
   );
 }
 
-type ModelProps = React.DetailedHTMLProps<
-  React.HTMLAttributes<HTMLDivElement>,
-  HTMLDivElement
+type ModelProps = Omit<
+  React.ComponentPropsWithoutRef<typeof motion.div>,
+  "onClick" | "style"
 > & {
   model: Model;
   className?: string;
@@ -259,7 +258,7 @@ function PriceColumn({
           </span>
         </motion.div>
       );
-    case tokenBilling:
+    case tokenBilling: {
       const inputValue = input * unitValue;
       const outputValue = output * unitValue;
 
@@ -289,6 +288,7 @@ function PriceColumn({
           </motion.div>
         </div>
       );
+    }
   }
 }
 
@@ -308,15 +308,13 @@ function ModelItem({
   const list = useSelector(selectModelList);
 
   const level = useSelector(levelSelector);
-  const student = useSelector(teenagerSelector);
-
   const subscriptionData = useSelector(subscriptionDataSelector);
 
   const state = useMemo(() => list.includes(model.id), [model, list]);
 
   const pro = useMemo(() => {
     return includingModelFromPlan(subscriptionData, level, model.id);
-  }, [subscriptionData, model, level, student]);
+  }, [subscriptionData, model, level]);
 
   const tags = useMemo(
     (): string[] => getTags(model).filter((tag) => tag !== "free"),
@@ -326,7 +324,7 @@ function ModelItem({
   return (
     <motion.div
       className={cn("model-item rounded-md", className)}
-      style={style} //@ts-ignore
+      style={style}
       ref={forwardRef}
       {...props}
       onClick={() => onModelSelect(model)}
@@ -516,7 +514,7 @@ function MarketPlace({ search, showPricing, show1mPricing, onSelect}: MarketPlac
           id.includes(item),
       );
     });
-  }, [supportModels, search]);
+  }, [supportModels, search, t]);
 
   return (
     <motion.div
@@ -556,13 +554,12 @@ function ModelDetailPanel({
   const list = useSelector(selectModelList);
   const auth = useSelector(selectAuthenticated);
   const level = useSelector(levelSelector);
-  const student = useSelector(teenagerSelector);
   const subscriptionData = useSelector(subscriptionDataSelector);
 
   const state = useMemo(() => list.includes(model.id), [model, list]);
   const pro = useMemo(
     () => includingModelFromPlan(subscriptionData, level, model.id),
-    [subscriptionData, model, level, student],
+    [subscriptionData, model, level],
   );
   const tags = useMemo(() => getTags(model), [model]);
 
@@ -884,7 +881,7 @@ function Model() {
       searchText,
       ...searchTags.filter((tag) => tag !== "").map((v) => t(`tag.${v}`)),
     ].join(" ");
-  }, [searchText, searchTags]);
+  }, [searchText, searchTags, t]);
 
   return (
     <>

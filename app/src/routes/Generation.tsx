@@ -6,7 +6,7 @@ import { ChevronLeft, Cloud, FileDown, Send } from "lucide-react";
 import { apiEndpoint } from "@/conf/bootstrap.ts";
 import router from "@/router.tsx";
 import { Input } from "@/components/ui/input.tsx";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { manager } from "@/api/generation.ts";
 import { handleGenerationData } from "@/utils/processor.ts";
 import { selectModel } from "@/store/chat.ts";
@@ -52,7 +52,7 @@ function Wrapper({ onSend }: WrapperProps) {
     setHash(hash);
   });
 
-  function handleSend(model: string = "gpt-3.5-16k") {
+  const handleSend = useCallback((model: string = "gpt-3.5-16k") => {
     const target = ref.current as HTMLInputElement | null;
     if (!target) return;
 
@@ -64,28 +64,25 @@ function Wrapper({ onSend }: WrapperProps) {
       clear();
       target.value = "";
     }
-  }
+  }, [onSend]);
 
   useEffect(() => {
     const target = ref.current as HTMLInputElement | null;
     if (!target) return;
-    target.focus();
-    target.removeEventListener("keydown", () => {});
-    target.addEventListener("keydown", (e) => {
+    const listener = (e: KeyboardEvent) => {
       if (isEnter(e)) {
         // cannot use model here, because model is not updated
         handleSend(modelRef.current);
       }
-    });
+    };
+
+    target.focus();
+    target.addEventListener("keydown", listener);
 
     return () => {
-      ref.current &&
-        (ref.current as HTMLInputElement).removeEventListener(
-          "keydown",
-          () => {},
-        );
+      target.removeEventListener("keydown", listener);
     };
-  }, [ref]);
+  }, [handleSend]);
 
   useEffect(() => {
     modelRef.current = model;

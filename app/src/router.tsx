@@ -1,48 +1,55 @@
-import {
-  createBrowserRouter,
-  RouterProvider,
-  useLocation,
-  useNavigate,
-} from "react-router-dom";
+import { createBrowserRouter } from "react-router-dom";
 import Home from "./routes/Home.tsx";
 import NotFound from "./routes/NotFound.tsx";
 import Auth from "./routes/Auth.tsx";
-import React, { Suspense, useEffect } from "react";
+import React, { Suspense } from "react";
 import { useDeeptrain } from "@/conf/env.ts";
 import Register from "@/routes/Register.tsx";
 import Forgot from "@/routes/Forgot.tsx";
 import { lazyFactor } from "@/utils/loader.tsx";
-import { useSelector } from "react-redux";
-import { selectAdmin, selectAuthenticated, selectInit } from "@/store/auth.ts";
 import Index from "@/routes/Index.tsx";
+import {
+  AdminRequired,
+  AuthForbidden,
+  AuthRequired,
+} from "@/routes/RouteGuards.tsx";
 
-const Model = lazyFactor(() => import("@/routes/Model.tsx"));
-const Personalization = lazyFactor(
+const modelRoute = lazyFactor(() => import("@/routes/Model.tsx"));
+const personalizationRoute = lazyFactor(
   () => import("@/routes/Personalization.tsx"),
 );
-const Wallet = lazyFactor(() => import("@/routes/Wallet.tsx"));
-const Account = lazyFactor(() => import("@/routes/Account.tsx"));
+const walletRoute = lazyFactor(() => import("@/routes/Wallet.tsx"));
+const accountRoute = lazyFactor(() => import("@/routes/Account.tsx"));
 
-const Generation = lazyFactor(() => import("@/routes/Generation.tsx"));
-const Sharing = lazyFactor(() => import("@/routes/Sharing.tsx"));
-const Article = lazyFactor(() => import("@/routes/Article.tsx"));
+const generationRoute = lazyFactor(() => import("@/routes/Generation.tsx"));
+const sharingRoute = lazyFactor(() => import("@/routes/Sharing.tsx"));
+const articleRoute = lazyFactor(() => import("@/routes/Article.tsx"));
 
-const AdminPage = lazyFactor(() => import("@/routes/Admin.tsx"));
-const AdminDashboard = lazyFactor(() => import("@/routes/admin/DashBoard.tsx"));
-const AdminMarket = lazyFactor(() => import("@/routes/admin/Market.tsx"));
-const AdminChannel = lazyFactor(() => import("@/routes/admin/Channel.tsx"));
-const AdminSystem = lazyFactor(() => import("@/routes/admin/System.tsx"));
-const AdminCharge = lazyFactor(() => import("@/routes/admin/Charge.tsx"));
-const AdminUsers = lazyFactor(() => import("@/routes/admin/Users.tsx"));
-const AdminBroadcast = lazyFactor(() => import("@/routes/admin/Broadcast.tsx"));
-const AdminSubscription = lazyFactor(
+const adminPageRoute = lazyFactor(() => import("@/routes/Admin.tsx"));
+const adminDashboardRoute = lazyFactor(
+  () => import("@/routes/admin/DashBoard.tsx"),
+);
+const adminMarketRoute = lazyFactor(() => import("@/routes/admin/Market.tsx"));
+const adminChannelRoute = lazyFactor(() => import("@/routes/admin/Channel.tsx"));
+const adminSystemRoute = lazyFactor(() => import("@/routes/admin/System.tsx"));
+const adminChargeRoute = lazyFactor(() => import("@/routes/admin/Charge.tsx"));
+const adminUsersRoute = lazyFactor(() => import("@/routes/admin/Users.tsx"));
+const adminBroadcastRoute = lazyFactor(
+  () => import("@/routes/admin/Broadcast.tsx"),
+);
+const adminSubscriptionRoute = lazyFactor(
   () => import("@/routes/admin/Subscription.tsx"),
 );
-const AdminAttachment = lazyFactor(() => import("@/routes/admin/Attachment.tsx"));
-const AdminLogger = lazyFactor(() => import("@/routes/admin/Logger.tsx"));
-const AdminRecord = lazyFactor(() => import("@/routes/admin/Record.tsx"));
-const AdminPayment = lazyFactor(() => import("@/routes/admin/Payment.tsx"));
-const AdminWarmup = lazyFactor(() => import("@/routes/admin/Warmup.tsx"));
+const adminAttachmentRoute = lazyFactor(
+  () => import("@/routes/admin/Attachment.tsx"),
+);
+const adminLoggerRoute = lazyFactor(() => import("@/routes/admin/Logger.tsx"));
+const adminRecordRoute = lazyFactor(() => import("@/routes/admin/Record.tsx"));
+const adminPaymentRoute = lazyFactor(() => import("@/routes/admin/Payment.tsx"));
+const adminWarmupRoute = lazyFactor(() => import("@/routes/admin/Warmup.tsx"));
+
+const withSuspense = (component: React.ComponentType) =>
+  React.createElement(Suspense, null, React.createElement(component));
 
 const router = createBrowserRouter([
   {
@@ -64,29 +71,17 @@ const router = createBrowserRouter([
       {
         id: "personalization",
         path: "personalization",
-        element: (
-          <Suspense>
-            <Personalization />
-          </Suspense>
-        ),
+        element: withSuspense(personalizationRoute),
       },
       {
         id: "model",
         path: "model",
-        element: (
-          <Suspense>
-            <Model />
-          </Suspense>
-        ),
+        element: withSuspense(modelRoute),
       },
       {
         id: "wallet",
         path: "wallet",
-        element: (
-          <Suspense>
-            <Wallet />
-          </Suspense>
-        ),
+        element: withSuspense(walletRoute),
       },
       // {
       //   id: "log",
@@ -118,11 +113,7 @@ const router = createBrowserRouter([
       {
         id: "account",
         path: "account",
-        element: (
-          <Suspense>
-            <Account />
-          </Suspense>
-        ),
+        element: withSuspense(accountRoute),
       },
       {
         id: "login",
@@ -139,128 +130,74 @@ const router = createBrowserRouter([
         path: "/admin",
         element: (
           <AdminRequired>
-            <Suspense>
-              <AdminPage />
-            </Suspense>
+            {withSuspense(adminPageRoute)}
           </AdminRequired>
         ),
         children: [
           {
             id: "admin-dashboard",
             path: "",
-            element: (
-              <Suspense>
-                <AdminDashboard />
-              </Suspense>
-            ),
+            element: withSuspense(adminDashboardRoute),
           },
           {
             id: "admin-users",
             path: "users",
-            element: (
-              <Suspense>
-                <AdminUsers />
-              </Suspense>
-            ),
+            element: withSuspense(adminUsersRoute),
           },
           {
             id: "admin-market",
             path: "market",
-            element: (
-              <Suspense>
-                <AdminMarket />
-              </Suspense>
-            ),
+            element: withSuspense(adminMarketRoute),
           },
           {
             id: "admin-channel",
             path: "channel",
-            element: (
-              <Suspense>
-                <AdminChannel />
-              </Suspense>
-            ),
+            element: withSuspense(adminChannelRoute),
           },
           {
             id: "admin-system",
             path: "system",
-            element: (
-              <Suspense>
-                <AdminSystem />
-              </Suspense>
-            ),
+            element: withSuspense(adminSystemRoute),
           },
           {
             id: "admin-attachment",
             path: "attachment",
-            element: (
-              <Suspense>
-                <AdminAttachment />
-              </Suspense>
-            ),
+            element: withSuspense(adminAttachmentRoute),
           },
           {
             id: "admin-warm-up",
             path: "warmup",
-            element: (
-              <Suspense>
-                <AdminWarmup />
-              </Suspense>
-            ),
+            element: withSuspense(adminWarmupRoute),
           },
           {
             id: "admin-charge",
             path: "charge",
-            element: (
-              <Suspense>
-                <AdminCharge />
-              </Suspense>
-            ),
+            element: withSuspense(adminChargeRoute),
           },
           {
             id: "admin-broadcast",
             path: "broadcast",
-            element: (
-              <Suspense>
-                <AdminBroadcast />
-              </Suspense>
-            ),
+            element: withSuspense(adminBroadcastRoute),
           },
           {
             id: "admin-subscription",
             path: "subscription",
-            element: (
-              <Suspense>
-                <AdminSubscription />
-              </Suspense>
-            ),
+            element: withSuspense(adminSubscriptionRoute),
           },
           {
             id: "admin-record",
             path: "record",
-            element: (
-              <Suspense>
-                <AdminRecord />
-              </Suspense>
-            ),
+            element: withSuspense(adminRecordRoute),
           },
           {
             id: "admin-payment",
             path: "pay",
-            element: (
-              <Suspense>
-                <AdminPayment />
-              </Suspense>
-            ),
+            element: withSuspense(adminPaymentRoute),
           },
           {
             id: "admin-logger",
             path: "logger",
-            element: (
-              <Suspense>
-                <AdminLogger />
-              </Suspense>
-            ),
+            element: withSuspense(adminLoggerRoute),
           },
         ],
         ErrorBoundary: NotFound,
@@ -270,9 +207,7 @@ const router = createBrowserRouter([
         path: "/generate",
         element: (
           <AuthRequired>
-            <Suspense>
-              <Generation />
-            </Suspense>
+            {withSuspense(generationRoute)}
           </AuthRequired>
         ),
         ErrorBoundary: NotFound,
@@ -282,14 +217,11 @@ const router = createBrowserRouter([
         path: "/article",
         element: (
           <AuthRequired>
-            <Suspense>
-              <Article />
-            </Suspense>
+            {withSuspense(articleRoute)}
           </AuthRequired>
         ),
         ErrorBoundary: NotFound,
       },
-
       ...(useDeeptrain
         ? []
         : [
@@ -319,62 +251,9 @@ const router = createBrowserRouter([
   {
     id: "share",
     path: "/share/:hash",
-    element: (
-      <Suspense>
-        <Sharing />
-      </Suspense>
-    ),
+    element: withSuspense(sharingRoute),
     ErrorBoundary: NotFound,
   },
 ]);
-
-export function AuthRequired({ children }: { children: React.ReactNode }) {
-  const init = useSelector(selectInit);
-  const authenticated = useSelector(selectAuthenticated);
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  useEffect(() => {
-    if (init && !authenticated) {
-      navigate("/login", { state: { from: location.pathname } });
-    }
-  }, [init, authenticated]);
-
-  return <>{children}</>;
-}
-
-export function AuthForbidden({ children }: { children: React.ReactNode }) {
-  const init = useSelector(selectInit);
-  const authenticated = useSelector(selectAuthenticated);
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  useEffect(() => {
-    if (init && authenticated) {
-      navigate("/", { state: { from: location.pathname } });
-    }
-  }, [init, authenticated]);
-
-  return <>{children}</>;
-}
-
-export function AdminRequired({ children }: { children: React.ReactNode }) {
-  const init = useSelector(selectInit);
-  const admin = useSelector(selectAdmin);
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  useEffect(() => {
-    if (init && !admin) {
-      navigate("/", { state: { from: location.pathname } });
-    }
-  }, [init, admin]);
-
-  return <>{children}</>;
-}
-
-export function AppRouter() {
-  return <RouterProvider router={router} />;
-}
 
 export default router;

@@ -38,13 +38,14 @@ type SharingFormProps = {
 };
 
 function SharingForm({ data }: SharingFormProps) {
-  if (data === null) return null;
-
   const { t } = useTranslation();
   const mobile = useMobile();
   const { mask: setMask, selected: setModel } = useConversationActions();
   const [maximized, setMaximized] = useState(isMobile());
   const container = useRef<HTMLDivElement>(null);
+
+  if (data === null) return null;
+
   const date = new Date(data.time);
   const time = `${
     date.getMonth() + 1

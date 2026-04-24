@@ -1,5 +1,5 @@
 import { tokenField } from "@/conf/bootstrap.ts";
-import { useEffect, useReducer } from "react";
+import { useCallback, useEffect, useReducer } from "react";
 import Loader from "@/components/Loader.tsx";
 import "@/assets/pages/auth.less";
 import { validateToken } from "@/store/auth.ts";
@@ -72,7 +72,7 @@ function DeepAuth() {
           },
         });
       });
-  }, []);
+  }, [dispatch, t, token]);
 
   return (
     <div className={`auth`}>
@@ -89,7 +89,7 @@ function Login() {
     password: sessionStorage.getItem("password") || "",
   });
 
-  const onSubmit = async () => {
+  const onSubmit = useCallback(async () => {
     if (
       !isTextInRange(form.username, 1, 255) ||
       !isTextInRange(form.password, 6, 36)
@@ -127,7 +127,7 @@ function Login() {
         description: `${t("server-error-prompt")}\n${getErrorMessage(err)}`,
       });
     }
-  };
+  }, [form, globalDispatch, t]);
 
   useEffect(() => {
     // listen to enter key and auto submit
@@ -137,7 +137,7 @@ function Login() {
 
     document.addEventListener("keydown", listener);
     return () => document.removeEventListener("keydown", listener);
-  }, []);
+  }, [onSubmit]);
 
   return (
     <ScrollArea className={`w-full h-full grid place-items-center`}>
