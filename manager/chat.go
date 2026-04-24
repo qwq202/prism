@@ -269,6 +269,29 @@ func syncBufferChannel(target *utils.Buffer, source *utils.Buffer) {
 	target.SetChannel(source.GetChannelId(), source.GetChannelName())
 }
 
+func signalInterrupt(interruptSignal chan error, err error) {
+	select {
+	case interruptSignal <- err:
+	default:
+	}
+}
+
+func waitForRoundTaskEnd(chunkChan <-chan partialChunk) {
+	timer := time.NewTimer(2 * time.Second)
+	defer timer.Stop()
+
+	for {
+		select {
+		case data := <-chunkChan:
+			if data.End {
+				return
+			}
+		case <-timer.C:
+			return
+		}
+	}
+}
+
 func buildChatProps(
 	conn *Connection,
 	instance *conversation.Conversation,
@@ -326,9 +349,7 @@ func createRoundTask(
 	stopSignal := createStopSignal(conn)
 
 	defer func() {
-		close(interruptSignal)
 		close(stopSignal)
-		close(chunkChan)
 	}()
 
 	go func() {
@@ -410,7 +431,8 @@ func createRoundTask(
 					Plan:    plan,
 				}); err != nil {
 					globals.Warn(fmt.Sprintf("failed to send message to client: %s", err.Error()))
-					interruptSignal <- err
+					signalInterrupt(interruptSignal, err)
+					waitForRoundTaskEnd(chunkChan)
 					return hit, nil, true
 				}
 			}
@@ -429,7 +451,8 @@ func createRoundTask(
 					End:   true,
 					Plan:  plan,
 				})
-				interruptSignal <- errors.New("signal")
+				signalInterrupt(interruptSignal, errors.New("signal"))
+				waitForRoundTaskEnd(chunkChan)
 				return hit, nil, true
 			}
 		}
