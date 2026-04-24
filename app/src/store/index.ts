@@ -36,7 +36,7 @@ type AppDispatch = typeof store.dispatch;
 
 export function createCronJob(
   dispatch: AppDispatch,
-  method: Function,
+  method: () => Parameters<AppDispatch>[0],
   interval: number,
   runWhenInit?: boolean,
 ) {

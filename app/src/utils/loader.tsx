@@ -6,7 +6,7 @@ import {
 } from "@/events/spinner.ts";
 import { generateListNumber } from "@/utils/base.ts";
 
-export function lazyFactor<T extends React.ComponentType<any>>(
+export function lazyFactor<T extends React.ComponentType<Record<string, never>>>(
   factor: () => Promise<{ default: T }>,
 ): React.LazyExoticComponent<T> {
   /**

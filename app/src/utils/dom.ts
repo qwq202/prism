@@ -182,7 +182,7 @@ export function useDraggableInput(
   };
 }
 
-export function testNumberInputEvent(e: any): boolean {
+export function testNumberInputEvent(e: KeyboardEvent | React.KeyboardEvent): boolean {
   /**
    * Test if input event is valid for number input
    * @param e Input event

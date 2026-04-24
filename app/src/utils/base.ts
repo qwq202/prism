@@ -21,9 +21,11 @@ export function move<T>(arr: T[], from: number, to: number): T[] {
   return insert(remove(arr, from), to, value);
 }
 
-export function asyncCaller<T>(fn: (...args: any[]) => Promise<T>) {
+export function asyncCaller<T, Args extends unknown[]>(
+  fn: (...args: Args) => Promise<T>,
+) {
   let promise: Promise<T> | undefined;
-  return (...args: any[]) => {
+  return (...args: Args) => {
     if (!promise) promise = fn(...args);
     return promise;
   };
@@ -57,13 +59,14 @@ export function splitList(value: string, separators: string[]): string[] {
   return result;
 }
 
-export function getErrorMessage(error: any): string {
+export function getErrorMessage(error: unknown): string {
   if (error instanceof Error) return error.message;
   if (typeof error === "string") return error;
   return JSON.stringify(error);
 }
 
-export function isAsyncFunc(fn: any): boolean {
+export function isAsyncFunc(fn: unknown): boolean {
+  if (typeof fn !== "function") return false;
   return fn.constructor.name === "AsyncFunction";
 }
 

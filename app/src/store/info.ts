@@ -129,9 +129,9 @@ export const infoAuthFooterSelector = (state: RootState): boolean =>
 export const infoRelayPlanSelector = (state: RootState): boolean =>
   state.info.relay_plan;
 export const infoWebSearchSelector = (state: RootState): boolean =>
-  (state.info as any).web_search ?? false;
+  state.info.web_search ?? false;
 export const infoHasTaskModelSelector = (state: RootState): boolean =>
-  (state.info as any).has_task_model ?? false;
+  state.info.has_task_model ?? false;
 export const infoPaymentSelector = (state: RootState): string[] =>
   state.info.payment;
 export const isPaymentAggregationSelector = (state: RootState): boolean =>
@@ -141,9 +141,9 @@ export const infoCurrencySelector = (state: RootState): string =>
 export const infoAnnouncementSelector = (state: RootState): string =>
   state.info.announcement;
 export const infoHideKeyDocsSelector = (state: RootState): boolean =>
-  (state.info as any).hide_key_docs ?? false;
+  state.info.hide_key_docs ?? false;
 export const infoBackendSelector = (state: RootState): string | undefined =>
-  (state.info as any).backend;
+  state.info.backend;
 export const infoBroadcastSelector = (state: RootState): BroadcastEvent =>
   state.info.broadcast;
 

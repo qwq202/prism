@@ -13,7 +13,10 @@ declare module "sonner" {
   export const Toaster: React.FC;
 
   export type ToastFunc = (title: string, options?: ToastProps) => void;
-  export type ToastPromise = (promise: Promise<any>, options?: any) => void;
+  export type ToastPromise = (
+    promise: Promise<unknown>,
+    options?: Record<string, unknown>,
+  ) => void;
 
   export const toast: {
     (title: string, options?: ToastProps): void;

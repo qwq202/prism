@@ -1,15 +1,16 @@
 import { toast } from "sonner";
+import type { TFunction } from "i18next";
 
 export type CommonResponse = {
   status: boolean;
   error?: string;
   reason?: string;
   message?: string;
-  data?: any;
+  data?: unknown;
 };
 
 export function withNotify(
-  t: any,
+  t: TFunction,
   state: CommonResponse,
   toastSuccess?: boolean,
   toastSuccessMessage?: string,

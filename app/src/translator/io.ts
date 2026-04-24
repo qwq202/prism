@@ -1,17 +1,28 @@
 import fs from "fs";
 import path from "path";
 
-export function readJSON(...paths: string[]): any {
-  return JSON.parse(fs.readFileSync(path.resolve(...paths)).toString());
+export type JsonValue =
+  | string
+  | number
+  | boolean
+  | undefined
+  | null
+  | JsonValue[]
+  | { [key: string]: JsonValue };
+
+export type JsonObject = Record<string, JsonValue>;
+
+export function readJSON<T = JsonValue>(...paths: string[]): T {
+  return JSON.parse(fs.readFileSync(path.resolve(...paths)).toString()) as T;
 }
 
-export function writeJSON(data: any, ...paths: string[]): void {
+export function writeJSON(data: JsonValue, ...paths: string[]): void {
   fs.writeFileSync(path.resolve(...paths), JSON.stringify(data, null, 2));
 }
 
 export function getMigration(
-  mother: Record<string, any>,
-  data: Record<string, any>,
+  mother: JsonObject,
+  data: JsonObject | undefined,
   prefix: string,
 ): string[] {
   return Object.keys(mother)
@@ -26,7 +37,16 @@ export function getMigration(
           else if (template.startsWith("!!")) return val;
           break;
         case "object":
-          return getMigration(template, translation, val[0]);
+          if (template && !Array.isArray(template)) {
+            return getMigration(
+              template,
+              translation && typeof translation === "object" && !Array.isArray(translation)
+                ? translation
+                : undefined,
+              val[0],
+            );
+          }
+          return typeof translation === typeof template ? [] : val;
         default:
           return typeof translation === typeof template ? [] : val;
       }
@@ -37,11 +57,12 @@ export function getMigration(
     .filter((key) => key !== undefined && key.length > 0);
 }
 
-export function getFields(data: any): number {
+export function getFields(data: JsonValue): number {
   switch (typeof data) {
     case "string":
       return 1;
     case "object":
+      if (data === null) return 1;
       if (Array.isArray(data)) return data.length;
       return Object.keys(data).reduce(
         (acc, key) => acc + getFields(data[key]),
@@ -52,10 +73,13 @@ export function getFields(data: any): number {
   }
 }
 
-export function getTranslation(data: Record<string, any>, path: string): any {
+export function getTranslation(data: JsonObject, path: string): JsonValue | undefined {
   const keys = path.split(".");
-  let current = data;
+  let current: JsonValue | undefined = data;
   for (const key of keys) {
+    if (!current || typeof current !== "object" || Array.isArray(current)) {
+      return undefined;
+    }
     if (current[key] === undefined) return undefined;
     current = current[key];
   }
@@ -63,15 +87,19 @@ export function getTranslation(data: Record<string, any>, path: string): any {
 }
 
 export function setTranslation(
-  data: Record<string, any>,
+  data: JsonObject,
   path: string,
-  value: any,
+  value: JsonValue,
 ): void {
   const keys = path.split(".");
-  let current = data;
+  let current: JsonObject = data;
   for (let i = 0; i < keys.length - 1; i++) {
     if (current[keys[i]] === undefined) current[keys[i]] = {};
-    current = current[keys[i]];
+    const next = current[keys[i]];
+    if (!next || typeof next !== "object" || Array.isArray(next)) {
+      current[keys[i]] = {};
+    }
+    current = current[keys[i]] as JsonObject;
   }
   current[keys[keys.length - 1]] = value;
 }

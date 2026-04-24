@@ -1,5 +1,6 @@
 import { createSlice } from "@reduxjs/toolkit";
 import { mobile } from "@/utils/device.ts";
+import { RootState } from "@/store/index.ts";
 
 export const menuSlice = createSlice({
   name: "menu",
@@ -25,4 +26,4 @@ export const menuSlice = createSlice({
 export const { toggleMenu, closeMenu, openMenu, setMenu } = menuSlice.actions;
 export default menuSlice.reducer;
 
-export const selectMenu = (state: any) => state.menu.open;
+export const selectMenu = (state: RootState): boolean => state.menu.open;

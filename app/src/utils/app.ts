@@ -1,6 +1,6 @@
 import router from "@/router.tsx";
 import { useDeeptrain } from "@/conf/env.ts";
-import { goDeepLogin } from "@/conf/deeptrain.tsx";
+import { goDeepLogin } from "@/conf/deeptrain-login.ts";
 
 export let event: BeforeInstallPromptEvent | undefined;
 
@@ -21,7 +21,7 @@ export function triggerInstallApp() {
   if (!event) return;
   try {
     event.prompt();
-    event.userChoice.then((choice: any) => {
+    event.userChoice.then((choice: { outcome: string }) => {
       console.debug(`[service] installed app (status: ${choice.outcome})`);
     });
   } catch (err) {

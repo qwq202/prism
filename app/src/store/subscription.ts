@@ -1,5 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { getSubscription } from "@/api/addition.ts";
+import { RootState } from "@/store/index.ts";
 
 export const subscriptionSlice = createSlice({
   name: "subscription",
@@ -35,18 +36,20 @@ export const subscriptionSlice = createSlice({
 
 export default subscriptionSlice.reducer;
 
-export const isSubscribedSelector = (state: any): boolean =>
+export const isSubscribedSelector = (state: RootState): boolean =>
   state.subscription.is_subscribed;
-export const levelSelector = (state: any): number => state.subscription.level;
-export const expiredSelector = (state: any): number =>
+export const levelSelector = (state: RootState): number =>
+  state.subscription.level;
+export const expiredSelector = (state: RootState): number =>
   state.subscription.expired;
-export const expiredAtSelector = (state: any): string =>
+export const expiredAtSelector = (state: RootState): string =>
   state.subscription.expired_at;
-export const refreshSelector = (state: any): number =>
+export const refreshSelector = (state: RootState): number =>
   state.subscription.refresh;
-export const refreshAtSelector = (state: any): string =>
+export const refreshAtSelector = (state: RootState): string =>
   state.subscription.refresh_at;
-export const usageSelector = (state: any): any => state.subscription.usage;
+export const usageSelector = (state: RootState): Record<string, number> =>
+  state.subscription.usage;
 
 export const refreshSubscription = createAsyncThunk(
   "subscription/refreshSubscription",

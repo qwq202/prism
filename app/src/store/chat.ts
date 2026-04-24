@@ -844,7 +844,11 @@ export function useConversationActions() {
     },
     retitle: async (id: number) => {
       const resp = await doRetitleConversation(id);
-      const name = resp.data?.name;
+      const data = resp.data;
+      const name =
+        data && typeof data === "object" && "name" in data
+          ? data.name
+          : undefined;
       if (resp.status && typeof name === "string" && name.length > 0) {
         dispatch(renameHistory({ id, name }));
       }
@@ -1120,7 +1124,7 @@ export function useMessageActions() {
   };
 }
 
-export function listenMessageEvent() {
+export function useListenMessageEvent() {
   const actions = useMessageActions();
 
   return (e: ConnectionEvent) => {
@@ -1142,6 +1146,8 @@ export function listenMessageEvent() {
     }
   };
 }
+
+export const listenMessageEvent = useListenMessageEvent;
 
 export function useMessages(): Message[] {
   const conversations = useSelector(selectConversations);

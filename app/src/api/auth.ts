@@ -2,6 +2,7 @@ import axios from "axios";
 import { getErrorMessage } from "@/utils/base.ts";
 import { isEmailValid } from "@/utils/form.ts";
 import { toast } from "sonner";
+import type { TFunction } from "i18next";
 
 export type LoginForm = {
   username: string;
@@ -131,7 +132,7 @@ export async function doReset(data: ResetForm): Promise<ResetResponse> {
 }
 
 export async function sendCode(
-  t: any,
+  t: TFunction,
   email: string,
   checkout?: boolean,
 ): Promise<boolean> {

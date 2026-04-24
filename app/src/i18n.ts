@@ -6,6 +6,7 @@ import en from "@/resources/i18n/en.json";
 import ru from "@/resources/i18n/ru.json";
 import ja from "@/resources/i18n/ja.json";
 import tw from "@/resources/i18n/tw.json";
+import type { i18n as I18nInstance } from "i18next";
 
 // the translations
 // (tip move them in a JSON file and import them,
@@ -57,12 +58,12 @@ export function getLanguage(): string {
   return defaultLanguage;
 }
 
-export function setLanguage(i18n: any, lang: string): void {
+export function setLanguage(instance: I18nInstance, lang: string): void {
   if (supportedLanguages.includes(lang)) {
-    i18n
+    instance
       .changeLanguage(lang)
       .then(() =>
-        console.debug(`[i18n] language changed (language: ${i18n.language})`),
+        console.debug(`[i18n] language changed (language: ${instance.language})`),
       );
     setMemory("language", lang);
     return;

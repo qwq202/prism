@@ -1,4 +1,10 @@
-export function setKey<T>(state: T, key: string, value: any): T {
+type FormAction = {
+  type: string;
+  payload?: unknown;
+  value?: unknown;
+};
+
+export function setKey<T>(state: T, key: string, value: unknown): T {
   const segment = key.split(".");
   if (segment.length === 1) {
     return { ...state, [key]: value };
@@ -12,20 +18,20 @@ export function setKey<T>(state: T, key: string, value: any): T {
 }
 
 export const formReducer = <T>() => {
-  return (state: T, action: any): T => {
-    action.payload = action.payload ?? action.value;
+  return (state: T, action: FormAction): T => {
+    const payload = action.payload ?? action.value;
 
     switch (action.type) {
       case "update":
-        return { ...state, ...action.payload } as T;
+        return { ...state, ...(payload as Partial<T>) } as T;
       case "reset":
-        return { ...action.payload } as T;
+        return { ...(payload as Partial<T>) } as T;
       case "set":
-        return action.payload as T;
+        return payload as T;
       default:
         if (action.type.startsWith("update:")) {
           const key = action.type.slice(7);
-          return setKey(state, key, action.payload) as T;
+          return setKey(state, key, payload) as T;
         }
 
         return state;

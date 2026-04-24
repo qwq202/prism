@@ -1,15 +1,20 @@
 import { useDispatch, useSelector } from "react-redux";
-import { RootState } from "./index.ts";
+import { AppDispatch, RootState } from "./index.ts";
 
 export function dispatchWrapper(
-  action: (state: RootState, payload?: any) => any,
+  action: (payload?: unknown) => Parameters<AppDispatch>[0],
 ) {
-  return (payload?: any) => {
-    const dispatch = useDispatch();
+  return (payload?: unknown) => {
+    const dispatch = useDispatch<AppDispatch>();
     dispatch(action(payload));
   };
 }
 
-export function getSelector(reducer: string, key: string) {
-  return useSelector((state: any) => state[reducer][key]);
+export function useGetSelector(reducer: string, key: string) {
+  return useSelector((state: RootState) => {
+    const section = state[reducer as keyof RootState] as Record<string, unknown>;
+    return section[key];
+  });
 }
+
+export const getSelector = useGetSelector;

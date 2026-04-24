@@ -1,6 +1,11 @@
 import React, { useEffect } from "react";
 
-export function useEffectAsync<T>(effect: () => Promise<T>, deps?: any[]) {
+const useEffectImpl = useEffect;
+
+export function useEffectAsync<T>(
+  effect: () => Promise<T>,
+  deps?: React.DependencyList,
+) {
   /**
    * useEffect with async/await support
    *
@@ -11,7 +16,7 @@ export function useEffectAsync<T>(effect: () => Promise<T>, deps?: any[]) {
    *  }, []);
    */
 
-  return useEffect(() => {
+  return useEffectImpl(() => {
     effect().catch((err) =>
       console.debug("[runtime] error during use effect", err),
     );
@@ -19,7 +24,7 @@ export function useEffectAsync<T>(effect: () => Promise<T>, deps?: any[]) {
 }
 
 export function useAnimation(
-  ref: React.MutableRefObject<any>,
+  ref: React.MutableRefObject<HTMLElement | null>,
   cls: string,
   min?: number,
 ): (() => number) | undefined {

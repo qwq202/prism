@@ -9,6 +9,7 @@ import {
   setTranslation,
   writeJSON,
 } from "./io";
+import type { JsonObject } from "./io";
 import { doTranslate } from "./adapter";
 
 export const defaultDevLang = "cn";
@@ -29,12 +30,12 @@ export async function processTranslation(
     return;
   }
 
-  const data = readJSON(source, motherboard);
+  const data = readJSON<JsonObject>(source, motherboard);
 
   const target = files.filter((file) => file !== motherboard);
   for (const file of target) {
     const lang = file.split(".")[0];
-    const translation = { ...readJSON(source, file) };
+    const translation = { ...readJSON<JsonObject>(source, file) };
 
     const fields = getFields(data);
     const migration = getMigration(data, translation, "");

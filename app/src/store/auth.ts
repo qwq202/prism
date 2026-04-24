@@ -64,7 +64,7 @@ export const authSlice = createSlice({
 export function validateToken(
   dispatch: AppDispatch,
   token: string,
-  hook?: () => any,
+  hook?: () => void,
 ) {
   token = token.trim();
   dispatch(setToken(token));

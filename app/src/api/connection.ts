@@ -2,6 +2,7 @@ import { tokenField, websocketEndpoint } from "@/conf/bootstrap.ts";
 import { getMemory } from "@/utils/memory.ts";
 import { getErrorMessage } from "@/utils/base.ts";
 import { Mask } from "@/masks/types.ts";
+import type { TFunction } from "i18next";
 
 export const endpoint = `${websocketEndpoint}/chat`;
 export const maxRetry = 60; // 30s max websocket retry
@@ -85,7 +86,7 @@ type StreamCallback = (id: number, message: StreamMessage) => void;
 export class Connection {
   protected connection?: WebSocket;
   protected callback?: StreamCallback;
-  protected stack?: Record<string, any>;
+  protected stack?: Record<string, unknown>;
   public id: number;
   public state: boolean;
 
@@ -131,7 +132,7 @@ export class Connection {
     this.init();
   }
 
-  public send(data: Record<string, string | boolean | number>): boolean {
+  public send(data: Record<string, string | boolean | number | undefined>): boolean {
     if (!this.state || !this.connection) {
       if (this.connection === undefined) this.init();
       console.debug("[connection] connection not ready, retrying in 500ms...");
@@ -141,7 +142,7 @@ export class Connection {
     return true;
   }
 
-  public sendWithRetry(t: any, data: ChatProps, times?: number): void {
+  public sendWithRetry(t: TFunction | undefined, data: ChatProps, times?: number): void {
     try {
       if (!times || times < maxRetry) {
         if (!this.send(data)) {
@@ -175,7 +176,7 @@ export class Connection {
       });
   }
 
-  public sendEvent(t: any, event: string, data?: string, props?: ChatProps) {
+  public sendEvent(t: TFunction | undefined, event: string, data?: string, props?: ChatProps) {
     this.sendWithRetry(t, {
       type: event,
       message: data || "",
@@ -184,27 +185,27 @@ export class Connection {
     });
   }
 
-  public sendStopEvent(t: any) {
+  public sendStopEvent(t: TFunction | undefined) {
     this.sendEvent(t, "stop");
   }
 
-  public sendRestartEvent(t: any, data?: ChatProps) {
+  public sendRestartEvent(t: TFunction | undefined, data?: ChatProps) {
     this.sendEvent(t, "restart", undefined, data);
   }
 
-  public sendMaskEvent(t: any, mask: Mask) {
+  public sendMaskEvent(t: TFunction | undefined, mask: Mask) {
     this.sendEvent(t, "mask", JSON.stringify(mask.context));
   }
 
-  public sendEditEvent(t: any, id: number, message: string) {
+  public sendEditEvent(t: TFunction | undefined, id: number, message: string) {
     this.sendEvent(t, "edit", `${id}:${message}`);
   }
 
-  public sendRemoveEvent(t: any, id: number) {
+  public sendRemoveEvent(t: TFunction | undefined, id: number) {
     this.sendEvent(t, "remove", id.toString());
   }
 
-  public sendShareEvent(t: any, refer: string) {
+  public sendShareEvent(t: TFunction | undefined, refer: string) {
     this.sendEvent(t, "share", refer);
   }
 
@@ -261,7 +262,7 @@ export class ConnectionStack {
     return conn;
   }
 
-  public send(id: number, t: any, props: ChatProps) {
+  public send(id: number, t: TFunction | undefined, props: ChatProps) {
     const conn = this.getConnection(id);
     if (!conn) return false;
 
@@ -277,37 +278,37 @@ export class ConnectionStack {
     this.callback = callback;
   }
 
-  public sendEvent(id: number, t: any, event: string, data?: string) {
+  public sendEvent(id: number, t: TFunction | undefined, event: string, data?: string) {
     const conn = this.getConnection(id);
     conn && conn.sendEvent(t, event, data);
   }
 
-  public sendStopEvent(id: number, t: any) {
+  public sendStopEvent(id: number, t: TFunction | undefined) {
     const conn = this.getConnection(id);
     conn && conn.sendStopEvent(t);
   }
 
-  public sendRestartEvent(id: number, t: any, data?: ChatProps) {
+  public sendRestartEvent(id: number, t: TFunction | undefined, data?: ChatProps) {
     const conn = this.getConnection(id);
     conn && conn.sendRestartEvent(t, data);
   }
 
-  public sendMaskEvent(id: number, t: any, mask: Mask) {
+  public sendMaskEvent(id: number, t: TFunction | undefined, mask: Mask) {
     const conn = this.getConnection(id);
     conn && conn.sendMaskEvent(t, mask);
   }
 
-  public sendEditEvent(id: number, t: any, messageId: number, message: string) {
+  public sendEditEvent(id: number, t: TFunction | undefined, messageId: number, message: string) {
     const conn = this.getConnection(id);
     conn && conn.sendEditEvent(t, messageId, message);
   }
 
-  public sendRemoveEvent(id: number, t: any, messageId: number) {
+  public sendRemoveEvent(id: number, t: TFunction | undefined, messageId: number) {
     const conn = this.getConnection(id);
     conn && conn.sendRemoveEvent(t, messageId);
   }
 
-  public sendShareEvent(id: number, t: any, refer: string) {
+  public sendShareEvent(id: number, t: TFunction | undefined, refer: string) {
     const conn = this.getConnection(id);
     conn && conn.sendShareEvent(t, refer);
   }
