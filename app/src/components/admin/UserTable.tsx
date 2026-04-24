@@ -76,27 +76,28 @@ import { formReducer } from "@/utils/form.ts";
 import { Separator } from "@/components/ui/separator.tsx";
 import { toast } from "sonner";
 import { Badge } from "../ui/badge";
+import type { TFunction } from "i18next";
 
 type OperationMenuProps = {
   user: UserData;
   onRefresh?: () => void;
 };
 
-export enum UserType {
+enum UserType {
   normal = "normal",
   basic_plan = "basic_plan",
   standard_plan = "standard_plan",
   pro_plan = "pro_plan",
 }
 
-export const userTypeArray = [
+const userTypeArray = [
   UserType.normal,
   UserType.basic_plan,
   UserType.standard_plan,
   UserType.pro_plan,
 ];
 
-function doToast(t: any, resp: CommonResponse) {
+function doToast(t: TFunction, resp: CommonResponse) {
   if (!resp.status)
     toast.error(t("admin.operate-failed"), {
       description: t("admin.operate-failed-prompt", {

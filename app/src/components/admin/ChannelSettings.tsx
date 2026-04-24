@@ -27,9 +27,38 @@ const initialState: Channel = {
   proxy: { ...initialProxyState },
 };
 
-function reducer(state: Channel, action: any): Channel {
+type ChannelAction =
+  | { type: "type"; value: string }
+  | { type: "name"; value: string }
+  | { type: "models"; value: string[] }
+  | { type: "add-model"; value: string }
+  | { type: "add-models"; value: string[] }
+  | { type: "remove-model"; value: string }
+  | { type: "clear-models" }
+  | { type: "priority"; value: number }
+  | { type: "weight"; value: number }
+  | { type: "secret"; value: string }
+  | { type: "endpoint"; value: string }
+  | { type: "mapper"; value: string }
+  | { type: "retry"; value: number }
+  | { type: "clear" }
+  | { type: "add-group"; value: string }
+  | { type: "remove-group"; value: string }
+  | { type: "set-group"; value: string[] }
+  | { type: "set-proxy"; value: string }
+  | { type: "set-proxy-type"; value: number }
+  | { type: "set-proxy-username"; value: string }
+  | { type: "set-proxy-password"; value: string }
+  | { type: "set-first-message-as-user"; value: boolean }
+  | { type: "set-merge-consecutive-user-messages"; value: boolean }
+  | { type: "set"; value: Partial<Channel> }
+  | { type: "import"; value: Partial<Channel> };
+
+export type ChannelDispatch = (action: ChannelAction) => void;
+
+function reducer(state: Channel, action: ChannelAction): Channel {
   switch (action.type) {
-    case "type":
+    case "type": {
       const isChanged =
         getChannelInfo(state.type).endpoint !== state.endpoint &&
         state.endpoint.trim() !== "";
@@ -37,6 +66,7 @@ function reducer(state: Channel, action: any): Channel {
         ? state.endpoint
         : getChannelInfo(action.value).endpoint;
       return { ...state, endpoint, type: action.value };
+    }
     case "name":
       return { ...state, name: action.value };
     case "models":
@@ -46,11 +76,12 @@ function reducer(state: Channel, action: any): Channel {
         return state;
       }
       return { ...state, models: [...state.models, action.value] };
-    case "add-models":
+    case "add-models": {
       const models = action.value.filter(
         (model: string) => !state.models.includes(model) && model !== "",
       );
       return { ...state, models: [...state.models, ...models] };
+    }
     case "remove-model":
       return {
         ...state,

@@ -39,7 +39,7 @@ function MenuItem({ title, icon, path, exit, pro }: MenuItemProps) {
       !exit &&
       (location.pathname === `/admin${path}` ||
         location.pathname + "/" === `/admin${path}`),
-    [location.pathname, path],
+    [exit, location.pathname, path],
   );
 
   const redirect = async () => {

@@ -93,16 +93,32 @@ const initialState: ChargeProps = {
   output: 0,
 };
 
-function reducer(state: ChargeProps, action: any): ChargeProps {
+type ChargeAction =
+  | { type: "set"; payload: ChargeProps }
+  | { type: "set-models"; payload: string[] }
+  | { type: "add-model"; payload: string }
+  | { type: "toggle-model"; payload: string }
+  | { type: "remove-model"; payload: string }
+  | { type: "set-type"; payload: string }
+  | { type: "set-anonymous"; payload: boolean }
+  | { type: "set-input"; payload: number }
+  | { type: "set-output"; payload: number }
+  | { type: "clear" }
+  | { type: "clear-param" };
+
+type ChargeDispatch = (action: ChargeAction) => void;
+
+function reducer(state: ChargeProps, action: ChargeAction): ChargeProps {
   switch (action.type) {
     case "set":
       return { ...action.payload };
     case "set-models":
       return { ...state, models: action.payload };
-    case "add-model":
+    case "add-model": {
       const model = action.payload.trim();
       if (model.length === 0 || state.models.includes(model)) return state;
       return { ...state, models: [...state.models, model] };
+    }
     case "toggle-model":
       if (action.payload.trim().length === 0) return state;
       return state.models.includes(action.payload)
@@ -402,7 +418,7 @@ function ChargeAlert({ models, onClick }: ChargeAlertProps) {
 
 type ChargeEditorProps = {
   form: ChargeProps;
-  dispatch: (action: any) => void;
+  dispatch: ChargeDispatch;
   onRefresh: () => void;
   usedModels: string[];
   allModels: string[];
@@ -436,7 +452,7 @@ function ChargeEditor({
         !usedModels.includes(model) &&
         model.trim() !== "",
     );
-  }, [form.models, usedModels]);
+  }, [channelModels, form.models, usedModels]);
 
   const disabled = useMemo(() => {
     if (model.trim() !== "") return false;
@@ -687,7 +703,7 @@ function ChargeEditor({
 
 type ChargeTableProps = {
   data: ChargeProps[];
-  dispatch: (action: any) => void;
+  dispatch: ChargeDispatch;
   onRefresh: () => void;
   unitM: boolean;
   setUnitM: (v: boolean | ((prev: boolean) => boolean)) => void;

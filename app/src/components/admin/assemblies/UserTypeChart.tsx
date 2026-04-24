@@ -26,6 +26,16 @@ type UserStatus = {
 
 function UserTypeChart({ data }: UserTypeChartProps) {
   const { t } = useTranslation();
+  const identityLabels = useMemo(
+    () => ({
+      [UserType.normal]: t("admin.identity.normal"),
+      [UserType.api_paid]: t("admin.identity.api_paid"),
+      [UserType.basic_plan]: t("admin.identity.basic_plan"),
+      [UserType.standard_plan]: t("admin.identity.standard_plan"),
+      [UserType.pro_plan]: t("admin.identity.pro_plan"),
+    }),
+    [t],
+  );
 
   const [display, setDisplay] = useState<UserType[]>([
     UserType.normal,
@@ -38,27 +48,27 @@ function UserTypeChart({ data }: UserTypeChartProps) {
   const chart = useMemo((): UserStatus[] => {
     return [
       display.includes(UserType.normal) && {
-        name: t("admin.identity.normal"),
+        name: identityLabels[UserType.normal],
         value: data.normal,
       },
       display.includes(UserType.api_paid) && {
-        name: t("admin.identity.api_paid"),
+        name: identityLabels[UserType.api_paid],
         value: data.api_paid,
       },
       display.includes(UserType.basic_plan) && {
-        name: t("admin.identity.basic_plan"),
+        name: identityLabels[UserType.basic_plan],
         value: data.basic_plan,
       },
       display.includes(UserType.standard_plan) && {
-        name: t("admin.identity.standard_plan"),
+        name: identityLabels[UserType.standard_plan],
         value: data.standard_plan,
       },
       display.includes(UserType.pro_plan) && {
-        name: t("admin.identity.pro_plan"),
+        name: identityLabels[UserType.pro_plan],
         value: data.pro_plan,
       },
     ].filter((item) => item) as UserStatus[];
-  }, [display, data, t("admin.identity.normal")]);
+  }, [display, data, identityLabels]);
 
   return (
     <div className={`chart`}>

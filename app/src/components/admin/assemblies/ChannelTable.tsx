@@ -27,7 +27,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button.tsx";
 import OperationAction from "@/components/OperationAction.tsx";
-import { Dispatch, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Channel, getShortChannelType } from "@/admin/channel.ts";
 import { withNotify } from "@/api/common.ts";
 import { useTranslation } from "react-i18next";
@@ -52,10 +52,11 @@ import { Label } from "@/components/ui/label.tsx";
 import { Input } from "@/components/ui/input.tsx";
 import { DialogClose } from "@radix-ui/react-dialog";
 import { ChannelTypeAvatar } from "@/components/ModelAvatar.tsx";
+import type { ChannelDispatch } from "@/components/admin/ChannelSettings.tsx";
 
 type ChannelTableProps = {
   display: boolean;
-  dispatch: Dispatch<any>;
+  dispatch: ChannelDispatch;
   setId: (id: number) => void;
   setEnabled: (enabled: boolean) => void;
   data: Channel[];
@@ -89,7 +90,7 @@ export function TypeBadge({ type, className, variant }: TypeBadgeProps) {
 }
 
 type SyncDialogProps = {
-  dispatch: Dispatch<any>;
+  dispatch: ChannelDispatch;
   open: boolean;
   setOpen: (open: boolean) => void;
 };
@@ -206,7 +207,7 @@ function ChannelTable({
 
   useEffect(() => {
     if (display) setId(-1);
-  }, [display]);
+  }, [display, setId]);
 
   const { bar, toggle, merge } = useColumnsVisibility(
     {

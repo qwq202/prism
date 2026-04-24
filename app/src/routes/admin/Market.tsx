@@ -7,6 +7,7 @@ import {
 import { useTranslation } from "react-i18next";
 import React, {
   Dispatch,
+  useCallback,
   useEffect,
   useMemo,
   useReducer,
@@ -67,6 +68,42 @@ type Model = RawModel & {
 };
 
 type MarketForm = Model[];
+type MarketTemplatePayload = { id: string; name: string };
+type MarketIndexedPayload = { idx: number };
+type MarketFlagPayload = MarketIndexedPayload & { default: boolean };
+type MarketAction =
+  | { type: "set"; payload: RawModel[] }
+  | { type: "add"; payload: RawModel }
+  | { type: "add-multiple"; payload: RawModel[] }
+  | { type: "new" }
+  | { type: "new-template"; payload: MarketTemplatePayload }
+  | { type: "batch-new-template"; payload: MarketTemplatePayload[] }
+  | { type: "remove"; payload: MarketIndexedPayload }
+  | { type: "update"; payload: { index: number; data: Model } }
+  | { type: "update-id"; payload: MarketIndexedPayload & { id: string } }
+  | { type: "update-name"; payload: MarketIndexedPayload & { name: string } }
+  | {
+      type: "update-description";
+      payload: MarketIndexedPayload & { description: string };
+    }
+  | { type: "update-context"; payload: MarketIndexedPayload & { context: boolean } }
+  | { type: "update-default"; payload: MarketFlagPayload }
+  | { type: "update-function-calling"; payload: MarketFlagPayload }
+  | { type: "update-vision-model"; payload: MarketFlagPayload }
+  | { type: "update-thinking-model"; payload: MarketFlagPayload }
+  | { type: "update-ocr-model"; payload: MarketFlagPayload }
+  | { type: "update-reverse-model"; payload: MarketFlagPayload }
+  | { type: "update-tags"; payload: MarketIndexedPayload & { tags: string[] } }
+  | { type: "add-tag"; payload: MarketIndexedPayload & { tag: string } }
+  | { type: "remove-tag"; payload: MarketIndexedPayload & { tag: string } }
+  | { type: "set-avatar"; payload: MarketIndexedPayload & { avatar: string } }
+  | { type: "replace"; payload: { from: number; to: number } }
+  | { type: "add-below"; payload: MarketIndexedPayload }
+  | { type: "upward"; payload: MarketIndexedPayload }
+  | { type: "downward"; payload: MarketIndexedPayload }
+  | { type: "move"; payload: { fromIndex: number; toIndex: number } };
+
+type MarketDispatch = Dispatch<MarketAction>;
 
 const generateSeed = () => generateRandomChar(8);
 
@@ -84,7 +121,7 @@ function normalizeMarketModel(model: Model): Model {
   return next;
 }
 
-function reducer(state: MarketForm, action: any): MarketForm {
+function reducer(state: MarketForm, action: MarketAction): MarketForm {
   switch (action.type) {
     case "set":
       return [
@@ -176,12 +213,14 @@ function reducer(state: MarketForm, action: any): MarketForm {
         ),
         ...state,
       ];
-    case "remove":
-      let { idx } = action.payload;
+    case "remove": {
+      const { idx } = action.payload;
       return [...state.slice(0, idx), ...state.slice(idx + 1)];
-    case "update":
-      let { index, data } = action.payload;
+    }
+    case "update": {
+      const { index, data } = action.payload;
       return [...state.slice(0, index), data, ...state.slice(index + 1)];
+    }
     case "update-id":
       return [
         ...state.map((model, idx) => {
@@ -328,11 +367,13 @@ function reducer(state: MarketForm, action: any): MarketForm {
           return model;
         }),
       ];
-    case "replace":
+    case "replace": {
       const { from, to } = action.payload;
-      const [removed] = state.splice(from, 1);
-      state.splice(to, 0, removed);
-      return [...state];
+      const next = [...state];
+      const [removed] = next.splice(from, 1);
+      next.splice(to, 0, removed);
+      return next;
+    }
     case "add-below":
       return [
         ...state.slice(0, action.payload.idx + 1),
@@ -350,24 +391,29 @@ function reducer(state: MarketForm, action: any): MarketForm {
         }),
         ...state.slice(action.payload.idx + 1),
       ];
-    case "upward":
+    case "upward": {
       if (action.payload.idx === 0) return state;
-      const upward = state[action.payload.idx];
-      state[action.payload.idx] = state[action.payload.idx - 1];
-      state[action.payload.idx - 1] = upward;
-      return [...state];
-    case "downward":
+      const next = [...state];
+      const upward = next[action.payload.idx];
+      next[action.payload.idx] = next[action.payload.idx - 1];
+      next[action.payload.idx - 1] = upward;
+      return next;
+    }
+    case "downward": {
       if (action.payload.idx === state.length - 1) return state;
-      const downward = state[action.payload.idx];
-      state[action.payload.idx] = state[action.payload.idx + 1];
-      state[action.payload.idx + 1] = downward;
-      return [...state];
-    case "move":
+      const next = [...state];
+      const downward = next[action.payload.idx];
+      next[action.payload.idx] = next[action.payload.idx + 1];
+      next[action.payload.idx + 1] = downward;
+      return next;
+    }
+    case "move": {
       const { fromIndex, toIndex } = action.payload;
-      const moved = state[fromIndex];
-      state.splice(fromIndex, 1);
-      state.splice(toIndex, 0, moved);
-      return [...state];
+      const next = [...state];
+      const [moved] = next.splice(fromIndex, 1);
+      next.splice(toIndex, 0, moved);
+      return next;
+    }
     default:
       throw new Error();
   }
@@ -376,7 +422,7 @@ function reducer(state: MarketForm, action: any): MarketForm {
 type MarketTagsProps = {
   tag: string[] | undefined;
   idx: number;
-  dispatch: Dispatch<any>;
+  dispatch: MarketDispatch;
 };
 
 function MarketTags({ tag, idx, dispatch }: MarketTagsProps) {
@@ -423,7 +469,7 @@ function MarketTags({ tag, idx, dispatch }: MarketTagsProps) {
 type MarketImageProps = {
   image: string;
   idx: number;
-  dispatch: Dispatch<any>;
+  dispatch: MarketDispatch;
 };
 
 function CustomMarketImage({ image, idx, dispatch }: MarketImageProps) {
@@ -432,20 +478,20 @@ function CustomMarketImage({ image, idx, dispatch }: MarketImageProps) {
     image.trim().length > 0 && !deprecatedModelImages.includes(image),
   );
 
-  const setAvatar = (source: string) =>
+  const setAvatar = useCallback((source: string) =>
     dispatch({
       type: "set-avatar",
       payload: {
         idx,
         avatar: source,
       },
-    });
+    }), [dispatch, idx]);
 
   useEffect(() => {
     if (!customizedImage) {
       setAvatar("");
     }
-  }, [customizedImage]);
+  }, [customizedImage, setAvatar]);
 
   return (
     <>
@@ -494,7 +540,7 @@ type MarketItemProps = React.DetailedHTMLProps<
 > & {
   model: Model;
   form: MarketForm;
-  dispatch: Dispatch<any>;
+  dispatch: MarketDispatch;
   index: number;
   stacked: boolean;
   channelModels: string[];
@@ -815,7 +861,7 @@ function MarketItem({
 
 type MarketGroupProps = {
   form: MarketForm;
-  dispatch: Dispatch<any>;
+  dispatch: MarketDispatch;
   stacked: boolean;
   channelModels: string[];
 };

@@ -11,12 +11,13 @@ type RequestChartProps = {
 
 function RequestChart({ labels, datasets }: RequestChartProps) {
   const { t } = useTranslation();
+  const requestsLabel = t("admin.requests");
   const data = useMemo(() => {
     return datasets.map((data, index) => ({
       date: labels[index],
-      [t("admin.requests")]: data,
+      [requestsLabel]: data,
     }));
-  }, [labels, datasets, t("admin.requests")]);
+  }, [labels, datasets, requestsLabel]);
 
   const rpm = useMemo(() => {
     // request per month, sum of datasets
@@ -39,7 +40,7 @@ function RequestChart({ labels, datasets }: RequestChartProps) {
       <AreaChart
         className={`common-chart`}
         data={data}
-        categories={[t("admin.requests")]}
+        categories={[requestsLabel]}
         index={"date"}
         colors={["blue"]}
         showAnimation={true}

@@ -60,6 +60,7 @@ import { MultiCombobox } from "@/components/ui/multi-combobox.tsx";
 import { useChannelModels } from "@/admin/hook.tsx";
 import { isEnter } from "@/utils/base.ts";
 import { TypeBadge } from "@/components/admin/assemblies/ChannelTable.tsx";
+import type { ChannelDispatch } from "@/components/admin/ChannelSettings.tsx";
 import { useClipboard } from "@/utils/dom.ts";
 import { Switch } from "@/components/ui/switch.tsx";
 
@@ -147,7 +148,7 @@ type ChannelEditorProps = {
   id: number;
   setEnabled: (enabled: boolean) => void;
   edit: Channel;
-  dispatch: (action: any) => void;
+  dispatch: ChannelDispatch;
   data: Channel[];
 };
 

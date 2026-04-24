@@ -11,13 +11,14 @@ type BillingChartProps = {
 function BillingChart({ labels, datasets }: BillingChartProps) {
   const { t } = useTranslation();
   const { symbol } = useCurrency();
+  const billingLabel = t("admin.billing");
 
   const data = useMemo(() => {
     return datasets.map((data, index) => ({
       date: labels[index],
-      [t("admin.billing")]: data,
+      [billingLabel]: data,
     }));
-  }, [labels, datasets, t("admin.billing")]);
+  }, [labels, datasets, billingLabel]);
 
   const mrr = useMemo(() => {
     // datasets sum
@@ -42,7 +43,7 @@ function BillingChart({ labels, datasets }: BillingChartProps) {
       <AreaChart
         className={`common-chart`}
         data={data}
-        categories={[t("admin.billing")]}
+        categories={[billingLabel]}
         index={"date"}
         colors={["orange"]}
         showAnimation={true}

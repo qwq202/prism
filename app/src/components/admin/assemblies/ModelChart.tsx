@@ -20,7 +20,7 @@ function ModelChart({ labels, datasets }: ModelChartProps) {
   const [area, setArea] = useState(false);
   const data = useMemo(() => {
     return labels.map((label, idx) => {
-      const v: Record<string, any> = { date: label };
+      const v: Record<string, string | number> = { date: label };
       datasets.forEach((dataset) => {
         if (dataset.data[idx] === 0 && !area) return;
         v[dataset.model] = dataset.data[idx];

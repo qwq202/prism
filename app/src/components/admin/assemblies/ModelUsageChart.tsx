@@ -50,10 +50,16 @@ function ModelUsageChart({ labels, datasets }: ModelChartProps) {
     );
   }, [sorted]);
 
+  type DonutTooltipPayload = {
+    color?: string;
+    name: string;
+    value: number;
+  };
+
   type CustomTooltipTypeDonut = {
-    payload: any;
+    payload?: DonutTooltipPayload[];
     active: boolean | undefined;
-    label: any;
+    label?: string;
   };
 
   const customTooltip = (props: CustomTooltipTypeDonut) => {

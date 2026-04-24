@@ -49,6 +49,33 @@ const planInitialConfig: PlanConfig = {
   plans: [],
 };
 
+type PlanLevelPayload = {
+  level: number;
+};
+
+type PlanItemPayload = PlanLevelPayload & {
+  index: number;
+};
+
+type PlanConfigAction =
+  | { type: "set"; payload: PlanConfig }
+  | { type: "set-enabled"; payload: boolean }
+  | { type: "set-price"; payload: PlanLevelPayload & { price: number } }
+  | { type: "set-item-id"; payload: PlanItemPayload & { id: string } }
+  | { type: "set-item-name"; payload: PlanItemPayload & { name: string } }
+  | { type: "set-item-value"; payload: PlanItemPayload & { value: number } }
+  | { type: "set-item-icon"; payload: PlanItemPayload & { icon: string } }
+  | { type: "add-item"; payload: PlanLevelPayload }
+  | { type: "set-item-models"; payload: PlanItemPayload & { models: string[] } }
+  | { type: "remove-item"; payload: PlanItemPayload }
+  | { type: "upward-item"; payload: PlanItemPayload }
+  | { type: "downward-item"; payload: PlanItemPayload }
+  | {
+      type: "set-discount";
+      payload: PlanLevelPayload & { month: string; value: number };
+    }
+  | { type: "remove-discount"; payload: PlanLevelPayload & { month: string } };
+
 function sanitizePlanConfigModels(
   config: PlanConfig,
   availableModels: string[],
@@ -98,7 +125,7 @@ function sanitizePlanConfigModels(
   };
 }
 
-function reducer(state: PlanConfig, action: Record<string, any>): PlanConfig {
+function reducer(state: PlanConfig, action: PlanConfigAction): PlanConfig {
   switch (action.type) {
     case "set":
       return action.payload;

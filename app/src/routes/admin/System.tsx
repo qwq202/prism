@@ -66,10 +66,16 @@ import { selectSupportModels } from "@/store/chat.ts";
 import { JSONEditorProvider } from "@/components/EditorProvider.tsx";
 import { Combobox } from "@/components/ui/combo-box.tsx";
 
+type FormAction = {
+  type: string;
+  payload?: unknown;
+  value?: unknown;
+};
+
 type CompProps<T> = {
   data: T;
   form: SystemProps;
-  dispatch: (action: any) => void;
+  dispatch: (action: FormAction) => void;
   onChange: (doToast?: boolean) => Promise<void>;
 };
 

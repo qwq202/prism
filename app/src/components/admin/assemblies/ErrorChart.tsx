@@ -10,12 +10,13 @@ type ErrorChartProps = {
 };
 function ErrorChart({ labels, datasets }: ErrorChartProps) {
   const { t } = useTranslation();
+  const timesLabel = t("admin.times");
   const data = useMemo(() => {
     return datasets.map((data, index) => ({
       date: labels[index],
-      [t("admin.times")]: data,
+      [timesLabel]: data,
     }));
-  }, [labels, datasets, t("admin.times")]);
+  }, [labels, datasets, timesLabel]);
 
   return (
     <div className={`chart`}>
@@ -28,7 +29,7 @@ function ErrorChart({ labels, datasets }: ErrorChartProps) {
       <AreaChart
         className={`common-chart`}
         data={data}
-        categories={[t("admin.times")]}
+        categories={[timesLabel]}
         index={"date"}
         colors={["red"]}
         showAnimation={true}
