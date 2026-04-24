@@ -170,7 +170,7 @@ func TestChatAPIWebsocketStopAndRestartPersistedHistory(t *testing.T) {
 	previousPlan := channel.PlanInstance
 	previousConnectionCache := connection.Cache
 	previousConnectionDB := connection.DB
-	previousTaskModel := globals.TaskModel
+	previousTaskModel := globals.GetTaskModel()
 	previousCacheModels := globals.CacheAcceptedModels
 	previousCacheSize := globals.CacheAcceptedSize
 
@@ -197,7 +197,7 @@ func TestChatAPIWebsocketStopAndRestartPersistedHistory(t *testing.T) {
 
 	connection.Cache = cache
 	connection.DB = db
-	globals.TaskModel = ""
+	globals.SetTaskModel("")
 	globals.CacheAcceptedModels = nil
 	globals.CacheAcceptedSize = 1
 
@@ -207,7 +207,7 @@ func TestChatAPIWebsocketStopAndRestartPersistedHistory(t *testing.T) {
 		channel.PlanInstance = previousPlan
 		connection.Cache = previousConnectionCache
 		connection.DB = previousConnectionDB
-		globals.TaskModel = previousTaskModel
+		globals.SetTaskModel(previousTaskModel)
 		globals.CacheAcceptedModels = previousCacheModels
 		globals.CacheAcceptedSize = previousCacheSize
 	})

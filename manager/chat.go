@@ -220,16 +220,53 @@ func createStopSignal(conn *Connection) chan bool {
 			select {
 			case <-ticker.C:
 				state := conn.PeekStop() != nil // check the stop state
-				stopSignal <- state
 
 				if state {
-					break
+					select {
+					case <-stopSignal:
+					default:
+					}
+					stopSignal <- true
+					return
+				}
+
+				select {
+				case stopSignal <- false:
+				default:
 				}
 			}
 		}
 	}(conn, stopSignal)
 
 	return stopSignal
+}
+
+func cloneChatPropsWithBuffer(props *adaptercommon.ChatProps, buffer *utils.Buffer) *adaptercommon.ChatProps {
+	if props == nil {
+		return nil
+	}
+
+	cloned := *props
+	cloned.Buffer = buffer
+	return &cloned
+}
+
+func newRequestBufferFromCaptureBuffer(props *adaptercommon.ChatProps, captureBuffer *utils.Buffer) *utils.Buffer {
+	if props == nil || captureBuffer == nil {
+		return captureBuffer
+	}
+
+	requestBuffer := utils.NewBuffer(props.Model, props.Message, captureBuffer.GetCharge())
+	requestBuffer.SetPrompts(props)
+	return requestBuffer
+}
+
+func syncBufferChannel(target *utils.Buffer, source *utils.Buffer) {
+	if target == nil || source == nil || target == source {
+		return
+	}
+
+	target.SetChannel(source.GetChannelId(), source.GetChannelName())
 }
 
 func buildChatProps(
@@ -312,14 +349,21 @@ func createRoundTask(
 				return nil
 			})
 		} else {
-			hit, err = channel.NewChatRequestWithCache(cache, captureBuffer, group, props, func(data *globals.Chunk) error {
+			requestBuffer := newRequestBufferFromCaptureBuffer(props, captureBuffer)
+			requestProps := cloneChatPropsWithBuffer(props, requestBuffer)
+			hit, err = channel.NewChatRequestWithCache(cache, requestBuffer, group, requestProps, func(data *globals.Chunk) error {
 				if len(interruptSignal) > 0 {
 					return errors.New(interruptMessage)
+				}
+
+				if requestBuffer != nil && requestBuffer != captureBuffer && data != nil {
+					requestBuffer.WriteChunk(data)
 				}
 
 				chunkChan <- partialChunk{Chunk: data, End: false, Hit: false, Error: nil}
 				return nil
 			})
+			syncBufferChannel(captureBuffer, requestBuffer)
 		}
 
 		chunkChan <- partialChunk{Chunk: nil, End: true, Hit: hit, Error: err}
@@ -660,13 +704,13 @@ func createChatTask(
 								videoUrl := fmt.Sprintf("%s/v1/videos/%s/content", backendUrl, job.Id)
 								videoMarkdown := utils.GetVideoMarkdown(videoUrl, "video")
 
-								chunkChan <- partialChunk{Chunk: &globals.Chunk{Content: videoMarkdown}, End: false, Hit: false, Error: nil}
+								sendPartialChunk(chunkChan, partialChunk{Chunk: &globals.Chunk{Content: videoMarkdown}, End: false, Hit: false, Error: nil})
 								return nil
 							}
 						}
 					}
 					// Send original content for progress updates and other messages
-					chunkChan <- partialChunk{Chunk: data, End: false, Hit: false, Error: nil}
+					sendPartialChunk(chunkChan, partialChunk{Chunk: data, End: false, Hit: false, Error: nil})
 					return nil
 				},
 			)
@@ -728,12 +772,12 @@ func createChatTask(
 				}
 
 				// send the chunk data to the channel
-				chunkChan <- partialChunk{
+				sendPartialChunk(chunkChan, partialChunk{
 					Chunk: data,
 					End:   false,
 					Hit:   false,
 					Error: nil,
-				}
+				})
 				return nil
 			},
 		)
@@ -750,8 +794,17 @@ func createChatTask(
 	for {
 		select {
 		case data := <-chunkChan:
+			acknowledged := false
+			acknowledge := func() {
+				if !acknowledged {
+					acknowledgePartialChunk(data)
+					acknowledged = true
+				}
+			}
+
 			if data.Error != nil && data.Error.Error() == interruptMessage {
 				interrupted = true
+				acknowledge()
 				if data.End {
 					return hit, nil, true
 				}
@@ -771,12 +824,15 @@ func createChatTask(
 				if err := sendToolCallEvents(conn, data.Chunk.ToolCall, "start", buffer.GetQuota(), plan); err != nil {
 					globals.Warn(fmt.Sprintf("failed to send tool call event to client: %s", err.Error()))
 					interruptSignal <- err
+					acknowledge()
 					return hit, nil, true
 				}
 			}
 
+			message := buffer.WriteChunk(data.Chunk)
+			acknowledge()
 			if err := conn.SendClient(globals.ChatSegmentResponse{
-				Message: buffer.WriteChunk(data.Chunk),
+				Message: message,
 				Quota:   buffer.GetQuota(),
 				End:     false,
 				Plan:    plan,

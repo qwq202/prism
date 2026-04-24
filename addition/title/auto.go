@@ -78,7 +78,7 @@ func buildTitleContext(messages []globals.Message) string {
 }
 
 func GenerateConversationTitle(group string, messages []globals.Message, cache *redis.Client) string {
-	model := strings.TrimSpace(globals.TaskModel)
+	model := globals.GetTaskModel()
 	if model == "" {
 		return ""
 	}

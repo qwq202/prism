@@ -174,7 +174,7 @@ func (c *SystemConfig) Load() {
 	globals.SearchMaxResults = c.GetSearchMaxResults()
 	globals.SearchTopic = c.GetSearchTopic()
 	globals.SearchDepth = c.GetSearchDepth()
-	globals.TaskModel = strings.TrimSpace(c.Task.Model)
+	globals.SetTaskModel(c.Task.Model)
 }
 
 func (c *SystemConfig) SaveConfig() error {
@@ -197,7 +197,7 @@ func (c *SystemConfig) AsInfo() ApiInfo {
 		Generation:   c.Common.Generation,
 		RelayPlan:    c.Site.RelayPlan,
 		WebSearch:    strings.TrimSpace(globals.SearchApiKey) != "",
-		HasTaskModel: strings.TrimSpace(globals.TaskModel) != "",
+		HasTaskModel: globals.GetTaskModel() != "",
 	}
 }
 

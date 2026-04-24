@@ -24,7 +24,7 @@ func normalizeExtractedQuery(query string) string {
 
 func ExtractSearchQuery(group, query string, cache *redis.Client) string {
 	original := strings.TrimSpace(query)
-	model := strings.TrimSpace(globals.TaskModel)
+	model := globals.GetTaskModel()
 
 	if original == "" || model == "" {
 		return original

@@ -3,6 +3,7 @@ package globals
 import (
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -49,8 +50,21 @@ var SearchCropLength int
 var SearchMaxResults int
 var SearchTopic string
 var SearchDepth string
-var TaskModel string
+var taskModel string
+var taskModelMu sync.RWMutex
 var VisionModelResolver func(string) bool
+
+func SetTaskModel(model string) {
+	taskModelMu.Lock()
+	defer taskModelMu.Unlock()
+	taskModel = strings.TrimSpace(model)
+}
+
+func GetTaskModel() string {
+	taskModelMu.RLock()
+	defer taskModelMu.RUnlock()
+	return taskModel
+}
 
 func IsConfiguredVisionModel(model string) bool {
 	if VisionModelResolver == nil {
