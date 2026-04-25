@@ -52,10 +52,6 @@ func stripHiddenMetadata(messages []globals.Message, stripGemini bool, stripClau
 }
 
 func stripVisibleThinkingReplay(messages []globals.Message, allowReasoningReplay bool) ([]globals.Message, bool) {
-	if allowReasoningReplay {
-		return messages, false
-	}
-
 	sanitized := make([]globals.Message, len(messages))
 	changed := false
 
@@ -75,7 +71,7 @@ func stripVisibleThinkingReplay(messages []globals.Message, allowReasoningReplay
 			}
 		}
 
-		if message.ReasoningContent != nil {
+		if !allowReasoningReplay && message.ReasoningContent != nil {
 			sanitized[idx].ReasoningContent = nil
 			changed = true
 		}

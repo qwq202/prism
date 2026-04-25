@@ -23,6 +23,7 @@ function getExpandedState(collapseThinking: boolean, isComplete: boolean): boole
 
 export function ThinkContent({ content, isComplete = true }: ThinkContentProps) {
   const collapseThinking = useSelector(collapseThinkingSelector);
+  const displayContent = content.replace(/<\/?think>/g, "").trim();
   const [isExpanded, setIsExpanded] = useState(
     getExpandedState(collapseThinking, isComplete),
   );
@@ -68,7 +69,7 @@ export function ThinkContent({ content, isComplete = true }: ThinkContentProps) 
             className="overflow-auto"
           >
             <div className={cn("p-3 pt-0 text-sm", !isComplete && "opacity-80")}>
-              <Markdown>{content}</Markdown>
+              <Markdown>{displayContent}</Markdown>
             </div>
           </motion.div>
         )}

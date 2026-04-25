@@ -84,6 +84,14 @@ func TestSanitizeDSMLToolMarkupPreservesWhitespaceWithoutMarker(t *testing.T) {
 	}
 }
 
+func TestSanitizeDeepseekStreamTextRemovesNestedThinkTags(t *testing.T) {
+	input := "先想一下 <think>\ninner\n</think> 继续"
+	got := sanitizeDeepseekStreamText(input)
+	if got != "先想一下 \ninner\n 继续" {
+		t.Fatalf("expected raw think tags to be stripped, got %q", got)
+	}
+}
+
 func TestGetChoicesStripsDSMLFromContentWithToolCalls(t *testing.T) {
 	instance := NewChatInstance("https://api.deepseek.com", "secret")
 	instance.isFirstReasoning = false
@@ -121,5 +129,46 @@ func TestGetChoicesStripsDSMLFromContentWithToolCalls(t *testing.T) {
 	}
 	if chunk.Content != "\n</think>\n\nI found a likely source. " {
 		t.Fatalf("expected visible DSML markup to be stripped, got %q", chunk.Content)
+	}
+}
+
+func TestGetChoicesStripsNestedThinkTagsFromReasoningWithToolCalls(t *testing.T) {
+	instance := NewChatInstance("https://api.deepseek.com", "secret")
+
+	calls := globals.ToolCalls{
+		{
+			Id:   "call_1",
+			Type: "function",
+			Function: globals.ToolCallFunction{
+				Name:      "fetch_webpage",
+				Arguments: `{"url":"https://example.com"}`,
+			},
+		},
+	}
+	reasoning := "Need a source. <think>\nsearching\n</think>"
+	chunk := instance.getChoices(&ChatStreamResponse{
+		Choices: []struct {
+			Delta        globals.Message `json:"delta"`
+			Index        int             `json:"index"`
+			FinishReason string          `json:"finish_reason"`
+			Logprobs     interface{}     `json:"logprobs,omitempty"`
+		}{
+			{
+				Delta: globals.Message{
+					ReasoningContent: &reasoning,
+					ToolCalls:        &calls,
+				},
+			},
+		},
+	})
+
+	if chunk.ToolCall == nil || len(*chunk.ToolCall) != 1 {
+		t.Fatalf("expected tool call to be preserved, got %#v", chunk.ToolCall)
+	}
+	if chunk.Content != "<think>\nNeed a source. \nsearching\n" {
+		t.Fatalf("expected nested raw think tags to be stripped, got %q", chunk.Content)
+	}
+	if chunk.ReasoningContent == nil || *chunk.ReasoningContent != "Need a source. \nsearching\n" {
+		t.Fatalf("expected clean reasoning content, got %#v", chunk.ReasoningContent)
 	}
 }

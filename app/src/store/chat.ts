@@ -595,7 +595,11 @@ const chatSlice = createSlice({
       const conversation = state.conversations[id];
       if (!conversation) return;
 
-      if (conversation.messages.length === 0) {
+      if (
+        conversation.messages.length === 0 ||
+        conversation.messages[conversation.messages.length - 1].role !==
+          AssistantRole
+      ) {
         if (model) {
           conversation.model = model;
         }

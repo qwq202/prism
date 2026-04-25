@@ -232,8 +232,8 @@ func TestSanitizeChatMessagesForRequestKeepsReasoningReplayForDeepseekV4(t *test
 		reflectedModel: globals.DeepseekV4Pro,
 	}, props)
 
-	if props.Message[0].Content != "<think>\nplan\n</think>\n\nAnswer" {
-		t.Fatalf("expected deepseek v4 thinking replay to remain, got %q", props.Message[0].Content)
+	if props.Message[0].Content != "Answer" {
+		t.Fatalf("expected visible deepseek v4 thinking replay to be stripped, got %q", props.Message[0].Content)
 	}
 
 	if props.Message[0].ReasoningContent == nil || *props.Message[0].ReasoningContent != "plan" {

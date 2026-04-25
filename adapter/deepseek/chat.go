@@ -134,12 +134,12 @@ func processChatErrorResponse(data string) *ChatStreamErrorResponse {
 }
 
 func formatReasoning(reasoning *string, content string) string {
-	content = sanitizeDSMLToolMarkup(content)
+	content = sanitizeDeepseekStreamText(content)
 	if reasoning == nil || *reasoning == "" {
 		return content
 	}
 
-	cleanReasoning := sanitizeDSMLToolMarkup(*reasoning)
+	cleanReasoning := sanitizeDeepseekStreamText(*reasoning)
 	if cleanReasoning == "" {
 		return content
 	}
@@ -177,6 +177,13 @@ func sanitizeDSMLToolMarkup(content string) string {
 	return cleaned
 }
 
+func sanitizeDeepseekStreamText(content string) string {
+	cleaned := sanitizeDSMLToolMarkup(content)
+	cleaned = strings.ReplaceAll(cleaned, "<think>", "")
+	cleaned = strings.ReplaceAll(cleaned, "</think>", "")
+	return cleaned
+}
+
 func (c *ChatInstance) getChoices(form *ChatStreamResponse) *globals.Chunk {
 	if len(form.Choices) == 0 {
 		return &globals.Chunk{Content: ""}
@@ -189,7 +196,7 @@ func (c *ChatInstance) getChoices(form *ChatStreamResponse) *globals.Chunk {
 		c.isReasonOver = true
 		if choice.Content != "" {
 			return &globals.Chunk{
-				Content:          fmt.Sprintf("\n</think>\n\n%s", sanitizeDSMLToolMarkup(choice.Content)),
+				Content:          fmt.Sprintf("\n</think>\n\n%s", sanitizeDeepseekStreamText(choice.Content)),
 				ToolCall:         choice.ToolCalls,
 				FunctionCall:     choice.FunctionCall,
 				ReasoningContent: nil,
@@ -204,9 +211,9 @@ func (c *ChatInstance) getChoices(form *ChatStreamResponse) *globals.Chunk {
 		}
 	}
 
-	content := sanitizeDSMLToolMarkup(choice.Content)
+	content := sanitizeDeepseekStreamText(choice.Content)
 	if reasoning != nil {
-		cleanReasoning := sanitizeDSMLToolMarkup(*reasoning)
+		cleanReasoning := sanitizeDeepseekStreamText(*reasoning)
 		if cleanReasoning != "" {
 			if c.isFirstReasoning {
 				c.isFirstReasoning = false
@@ -219,7 +226,7 @@ func (c *ChatInstance) getChoices(form *ChatStreamResponse) *globals.Chunk {
 
 	var reasoningContent *string
 	if reasoning != nil {
-		cleanReasoning := sanitizeDSMLToolMarkup(*reasoning)
+		cleanReasoning := sanitizeDeepseekStreamText(*reasoning)
 		if cleanReasoning != "" {
 			reasoningContent = &cleanReasoning
 		}
