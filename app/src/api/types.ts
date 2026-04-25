@@ -106,8 +106,6 @@ export type PlanItem = {
   id: string;
   name: string;
   value: number;
-  unit?: "times" | "points";
-  reset_interval?: number;
   icon: string;
   models: string[];
 };
@@ -115,6 +113,8 @@ export type PlanItem = {
 export type Plan = {
   level: number;
   price: number;
+  quota?: number;
+  reset_interval?: number;
   items: PlanItem[];
   discounts?: Record<string, number>;
 };

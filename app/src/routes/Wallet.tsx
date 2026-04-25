@@ -42,6 +42,7 @@ import WalletQuotaBox from "@/routes/wallet/WalletQuotaBox.tsx";
 import ModelAvatar from "@/components/ModelAvatar";
 import Icon from "@/components/utils/Icon";
 import Tips from "@/components/Tips";
+import type { Plan } from "@/api/types.tsx";
 
 type SubscriptionUsageValue = {
   used: number;
@@ -50,6 +51,10 @@ type SubscriptionUsageValue = {
   reset_interval?: number;
   reset_at?: string;
 };
+
+function hasPlanPointPool(plan: Plan): boolean {
+  return (plan.quota ?? 0) > 0 || plan.quota === -1;
+}
 
 function toSubscriptionUsage(
   value: unknown,
@@ -139,7 +144,7 @@ function PlanItem({ level, isYearly }: PlanItemProps) {
         discount = 0.8;
       }
     }
-    
+
     const result = plan.price * discount;
     if (result % 1 !== 0) {
       return result.toFixed(1);
@@ -224,15 +229,15 @@ function PlanItem({ level, isYearly }: PlanItemProps) {
         <span className="text-sm font-medium">/{t("sub.month")}</span>
 
         {(() => {
-          const plan = subscriptionData.find(p => p.level === level);
+          const plan = subscriptionData.find((p) => p.level === level);
           let discountPercent = 0;
-          
+
           if (plan && plan.discounts && plan.discounts["12"] !== undefined) {
             discountPercent = Math.round((1 - plan.discounts["12"]) * 100);
           } else if (isYearly) {
             discountPercent = 20;
           }
-          
+
           return discountPercent > 0 ? (
             <motion.span
               className="text-xs text-secondary ml-auto !text-[#55b467] bg-[#f4fdeb] border border-[#55b467]/20 cursor-pointer rounded-sm px-1 py-0.5"
@@ -441,9 +446,6 @@ function WalletPlanBox() {
                         usage?.[item.id],
                         item.value,
                       );
-                      if (itemUsage && item.unit === "points") {
-                        itemUsage.unit = "points";
-                      }
 
                       return (
                         itemUsage && (
@@ -455,6 +457,26 @@ function WalletPlanBox() {
                         )
                       );
                     })}
+                    {(() => {
+                      if (!hasPlanPointPool(plan)) return null;
+
+                      const planQuota = plan.quota ?? 0;
+                      return (
+                        <SubscriptionUsage
+                          name={t("sub.plan-points")}
+                          usage={
+                            toSubscriptionUsage(
+                              usage?.plan_points,
+                              planQuota,
+                            ) ?? {
+                              used: 0,
+                              total: planQuota,
+                              unit: "points",
+                            }
+                          }
+                        />
+                      );
+                    })()}
                   </div>
                 </AccordionContent>
               </AccordionItem>
@@ -474,13 +496,19 @@ function WalletPlanBox() {
                 <TabsTrigger value="yearly">
                   {t("sub.year-plan")}
                   {(() => {
-                    const firstPlan = subscriptionData.find(p => p.level > 0);
+                    const firstPlan = subscriptionData.find((p) => p.level > 0);
                     let discountPercent = 20;
-                    
-                    if (firstPlan && firstPlan.discounts && firstPlan.discounts["12"] !== undefined) {
-                      discountPercent = Math.round((1 - firstPlan.discounts["12"]) * 100);
+
+                    if (
+                      firstPlan &&
+                      firstPlan.discounts &&
+                      firstPlan.discounts["12"] !== undefined
+                    ) {
+                      discountPercent = Math.round(
+                        (1 - firstPlan.discounts["12"]) * 100,
+                      );
                     }
-                    
+
                     return discountPercent > 0 ? (
                       <p className="text-xs text-secondary !text-[#55b467] !bg-[#f4fdeb] !border !border-[#55b467]/20 px-1 py-0.5 rounded-sm ml-2">
                         -{discountPercent}%

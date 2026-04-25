@@ -20,6 +20,10 @@ func (u *User) GetSubscriptionRefreshAt(db *sql.DB, cache *redis.Client) time.Ti
 	}
 
 	plan := u.GetPlan(db)
+	if plan.HasPointPool() {
+		return plan.GetPointResetAt(u, cache)
+	}
+
 	if len(plan.Items) == 0 {
 		return time.Unix(0, 0)
 	}

@@ -88,42 +88,51 @@ func TestValidatePlanConfigModels(t *testing.T) {
 	}
 }
 
-func TestPlanItemUsesCustomResetInterval(t *testing.T) {
+func TestPlanSharedPointPoolUsesCustomResetInterval(t *testing.T) {
 	server, cache := openPlanTestCache(t)
 	user := planTestUser{id: 42}
-	item := PlanItem{
-		Id:            "deepseek-points",
-		Value:         2,
-		Unit:          PlanItemUnitPoints,
+	plan := Plan{
+		Level:         1,
+		Quota:         2,
 		ResetInterval: int64((5 * time.Hour).Seconds()),
+		Items: []PlanItem{
+			{
+				Id:     "all-models",
+				Models: []string{"deepseek-v4-flash", "gpt-5.1"},
+			},
+		},
 	}
 
-	if !item.Increase(user, cache) || !item.Increase(user, cache) {
-		t.Fatalf("expected first two point uses to be accepted")
+	if !plan.CanUsePointPool(user, cache, "deepseek-v4-flash") {
+		t.Fatalf("expected included model to be able to use point pool")
 	}
-	if item.Increase(user, cache) {
-		t.Fatalf("expected third point use before reset to be rejected")
+	if plan.CanUsePointPool(user, cache, "claude-4") {
+		t.Fatalf("expected excluded model to be rejected")
 	}
 
-	key := globals.GetSubscriptionLimitFormat(item.Id, user.HitID())
-	server.Set(key, fmt.Sprintf("%s/%d", time.Now().Add(-6*time.Hour).Format("2006-01-02:15:04:05"), 2))
+	if !plan.ConsumePointPool(user, cache, "deepseek-v4-flash", 0.75) ||
+		!plan.ConsumePointPool(user, cache, "gpt-5.1", 1.0) {
+		t.Fatalf("expected shared point pool consumption to be accepted")
+	}
+	if plan.ConsumePointPool(user, cache, "gpt-5.1", 0.5) {
+		t.Fatalf("expected over-limit shared point pool consumption to be rejected")
+	}
 
-	usage := item.GetUsageForm(user, nil, cache)
+	key := globals.GetSubscriptionLimitFormat(plan.pointUsageKey(), user.HitID())
+	server.Set(key, fmt.Sprintf("%s/%.6f", time.Now().Add(-6*time.Hour).Format("2006-01-02:15:04:05"), float32(2)))
+
+	usage := plan.GetPointUsageForm(user, cache)
 	if usage.Used != 0 {
-		t.Fatalf("expected usage to reset after custom interval, got %d", usage.Used)
+		t.Fatalf("expected usage to reset after custom interval, got %f", usage.Used)
 	}
 	if usage.Unit != PlanItemUnitPoints {
 		t.Fatalf("expected point unit, got %q", usage.Unit)
 	}
-	if usage.ResetInterval != item.ResetInterval {
-		t.Fatalf("expected reset interval %d, got %d", item.ResetInterval, usage.ResetInterval)
+	if usage.ResetInterval != plan.ResetInterval {
+		t.Fatalf("expected reset interval %d, got %d", plan.ResetInterval, usage.ResetInterval)
 	}
 	if usage.ResetAt == "" {
 		t.Fatalf("expected next reset time to be exposed")
-	}
-
-	if !item.Increase(user, cache) {
-		t.Fatalf("expected point use after reset to be accepted")
 	}
 }
 

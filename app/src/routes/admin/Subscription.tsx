@@ -54,8 +54,7 @@ const planInitialConfig: PlanConfig = {
   plans: [],
 };
 
-const planItemUnits = ["times", "points"] as const;
-const planItemResetPresets = [
+const planResetPresets = [
   { value: "0", seconds: 0 },
   { value: "18000", seconds: 5 * 60 * 60 },
   { value: "86400", seconds: 24 * 60 * 60 },
@@ -63,16 +62,14 @@ const planItemResetPresets = [
   { value: "custom", seconds: -1 },
 ] as const;
 
-function getPlanItemUnit(item: PlanItem): "times" | "points" {
-  return item.unit === "points" ? "points" : "times";
+function getPlanResetPreset(plan: Plan): string {
+  const seconds = plan.reset_interval ?? 0;
+  const preset = planResetPresets.find((option) => option.seconds === seconds);
+  return preset?.value ?? "custom";
 }
 
-function getPlanItemResetPreset(item: PlanItem): string {
-  const seconds = item.reset_interval ?? 0;
-  const preset = planItemResetPresets.find(
-    (option) => option.seconds === seconds,
-  );
-  return preset?.value ?? "custom";
+function hasPlanPointPool(plan: Plan): boolean {
+  return (plan.quota ?? 0) > 0 || plan.quota === -1;
 }
 
 type PlanLevelPayload = {
@@ -87,17 +84,14 @@ type PlanConfigAction =
   | { type: "set"; payload: PlanConfig }
   | { type: "set-enabled"; payload: boolean }
   | { type: "set-price"; payload: PlanLevelPayload & { price: number } }
+  | { type: "set-plan-quota"; payload: PlanLevelPayload & { quota: number } }
+  | {
+      type: "set-plan-reset-interval";
+      payload: PlanLevelPayload & { resetInterval: number };
+    }
   | { type: "set-item-id"; payload: PlanItemPayload & { id: string } }
   | { type: "set-item-name"; payload: PlanItemPayload & { name: string } }
   | { type: "set-item-value"; payload: PlanItemPayload & { value: number } }
-  | {
-      type: "set-item-unit";
-      payload: PlanItemPayload & { unit: "times" | "points" };
-    }
-  | {
-      type: "set-item-reset-interval";
-      payload: PlanItemPayload & { resetInterval: number };
-    }
   | { type: "set-item-icon"; payload: PlanItemPayload & { icon: string } }
   | { type: "add-item"; payload: PlanLevelPayload }
   | { type: "set-item-models"; payload: PlanItemPayload & { models: string[] } }
@@ -181,6 +175,32 @@ function reducer(state: PlanConfig, action: PlanConfigAction): PlanConfig {
           return plan;
         }),
       };
+    case "set-plan-quota":
+      return {
+        ...state,
+        plans: state.plans.map((plan: Plan) => {
+          if (plan.level === action.payload.level) {
+            return {
+              ...plan,
+              quota: action.payload.quota,
+            };
+          }
+          return plan;
+        }),
+      };
+    case "set-plan-reset-interval":
+      return {
+        ...state,
+        plans: state.plans.map((plan: Plan) => {
+          if (plan.level === action.payload.level) {
+            return {
+              ...plan,
+              reset_interval: action.payload.resetInterval,
+            };
+          }
+          return plan;
+        }),
+      };
     case "set-item-id":
       return {
         ...state,
@@ -244,48 +264,6 @@ function reducer(state: PlanConfig, action: PlanConfigAction): PlanConfig {
           return plan;
         }),
       };
-    case "set-item-unit":
-      return {
-        ...state,
-        plans: state.plans.map((plan: Plan) => {
-          if (plan.level === action.payload.level) {
-            return {
-              ...plan,
-              items: plan.items.map((item: PlanItem, index: number) => {
-                if (index === action.payload.index) {
-                  return {
-                    ...item,
-                    unit: action.payload.unit,
-                  };
-                }
-                return item;
-              }),
-            };
-          }
-          return plan;
-        }),
-      };
-    case "set-item-reset-interval":
-      return {
-        ...state,
-        plans: state.plans.map((plan: Plan) => {
-          if (plan.level === action.payload.level) {
-            return {
-              ...plan,
-              items: plan.items.map((item: PlanItem, index: number) => {
-                if (index === action.payload.index) {
-                  return {
-                    ...item,
-                    reset_interval: action.payload.resetInterval,
-                  };
-                }
-                return item;
-              }),
-            };
-          }
-          return plan;
-        }),
-      };
     case "set-item-icon":
       return {
         ...state,
@@ -320,8 +298,6 @@ function reducer(state: PlanConfig, action: PlanConfigAction): PlanConfig {
                   id: "",
                   name: "",
                   value: 0,
-                  unit: "times",
-                  reset_interval: 0,
                   icon: "",
                   models: [],
                 },
@@ -483,10 +459,7 @@ function PlanConfig() {
     const res = await setPlanConfig(payload);
     withNotify(t, res, true);
     if (res.status)
-      dispatchSubscriptionData(
-        dispatch,
-        payload.enabled ? payload.plans : [],
-      );
+      dispatchSubscriptionData(dispatch, payload.enabled ? payload.plans : []);
   };
 
   useEffectAsync(async () => await refresh(true), []);
@@ -605,6 +578,80 @@ function PlanConfig() {
                 }}
               />
             </div>
+            <div className={`plan-editor-row`}>
+              <p className={`select-none flex flex-row items-center mr-2`}>
+                {t("admin.plan.plan-quota")}
+                <Tips
+                  className={`inline-block`}
+                  content={t("admin.plan.plan-quota-tip")}
+                />
+              </p>
+              <NumberInput
+                value={plan.quota ?? 0}
+                min={-1}
+                acceptNegative={true}
+                onValueChange={(value: number) => {
+                  formDispatch({
+                    type: "set-plan-quota",
+                    payload: { level: plan.level, quota: value },
+                  });
+                }}
+              />
+            </div>
+            <div className={`plan-editor-row`}>
+              <p className={`select-none flex flex-row items-center mr-2`}>
+                {t("admin.plan.plan-reset")}
+                <Tips
+                  className={`inline-block`}
+                  content={t("admin.plan.plan-reset-tip")}
+                />
+              </p>
+              <Select
+                value={getPlanResetPreset(plan)}
+                onValueChange={(value: string) => {
+                  const resetInterval =
+                    value === "custom"
+                      ? Math.max(plan.reset_interval ?? 3600, 1)
+                      : Number(value);
+                  formDispatch({
+                    type: "set-plan-reset-interval",
+                    payload: { level: plan.level, resetInterval },
+                  });
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {planResetPresets.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {t(`admin.plan.plan-reset-${option.value}`)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {getPlanResetPreset(plan) === "custom" && (
+              <div className={`plan-editor-row`}>
+                <p className={`select-none flex flex-row items-center mr-2`}>
+                  {t("admin.plan.plan-reset-hours")}
+                </p>
+                <NumberInput
+                  value={Number(((plan.reset_interval ?? 0) / 3600).toFixed(2))}
+                  min={0.01}
+                  step={0.5}
+                  onValueChange={(value: number) => {
+                    formDispatch({
+                      type: "set-plan-reset-interval",
+                      payload: {
+                        level: plan.level,
+                        resetInterval: Math.max(1, Math.round(value * 3600)),
+                      },
+                    });
+                  }}
+                />
+              </div>
+            )}
             <div className={`plan-items-wrapper`}>
               {plan.items.map((item: PlanItem, index: number) => (
                 <div
@@ -657,112 +704,20 @@ function PlanConfig() {
                     </div>
                   )}
 
-                  <div className={`plan-editor-row`}>
-                    <p className={`plan-editor-label mr-2`}>
-                      {t(`admin.plan.item-value`)}
-                      <Tips content={t("admin.plan.item-value-tip")} />
-                    </p>
-                    <NumberInput
-                      value={item.value}
-                      min={-1}
-                      acceptNegative={true}
-                      onValueChange={(value: number) => {
-                        formDispatch({
-                          type: "set-item-value",
-                          payload: { level: plan.level, value, index },
-                        });
-                      }}
-                    />
-                  </div>
-
-                  <div className={`plan-editor-row`}>
-                    <p className={`plan-editor-label mr-2`}>
-                      {t("admin.plan.item-unit")}
-                      <Tips content={t("admin.plan.item-unit-tip")} />
-                    </p>
-                    <Select
-                      value={getPlanItemUnit(item)}
-                      onValueChange={(value: string) => {
-                        formDispatch({
-                          type: "set-item-unit",
-                          payload: {
-                            level: plan.level,
-                            unit: value === "points" ? "points" : "times",
-                            index,
-                          },
-                        });
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {planItemUnits.map((unit) => (
-                          <SelectItem key={unit} value={unit}>
-                            {t(`admin.plan.item-unit-${unit}`)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className={`plan-editor-row`}>
-                    <p className={`plan-editor-label mr-2`}>
-                      {t("admin.plan.item-reset")}
-                      <Tips content={t("admin.plan.item-reset-tip")} />
-                    </p>
-                    <Select
-                      value={getPlanItemResetPreset(item)}
-                      onValueChange={(value: string) => {
-                        const resetInterval =
-                          value === "custom"
-                            ? Math.max(item.reset_interval ?? 3600, 1)
-                            : Number(value);
-                        formDispatch({
-                          type: "set-item-reset-interval",
-                          payload: {
-                            level: plan.level,
-                            resetInterval,
-                            index,
-                          },
-                        });
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {planItemResetPresets.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {t(`admin.plan.item-reset-${option.value}`)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {getPlanItemResetPreset(item) === "custom" && (
+                  {!hasPlanPointPool(plan) && (
                     <div className={`plan-editor-row`}>
                       <p className={`plan-editor-label mr-2`}>
-                        {t("admin.plan.item-reset-hours")}
+                        {t(`admin.plan.item-value`)}
+                        <Tips content={t("admin.plan.item-value-tip")} />
                       </p>
                       <NumberInput
-                        value={Number(
-                          ((item.reset_interval ?? 0) / 3600).toFixed(2),
-                        )}
-                        min={0.01}
-                        step={0.5}
+                        value={item.value}
+                        min={-1}
+                        acceptNegative={true}
                         onValueChange={(value: number) => {
                           formDispatch({
-                            type: "set-item-reset-interval",
-                            payload: {
-                              level: plan.level,
-                              resetInterval: Math.max(
-                                1,
-                                Math.round(value * 3600),
-                              ),
-                              index,
-                            },
+                            type: "set-item-value",
+                            payload: { level: plan.level, value, index },
                           });
                         }}
                       />
@@ -873,18 +828,30 @@ function PlanConfig() {
             <div className="mt-6 border-t pt-4">
               <p className={`plan-config-title flex items-center`}>
                 {t("admin.plan.discounts")}
-                <Tips content={t("admin.plan.discounts-tip")} className="ml-1" />
+                <Tips
+                  content={t("admin.plan.discounts-tip")}
+                  className="ml-1"
+                />
               </p>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-3">
                 {[1, 3, 6, 12, 36].map((month) => {
-                  const hasDiscount = plan.discounts && plan.discounts[month.toString()] !== undefined;
-                  const discountValue = hasDiscount ? plan.discounts?.[month.toString()] : null;
-                  
+                  const hasDiscount =
+                    plan.discounts &&
+                    plan.discounts[month.toString()] !== undefined;
+                  const discountValue = hasDiscount
+                    ? plan.discounts?.[month.toString()]
+                    : null;
+
                   return (
-                    <div key={month} className="flex flex-col space-y-2 p-3 border rounded-md">
+                    <div
+                      key={month}
+                      className="flex flex-col space-y-2 p-3 border rounded-md"
+                    >
                       <div className="flex justify-between items-center">
-                        <span className="font-medium">{t(`sub.time.${month}`)}</span>
+                        <span className="font-medium">
+                          {t(`sub.time.${month}`)}
+                        </span>
                         <Switch
                           checked={hasDiscount}
                           onCheckedChange={(checked) => {
@@ -897,30 +864,30 @@ function PlanConfig() {
                               } else if (month >= 6) {
                                 discountPercent = 10;
                               }
-                              
-                              const discountFactor = 1 - (discountPercent / 100);
-                              
+
+                              const discountFactor = 1 - discountPercent / 100;
+
                               formDispatch({
                                 type: "set-discount",
-                                payload: { 
-                                  level: plan.level, 
+                                payload: {
+                                  level: plan.level,
                                   month: month.toString(),
-                                  value: discountFactor
+                                  value: discountFactor,
                                 },
                               });
                             } else {
                               formDispatch({
                                 type: "remove-discount",
-                                payload: { 
-                                  level: plan.level, 
-                                  month: month.toString() 
+                                payload: {
+                                  level: plan.level,
+                                  month: month.toString(),
                                 },
                               });
                             }
                           }}
                         />
                       </div>
-                      
+
                       {hasDiscount && (
                         <div className="mt-2">
                           <div className="flex items-center justify-between">
@@ -928,23 +895,26 @@ function PlanConfig() {
                               {t("admin.plan.discount-value")}
                             </span>
                             <span className="text-sm font-medium">
-                              {Math.round((1 - (discountValue || 1)) * 100)}% {t("admin.plan.discount-off")}
+                              {Math.round((1 - (discountValue || 1)) * 100)}%{" "}
+                              {t("admin.plan.discount-off")}
                             </span>
                           </div>
                           <div className="mt-2">
                             <NumberInput
-                              value={Math.round((1 - (discountValue || 1)) * 100)}
+                              value={Math.round(
+                                (1 - (discountValue || 1)) * 100,
+                              )}
                               min={0}
                               max={90}
                               step={5}
                               onValueChange={(value) => {
-                                const discountFactor = 1 - (value / 100);
+                                const discountFactor = 1 - value / 100;
                                 formDispatch({
                                   type: "set-discount",
-                                  payload: { 
-                                    level: plan.level, 
+                                  payload: {
+                                    level: plan.level,
                                     month: month.toString(),
-                                    value: discountFactor
+                                    value: discountFactor,
                                   },
                                 });
                               }}
