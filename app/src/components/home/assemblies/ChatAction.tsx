@@ -80,13 +80,6 @@ function formatModelLabel(model: string): string {
   return model.trim().toUpperCase();
 }
 
-function formatDeepSeekModelLabel(model: string): string {
-  const normalized = model.trim().toLowerCase();
-  if (normalized === "deepseek-v4-flash") return "Deepseek-V4 Flash";
-  if (normalized === "deepseek-v4-pro") return "Deepseek-V4 Pro";
-  return model.trim();
-}
-
 function getStepPosition(index: number, total: number): string {
   if (total <= 1) return "0%";
   return `${(index / (total - 1)) * 100}%`;
@@ -486,7 +479,6 @@ export function DeepSeekThinkingAction() {
     return null;
   }
 
-  const modelLabel = formatDeepSeekModelLabel(model);
   const currentEffort = deepSeekReasoningEfforts.includes(
     deepSeekReasoningEffort,
   )
@@ -503,7 +495,7 @@ export function DeepSeekThinkingAction() {
         <div>
           <ChatAction
             active={deepSeekThinkingEnabled}
-            text={t("chat.deepseek-thinking", { model: modelLabel })}
+            text={t("chat.deepseek-thinking")}
           >
             <Brain
               className={cn("h-4 w-4", deepSeekThinkingEnabled && "enable")}
@@ -515,7 +507,7 @@ export function DeepSeekThinkingAction() {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <Label htmlFor="deepseek-thinking-toggle" className="text-sm">
-              {t("chat.deepseek-thinking-enable", { model: modelLabel })}
+              {t("chat.deepseek-thinking-enable")}
             </Label>
             <Switch
               id="deepseek-thinking-toggle"
@@ -574,7 +566,7 @@ export function DeepSeekThinkingAction() {
           <div className="rounded-md bg-muted p-2 text-xs">
             <div className="flex items-start">
               <Icon icon={<Info />} className="h-3 w-3 mr-1 mt-0.5 shrink-0" />
-              {t("chat.deepseek-thinking-tip", { model: modelLabel })}
+              {t("chat.deepseek-thinking-tip")}
             </div>
           </div>
         </div>

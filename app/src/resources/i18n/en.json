@@ -175,8 +175,8 @@
     "openai-reasoning-summary-level-concise": "Concise",
     "openai-reasoning-summary-level-auto": "Auto",
     "openai-reasoning-summary-level-detailed": "Detailed",
-    "deepseek-thinking": "{{model}} Thinking",
-    "deepseek-thinking-enable": "Enable {{model}} Thinking",
+    "deepseek-thinking": "Thinking",
+    "deepseek-thinking-enable": "Enable Thinking",
     "deepseek-thinking-depth": "Thinking effort",
     "deepseek-thinking-level-off": "Off",
     "deepseek-thinking-level-high": "High",
@@ -190,7 +190,7 @@
     "gemini-thinking-tip": "The current model supports Gemini native thinking budget control. When turned off, thinking is disabled; when turned on, it returns to Gemini's thinking summary and consumes more tokens according to the depth of thinking you choose.",
     "openai-web-enable-tip": "Using OpenAI native Web Search may incur extra built-in tool costs or token usage.",
     "openai-reasoning-tip": "{{model}} supports reasoning.effort and reasoning.summary. When summary is off, the model can still reason without showing a summary; auto uses the most detailed summary available for the model.",
-    "deepseek-thinking-tip": "{{model}} supports DeepSeek thinking.type and reasoning_effort. Turning it off sends non-thinking mode; turning it on uses the selected effort."
+    "deepseek-thinking-tip": "DeepSeek thinking.type and reasoning_effort are supported. Turning it off sends non-thinking mode; turning it on uses the selected effort."
   },
   "message": {
     "copy": "Copy Message",
