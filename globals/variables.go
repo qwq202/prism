@@ -1,6 +1,7 @@
 package globals
 
 import (
+	"encoding/json"
 	"net/url"
 	"strings"
 	"sync"
@@ -164,6 +165,8 @@ const (
 	GoogleImagen002              = "imagen-3.0-generate-002"
 	DeepseekV3                   = "deepseek-chat"
 	DeepseekR1                   = "deepseek-reasoner"
+	DeepseekV4Flash              = "deepseek-v4-flash"
+	DeepseekV4Pro                = "deepseek-v4-pro"
 )
 
 var OpenAIDalleModels = []string{
@@ -255,6 +258,39 @@ func NormalizeOpenAIResponsesReasoningSummary(summary string) string {
 
 func IsGeminiNoThinkingModel(model string) bool {
 	return strings.HasSuffix(strings.TrimSpace(model), "-nothinking")
+}
+
+func NormalizeDeepseekModel(model string) string {
+	return strings.TrimSpace(strings.ToLower(model))
+}
+
+func IsDeepseekV4Model(model string) bool {
+	normalized := NormalizeDeepseekModel(model)
+	return normalized == DeepseekV4Flash || normalized == DeepseekV4Pro
+}
+
+func IsDeepseekReasoningReplayModel(model string) bool {
+	normalized := NormalizeDeepseekModel(model)
+	return normalized == DeepseekR1 || IsDeepseekV4Model(normalized)
+}
+
+func IsDeepseekThinkingDisabled(thinking interface{}) bool {
+	if thinking == nil {
+		return false
+	}
+
+	data, err := json.Marshal(thinking)
+	if err != nil {
+		return false
+	}
+
+	var payload struct {
+		Type string `json:"type"`
+	}
+	if err := json.Unmarshal(data, &payload); err != nil {
+		return false
+	}
+	return strings.EqualFold(strings.TrimSpace(payload.Type), "disabled")
 }
 
 func SupportGeminiThinkingLevel(model string) bool {

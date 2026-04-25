@@ -51,6 +51,7 @@ type ChatProps struct {
 	Stop                 interface{}            `json:"stop,omitempty"`
 	ResponseFormat       interface{}            `json:"response_format,omitempty"`
 	PreviousResponseID   *string                `json:"previous_response_id,omitempty"`
+	ReasoningEffort      *string                `json:"reasoning_effort,omitempty"`
 	ResponseInclude      []string               `json:"include,omitempty"`
 	ResponseStore        *bool                  `json:"store,omitempty"`
 	ParallelToolCalls    *bool                  `json:"parallel_tool_calls,omitempty"`

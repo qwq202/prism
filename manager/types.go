@@ -45,6 +45,7 @@ type RelayForm struct {
 	TopK                 *int        `json:"top_k"`
 	Stop                 interface{} `json:"stop,omitempty"`
 	ResponseFormat       interface{} `json:"response_format,omitempty"`
+	ReasoningEffort      *string     `json:"reasoning_effort,omitempty"`
 	StreamOptions        interface{} `json:"stream_options,omitempty"`
 	Thinking             interface{} `json:"thinking,omitempty"`
 	Logprobs             *bool       `json:"logprobs,omitempty"`

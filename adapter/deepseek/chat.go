@@ -6,7 +6,6 @@ import (
 	"chat/utils"
 	"errors"
 	"fmt"
-	"strings"
 )
 
 type ChatInstance struct {
@@ -65,14 +64,17 @@ func (c *ChatInstance) GetChatBody(props *adaptercommon.ChatProps, stream bool) 
 	frequencyPenalty := props.FrequencyPenalty
 	logprobs := props.Logprobs
 	topLogprobs := props.TopLogprobs
+	reasoningEffort := props.ReasoningEffort
 
-	if isReasoningModel(props.Model) {
+	if isReasoningRequest(props.Model, props.Thinking) {
 		temperature = nil
 		topP = nil
 		presencePenalty = nil
 		frequencyPenalty = nil
 		logprobs = nil
 		topLogprobs = nil
+	} else {
+		reasoningEffort = nil
 	}
 
 	var streamOptions interface{}
@@ -91,6 +93,7 @@ func (c *ChatInstance) GetChatBody(props *adaptercommon.ChatProps, stream bool) 
 		FrequencyPenalty: frequencyPenalty,
 		Stop:             props.Stop,
 		ResponseFormat:   props.ResponseFormat,
+		ReasoningEffort:  reasoningEffort,
 		Thinking:         props.Thinking,
 		StreamOptions:    streamOptions,
 		Logprobs:         logprobs,
@@ -100,8 +103,15 @@ func (c *ChatInstance) GetChatBody(props *adaptercommon.ChatProps, stream bool) 
 	}
 }
 
-func isReasoningModel(model string) bool {
-	return strings.TrimSpace(model) == globals.DeepseekR1
+func isReasoningRequest(model string, thinking interface{}) bool {
+	normalized := globals.NormalizeDeepseekModel(model)
+	if normalized == globals.DeepseekR1 {
+		return true
+	}
+	if globals.IsDeepseekV4Model(normalized) {
+		return !globals.IsDeepseekThinkingDisabled(thinking)
+	}
+	return false
 }
 
 func processChatResponse(data string) *ChatResponse {

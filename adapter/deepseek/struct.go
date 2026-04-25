@@ -17,6 +17,7 @@ type ChatRequest struct {
 	FrequencyPenalty *float32               `json:"frequency_penalty,omitempty"`
 	Stop             interface{}            `json:"stop,omitempty"`
 	ResponseFormat   interface{}            `json:"response_format,omitempty"`
+	ReasoningEffort  *string                `json:"reasoning_effort,omitempty"`
 	Thinking         interface{}            `json:"thinking,omitempty"`
 	StreamOptions    interface{}            `json:"stream_options,omitempty"`
 	Logprobs         *bool                  `json:"logprobs,omitempty"`

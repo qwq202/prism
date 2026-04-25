@@ -154,6 +154,16 @@ export const pricing: PricingDataset = [
     output: 0.002,
     currency: Currency.CNY,
   },
+  {
+    models: ["deepseek-v4-flash"],
+    input: 0.00014,
+    output: 0.00028,
+  },
+  {
+    models: ["deepseek-v4-pro"],
+    input: 0.00174,
+    output: 0.00348,
+  },
 ];
 
 const countPricing = (

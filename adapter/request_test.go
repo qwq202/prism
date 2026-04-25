@@ -292,6 +292,73 @@ func TestSanitizeChatMessagesForRequestKeepsReasoningReplayForDeepseekReasoner(t
 	}
 }
 
+func TestSanitizeChatMessagesForRequestKeepsReasoningReplayForDeepseekV4(t *testing.T) {
+	props := &adaptercommon.ChatProps{
+		OriginalModel: globals.DeepseekV4Pro,
+		Message: []globals.Message{
+			{
+				Role:             globals.Assistant,
+				Model:            globals.DeepseekV4Pro,
+				Content:          "<think>\nplan\n</think>\n\nAnswer",
+				ReasoningContent: utils.ToPtr("plan"),
+			},
+			{Role: globals.User, Content: "继续"},
+		},
+	}
+
+	restore := sanitizeChatMessagesForRequest(requestTestChannelConfig{
+		channelType:    globals.DeepseekChannelType,
+		reflectedModel: globals.DeepseekV4Pro,
+	}, props)
+
+	if props.Message[0].Content != "<think>\nplan\n</think>\n\nAnswer" {
+		t.Fatalf("expected deepseek v4 thinking replay to remain, got %q", props.Message[0].Content)
+	}
+
+	if props.Message[0].ReasoningContent == nil || *props.Message[0].ReasoningContent != "plan" {
+		t.Fatalf("expected deepseek v4 reasoning replay to remain, got %#v", props.Message[0].ReasoningContent)
+	}
+
+	restore()
+	if props.Message[0].ReasoningContent == nil || *props.Message[0].ReasoningContent != "plan" {
+		t.Fatalf("expected reasoning replay to remain after restore, got %#v", props.Message[0].ReasoningContent)
+	}
+}
+
+func TestSanitizeChatMessagesForRequestStripsReasoningReplayForDeepseekV4NonThinking(t *testing.T) {
+	props := &adaptercommon.ChatProps{
+		OriginalModel: globals.DeepseekV4Flash,
+		Thinking:      map[string]interface{}{"type": "disabled"},
+		Message: []globals.Message{
+			{
+				Role:             globals.Assistant,
+				Model:            globals.DeepseekV4Flash,
+				Content:          "<think>\nplan\n</think>\n\nAnswer",
+				ReasoningContent: utils.ToPtr("plan"),
+			},
+			{Role: globals.User, Content: "继续"},
+		},
+	}
+
+	restore := sanitizeChatMessagesForRequest(requestTestChannelConfig{
+		channelType:    globals.DeepseekChannelType,
+		reflectedModel: globals.DeepseekV4Flash,
+	}, props)
+
+	if props.Message[0].Content != "Answer" {
+		t.Fatalf("expected deepseek v4 non-thinking replay to be stripped, got %q", props.Message[0].Content)
+	}
+
+	if props.Message[0].ReasoningContent != nil {
+		t.Fatalf("expected deepseek v4 non-thinking reasoning replay to be stripped, got %#v", props.Message[0].ReasoningContent)
+	}
+
+	restore()
+	if props.Message[0].ReasoningContent == nil || *props.Message[0].ReasoningContent != "plan" {
+		t.Fatalf("expected reasoning replay to be restored, got %#v", props.Message[0].ReasoningContent)
+	}
+}
+
 func TestClearMessagesKeepsBase64ForConfiguredVisionModel(t *testing.T) {
 	originalResolver := globals.VisionModelResolver
 	globals.VisionModelResolver = func(model string) bool {

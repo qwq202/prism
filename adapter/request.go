@@ -22,6 +22,10 @@ func isAnthropicAdapterRequest(channelType string) bool {
 		channelType == globals.MiniMaxTokenPlanCNChannelType
 }
 
+func isDeepseekAdapterRequest(channelType string) bool {
+	return channelType == globals.DeepseekChannelType
+}
+
 func stripHiddenMetadata(messages []globals.Message, stripGemini bool, stripClaude bool) ([]globals.Message, bool) {
 	sanitized := make([]globals.Message, len(messages))
 	changed := false
@@ -181,7 +185,10 @@ func sanitizeChatMessagesForRequest(conf globals.ChannelConfig, props *adapterco
 	reflectedModel := conf.GetModelReflect(originalModel)
 	stripGemini := !isGeminiAdapterRequest(conf.GetType(), reflectedModel)
 	stripClaude := !isAnthropicAdapterRequest(conf.GetType())
-	allowReasoningReplay := isAnthropicAdapterRequest(conf.GetType()) || strings.TrimSpace(reflectedModel) == globals.DeepseekR1
+	allowReasoningReplay := isAnthropicAdapterRequest(conf.GetType()) ||
+		(isDeepseekAdapterRequest(conf.GetType()) &&
+			globals.IsDeepseekReasoningReplayModel(reflectedModel) &&
+			!globals.IsDeepseekThinkingDisabled(props.Thinking))
 
 	sanitized := props.Message
 	changed := false

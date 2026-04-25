@@ -119,6 +119,7 @@ func getChatProps(form RelayForm, messages []globals.Message, buffer *utils.Buff
 		TopK:                 form.TopK,
 		Stop:                 form.Stop,
 		ResponseFormat:       form.ResponseFormat,
+		ReasoningEffort:      form.ReasoningEffort,
 		StreamOptions:        form.StreamOptions,
 		Thinking:             form.Thinking,
 		Logprobs:             form.Logprobs,
