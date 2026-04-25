@@ -202,6 +202,47 @@ func TestBuildResponseChunkExtractsFunctionCalls(t *testing.T) {
 	}
 }
 
+func TestBuildResponseChunkIncludesReasoningSummary(t *testing.T) {
+	form := &ResponseResponse{
+		Output: []OutputItem{
+			{
+				Type: "reasoning",
+				Summary: []ReasoningSummaryContent{
+					{Type: "summary_text", Text: "核对输入。"},
+				},
+			},
+			{
+				Type: "message",
+				Role: globals.Assistant,
+				Content: []OutputContent{
+					{Type: "output_text", Text: "完成"},
+				},
+			},
+		},
+	}
+
+	chunk := buildResponseChunk(form)
+	expected := "<think>\n核对输入。\n</think>\n\n完成"
+	if chunk.Content != expected {
+		t.Fatalf("expected reasoning summary content, got %q", chunk.Content)
+	}
+}
+
+func TestEmitReasoningSummaryAndOutputText(t *testing.T) {
+	started := false
+	closed := false
+
+	summary := emitReasoningSummary("先想一步", &started)
+	if summary == nil || summary.Content != "<think>\n先想一步" || !started {
+		t.Fatalf("unexpected reasoning summary chunk: %#v started=%v", summary, started)
+	}
+
+	answer := emitOutputText("答案", &started, &closed)
+	if answer == nil || answer.Content != "\n</think>\n\n答案" || !closed {
+		t.Fatalf("unexpected output text chunk: %#v closed=%v", answer, closed)
+	}
+}
+
 func TestEmitFunctionCallEvent(t *testing.T) {
 	chunk := emitFunctionCallEvent(&OutputItem{
 		Type:      "function_call",

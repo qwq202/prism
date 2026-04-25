@@ -261,8 +261,42 @@ func parseStreamEvent(data string) (*ResponseStreamEvent, error) {
 	return form, nil
 }
 
-func emitOutputText(delta string) *globals.Chunk {
-	return compat.EmitOutputText(delta)
+func emitReasoningSummary(delta string, started *bool) *globals.Chunk {
+	if strings.TrimSpace(delta) == "" {
+		return nil
+	}
+
+	if !*started {
+		*started = true
+		return &globals.Chunk{
+			Content: fmt.Sprintf("<think>\n%s", delta),
+		}
+	}
+
+	return &globals.Chunk{
+		Content: delta,
+	}
+}
+
+func emitOutputText(delta string, reasoningStarted *bool, reasoningClosed *bool) *globals.Chunk {
+	content := delta
+
+	if *reasoningStarted && !*reasoningClosed {
+		*reasoningClosed = true
+		if content != "" {
+			content = fmt.Sprintf("\n</think>\n\n%s", content)
+		} else {
+			content = "\n</think>\n\n"
+		}
+	}
+
+	if content == "" {
+		return nil
+	}
+
+	return &globals.Chunk{
+		Content: content,
+	}
 }
 
 func emitFunctionCallEvent(item *OutputItem) *globals.Chunk {
@@ -270,6 +304,8 @@ func emitFunctionCallEvent(item *OutputItem) *globals.Chunk {
 }
 
 func (c *ChatInstance) CreateStreamChatRequest(props *adaptercommon.ChatProps, callback globals.Hook) error {
+	reasoningStarted := false
+	reasoningClosed := false
 	ticks := 0
 	body := c.GetChatBody(props, true)
 
@@ -286,8 +322,10 @@ func (c *ChatInstance) CreateStreamChatRequest(props *adaptercommon.ChatProps, c
 
 			var chunk *globals.Chunk
 			switch event.Type {
+			case "response.reasoning_summary_text.delta":
+				chunk = emitReasoningSummary(event.Delta, &reasoningStarted)
 			case "response.output_text.delta":
-				chunk = emitOutputText(event.Delta)
+				chunk = emitOutputText(event.Delta, &reasoningStarted, &reasoningClosed)
 			case "response.output_item.done", "response.function_call_arguments.done":
 				chunk = emitFunctionCallEvent(event.Item)
 			default:
@@ -313,6 +351,13 @@ func (c *ChatInstance) CreateStreamChatRequest(props *adaptercommon.ChatProps, c
 		}
 
 		return fmt.Errorf("openai responses error: %s", err.Error)
+	}
+
+	if reasoningStarted && !reasoningClosed {
+		if closeErr := callback(&globals.Chunk{Content: "\n</think>\n\n"}); closeErr != nil {
+			return closeErr
+		}
+		ticks += 1
 	}
 
 	if ticks == 0 {

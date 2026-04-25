@@ -78,6 +78,23 @@ func ExtractOutputText(items []OutputItem) string {
 	return strings.Join(chunks, "")
 }
 
+func ExtractReasoningSummary(items []OutputItem) string {
+	chunks := make([]string, 0)
+	for _, item := range items {
+		if item.Type != "reasoning" {
+			continue
+		}
+
+		for _, summary := range item.Summary {
+			if summary.Type == "summary_text" && strings.TrimSpace(summary.Text) != "" {
+				chunks = append(chunks, summary.Text)
+			}
+		}
+	}
+
+	return strings.Join(chunks, "\n\n")
+}
+
 func ExtractToolCalls(items []OutputItem) *globals.ToolCalls {
 	toolCalls := make(globals.ToolCalls, 0)
 	for idx, item := range items {
@@ -103,8 +120,21 @@ func ExtractToolCalls(items []OutputItem) *globals.ToolCalls {
 	return &toolCalls
 }
 
+func FormatReasoningSummary(summary string, content string) string {
+	summary = strings.TrimSpace(summary)
+	if summary == "" {
+		return content
+	}
+
+	if strings.TrimSpace(content) == "" {
+		return "<think>\n" + summary + "\n</think>"
+	}
+
+	return "<think>\n" + summary + "\n</think>\n\n" + content
+}
+
 func BuildResponseChunk(output []OutputItem) *globals.Chunk {
-	content := ExtractOutputText(output)
+	content := FormatReasoningSummary(ExtractReasoningSummary(output), ExtractOutputText(output))
 	toolCalls := ExtractToolCalls(output)
 	if content == "" && toolCalls == nil {
 		return &globals.Chunk{}

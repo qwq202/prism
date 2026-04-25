@@ -35,6 +35,8 @@ type ResponseRequest struct {
 
 type OutputContent = compat.OutputContent
 
+type ReasoningSummaryContent = compat.ReasoningSummaryContent
+
 type OutputItem = compat.OutputItem
 
 type ResponseResponse struct {

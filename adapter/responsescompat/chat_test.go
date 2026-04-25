@@ -69,6 +69,31 @@ func TestExtractOutputTextAndToolCalls(t *testing.T) {
 	}
 }
 
+func TestBuildResponseChunkIncludesReasoningSummary(t *testing.T) {
+	chunk := BuildResponseChunk([]OutputItem{
+		{
+			Type: "reasoning",
+			Summary: []ReasoningSummaryContent{
+				{Type: "summary_text", Text: "先判断问题类型。"},
+				{Type: "summary_text", Text: "再给出简短答案。"},
+			},
+			EncryptedContent: "opaque",
+		},
+		{
+			Type: "message",
+			Role: globals.Assistant,
+			Content: []OutputContent{
+				{Type: "output_text", Text: "答案"},
+			},
+		},
+	})
+
+	expected := "<think>\n先判断问题类型。\n\n再给出简短答案。\n</think>\n\n答案"
+	if chunk.Content != expected {
+		t.Fatalf("expected reasoning summary to be wrapped as think content, got %q", chunk.Content)
+	}
+}
+
 func TestEmitFunctionCallEvent(t *testing.T) {
 	chunk := EmitFunctionCallEvent(&OutputItem{
 		Type:      "function_call",

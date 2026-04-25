@@ -108,9 +108,14 @@ func buildThinkingConfig(instance *conversation.Conversation, model string) inte
 		return nil
 	}
 
-	return map[string]interface{}{
+	config := map[string]interface{}{
 		"effort": effort,
 	}
+	if effort != "none" {
+		config["summary"] = "auto"
+	}
+
+	return config
 }
 
 func sendToolCallEvents(conn *Connection, calls *globals.ToolCalls, status string, quota float32, plan bool) error {

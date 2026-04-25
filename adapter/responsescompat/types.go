@@ -23,12 +23,19 @@ type OutputContent struct {
 	Text string `json:"text,omitempty"`
 }
 
+type ReasoningSummaryContent struct {
+	Type string `json:"type"`
+	Text string `json:"text,omitempty"`
+}
+
 type OutputItem struct {
-	ID        string          `json:"id,omitempty"`
-	Type      string          `json:"type"`
-	Role      string          `json:"role,omitempty"`
-	Content   []OutputContent `json:"content,omitempty"`
-	Name      string          `json:"name,omitempty"`
-	Arguments string          `json:"arguments,omitempty"`
-	CallID    string          `json:"call_id,omitempty"`
+	ID               string                    `json:"id,omitempty"`
+	Type             string                    `json:"type"`
+	Role             string                    `json:"role,omitempty"`
+	Content          []OutputContent           `json:"content,omitempty"`
+	Summary          []ReasoningSummaryContent `json:"summary,omitempty"`
+	EncryptedContent string                    `json:"encrypted_content,omitempty"`
+	Name             string                    `json:"name,omitempty"`
+	Arguments        string                    `json:"arguments,omitempty"`
+	CallID           string                    `json:"call_id,omitempty"`
 }
