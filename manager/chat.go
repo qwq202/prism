@@ -28,7 +28,7 @@ import (
 
 const defaultMessage = "empty response"
 const interruptMessage = "interrupted"
-const maxFetchToolRounds = 8
+const maxFetchToolRounds = 20
 
 func summarizeToolCallArguments(arguments string) string {
 	arguments = strings.TrimSpace(arguments)

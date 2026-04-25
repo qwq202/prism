@@ -67,3 +67,51 @@ func TestGetChatBodyKeepsSamplingForDeepseekV4NonThinking(t *testing.T) {
 		t.Fatalf("expected reasoning_effort to be omitted outside thinking mode, got %#v", body.ReasoningEffort)
 	}
 }
+
+func TestSanitizeDSMLToolMarkup(t *testing.T) {
+	input := "Let me fetch it. </ | DSML | tool_calls>\n< | DSML | invoke name=\"fetch_webpage\">"
+	got := sanitizeDSMLToolMarkup(input)
+	if got != "Let me fetch it." {
+		t.Fatalf("expected DSML markup to be stripped, got %q", got)
+	}
+}
+
+func TestGetChoicesStripsDSMLFromContentWithToolCalls(t *testing.T) {
+	instance := NewChatInstance("https://api.deepseek.com", "secret")
+	instance.isFirstReasoning = false
+	instance.isReasonOver = false
+
+	calls := globals.ToolCalls{
+		{
+			Id:   "call_1",
+			Type: "function",
+			Function: globals.ToolCallFunction{
+				Name:      "fetch_webpage",
+				Arguments: `{"url":"https://example.com"}`,
+			},
+		},
+	}
+	content := "I found a likely source. </ | DSML | tool_calls>"
+	chunk := instance.getChoices(&ChatStreamResponse{
+		Choices: []struct {
+			Delta        globals.Message `json:"delta"`
+			Index        int             `json:"index"`
+			FinishReason string          `json:"finish_reason"`
+			Logprobs     interface{}     `json:"logprobs,omitempty"`
+		}{
+			{
+				Delta: globals.Message{
+					Content:   content,
+					ToolCalls: &calls,
+				},
+			},
+		},
+	})
+
+	if chunk.ToolCall == nil || len(*chunk.ToolCall) != 1 {
+		t.Fatalf("expected tool call to be preserved, got %#v", chunk.ToolCall)
+	}
+	if chunk.Content != "\n</think>\n\nI found a likely source." {
+		t.Fatalf("expected visible DSML markup to be stripped, got %q", chunk.Content)
+	}
+}

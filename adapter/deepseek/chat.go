@@ -6,6 +6,7 @@ import (
 	"chat/utils"
 	"errors"
 	"fmt"
+	"strings"
 )
 
 type ChatInstance struct {
@@ -133,15 +134,49 @@ func processChatErrorResponse(data string) *ChatStreamErrorResponse {
 }
 
 func formatReasoning(reasoning *string, content string) string {
+	content = sanitizeDSMLToolMarkup(content)
 	if reasoning == nil || *reasoning == "" {
 		return content
 	}
 
-	if content == "" {
-		return fmt.Sprintf("<think>\n%s\n</think>", *reasoning)
+	cleanReasoning := sanitizeDSMLToolMarkup(*reasoning)
+	if cleanReasoning == "" {
+		return content
 	}
 
-	return fmt.Sprintf("<think>\n%s\n</think>\n\n%s", *reasoning, content)
+	if content == "" {
+		return fmt.Sprintf("<think>\n%s\n</think>", cleanReasoning)
+	}
+
+	return fmt.Sprintf("<think>\n%s\n</think>\n\n%s", cleanReasoning, content)
+}
+
+func sanitizeDSMLToolMarkup(content string) string {
+	if content == "" {
+		return ""
+	}
+
+	markers := []string{
+		"<|DSML|tool_calls>",
+		"< | DSML | tool_calls>",
+		"</ | DSML | tool_calls>",
+		"</|DSML|tool_calls>",
+		"| DSML | tool_calls",
+		"|DSML|tool_calls",
+	}
+
+	cleaned := content
+	for _, marker := range markers {
+		index := strings.Index(cleaned, marker)
+		if index >= 0 {
+			cleaned = cleaned[:index]
+		}
+	}
+
+	cleaned = strings.TrimSpace(cleaned)
+	cleaned = strings.TrimSuffix(cleaned, "<")
+	cleaned = strings.TrimSpace(cleaned)
+	return cleaned
 }
 
 func (c *ChatInstance) getChoices(form *ChatStreamResponse) *globals.Chunk {
@@ -156,7 +191,7 @@ func (c *ChatInstance) getChoices(form *ChatStreamResponse) *globals.Chunk {
 		c.isReasonOver = true
 		if choice.Content != "" {
 			return &globals.Chunk{
-				Content:          fmt.Sprintf("\n</think>\n\n%s", choice.Content),
+				Content:          fmt.Sprintf("\n</think>\n\n%s", sanitizeDSMLToolMarkup(choice.Content)),
 				ToolCall:         choice.ToolCalls,
 				FunctionCall:     choice.FunctionCall,
 				ReasoningContent: nil,
@@ -171,13 +206,24 @@ func (c *ChatInstance) getChoices(form *ChatStreamResponse) *globals.Chunk {
 		}
 	}
 
-	content := choice.Content
+	content := sanitizeDSMLToolMarkup(choice.Content)
 	if reasoning != nil {
-		if c.isFirstReasoning {
-			c.isFirstReasoning = false
-			content = fmt.Sprintf("<think>\n%s", *reasoning)
-		} else {
-			content = *reasoning
+		cleanReasoning := sanitizeDSMLToolMarkup(*reasoning)
+		if cleanReasoning != "" {
+			if c.isFirstReasoning {
+				c.isFirstReasoning = false
+				content = fmt.Sprintf("<think>\n%s", cleanReasoning)
+			} else {
+				content = cleanReasoning
+			}
+		}
+	}
+
+	var reasoningContent *string
+	if reasoning != nil {
+		cleanReasoning := sanitizeDSMLToolMarkup(*reasoning)
+		if cleanReasoning != "" {
+			reasoningContent = &cleanReasoning
 		}
 	}
 
@@ -185,7 +231,7 @@ func (c *ChatInstance) getChoices(form *ChatStreamResponse) *globals.Chunk {
 		Content:          content,
 		ToolCall:         choice.ToolCalls,
 		FunctionCall:     choice.FunctionCall,
-		ReasoningContent: reasoning,
+		ReasoningContent: reasoningContent,
 	}
 }
 
