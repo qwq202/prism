@@ -484,10 +484,6 @@ export function DeepSeekThinkingAction() {
   )
     ? deepSeekReasoningEffort
     : "high";
-  const levelIndex = Math.max(
-    0,
-    deepSeekReasoningEfforts.indexOf(currentEffort),
-  );
 
   return (
     <Popover>
@@ -533,34 +529,27 @@ export function DeepSeekThinkingAction() {
               </span>
             </div>
 
-            <Slider
+            <ToggleGroup
+              type="single"
+              value={currentEffort}
               disabled={!deepSeekThinkingEnabled}
-              value={[levelIndex]}
-              min={0}
-              max={deepSeekReasoningEfforts.length - 1}
-              step={1}
               onValueChange={(value) => {
-                const next = deepSeekReasoningEfforts[value[0]];
-                next && dispatch(setDeepSeekReasoningEffort(next));
+                value && dispatch(setDeepSeekReasoningEffort(value));
               }}
-            />
-
-            <div className="relative h-4 text-[11px] text-muted-foreground">
-              {deepSeekReasoningEfforts.map((effort, index) => (
-                <span
+              className="grid grid-cols-2 gap-1"
+            >
+              {deepSeekReasoningEfforts.map((effort) => (
+                <ToggleGroupItem
                   key={effort}
-                  className="absolute top-0 -translate-x-1/2 whitespace-nowrap"
-                  style={{
-                    left: getStepPosition(
-                      index,
-                      deepSeekReasoningEfforts.length,
-                    ),
-                  }}
+                  value={effort}
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
                 >
                   {t(`chat.deepseek-thinking-level-${effort}`)}
-                </span>
+                </ToggleGroupItem>
               ))}
-            </div>
+            </ToggleGroup>
           </div>
 
           <div className="rounded-md bg-muted p-2 text-xs">
