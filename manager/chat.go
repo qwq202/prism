@@ -28,6 +28,7 @@ import (
 
 const defaultMessage = "empty response"
 const interruptMessage = "interrupted"
+const maxFetchToolRounds = 8
 
 func summarizeToolCallArguments(arguments string) string {
 	arguments = strings.TrimSpace(arguments)
@@ -595,6 +596,13 @@ func sendToolFinalAnswer(conn *Connection, liveBuffer *utils.Buffer, responseBuf
 	return nil
 }
 
+func buildToolLimitSystemMessage() globals.Message {
+	return globals.Message{
+		Role:    globals.System,
+		Content: "The tool call limit for this response has been reached. Do not emit any additional tool calls, DSML, XML, JSON, or tool-call markup. Produce the final answer in natural language using the available tool results. If the available information is incomplete, say that clearly.",
+	}
+}
+
 func summarizeMemoryRecords(memories []memory.Record) string {
 	if len(memories) == 0 {
 		return "[]"
@@ -707,13 +715,14 @@ func createToolChatTask(
 	plan bool,
 	ctx memoryContext,
 	tools *globals.FunctionTools,
+	maxToolRounds int,
 ) (hit bool, err error, interrupted bool) {
 	workingSegment := utils.DeepCopy(segment)
 	memoryPrompt := ctx.MemoryPrompt
 	recentChatsPrompt := ctx.RecentChatsPrompt
 	toolChoice := buildAutoToolChoice()
 
-	for round := 0; round < memory.MaxToolRounds; round++ {
+	for round := 0; round < maxToolRounds; round++ {
 		roundBuffer := utils.NewBuffer(model, workingSegment, liveBuffer.GetCharge())
 		if round > 0 {
 			liveBuffer.InputTokens += roundBuffer.CountInputToken()
@@ -794,10 +803,12 @@ func createToolChatTask(
 	}
 
 	globals.Warn(fmt.Sprintf(
-		"[tools] reached max tool rounds for model %s; requesting final answer without tools",
+		"[tools] reached max tool rounds for model %s max_rounds=%d; requesting final answer without tools",
 		model,
+		maxToolRounds,
 	))
 
+	workingSegment = append(workingSegment, buildToolLimitSystemMessage())
 	finalBuffer := utils.NewBuffer(model, workingSegment, liveBuffer.GetCharge())
 	liveBuffer.InputTokens += finalBuffer.CountInputToken()
 	liveBuffer.Quota += utils.CountInputQuota(liveBuffer.GetCharge(), finalBuffer.CountInputToken())
@@ -1106,7 +1117,11 @@ func ChatHandler(conn *Connection, user *auth.User, instance *conversation.Conve
 		tools := buildAvailableToolDefinitions(fetchToolEnabled, memCtx.Writable)
 		toolEnabled = tools != nil
 		if tools != nil {
-			hit, err, interrupted = createToolChatTask(conn, user, buffer, db, cache, model, group, instance, segment, plan, memCtx, tools)
+			maxToolRounds := memory.MaxToolRounds
+			if fetchToolEnabled {
+				maxToolRounds = maxFetchToolRounds
+			}
+			hit, err, interrupted = createToolChatTask(conn, user, buffer, db, cache, model, group, instance, segment, plan, memCtx, tools, maxToolRounds)
 		} else {
 			props := buildChatProps(conn, instance, model, segment, buffer, memCtx.MemoryPrompt, memCtx.RecentChatsPrompt, nil, nil, false)
 			hit, err, interrupted = createRoundTask(conn, user, buffer, buffer, db, cache, group, props, plan)
