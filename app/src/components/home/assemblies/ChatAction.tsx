@@ -70,6 +70,10 @@ const geminiThinkingPresets = [
 
 const openAIReasoningSummaryLevels = ["concise", "auto", "detailed"];
 
+function formatModelLabel(model: string): string {
+  return model.trim().toUpperCase();
+}
+
 type ChatActionProps = {
   style?: React.CSSProperties;
   className?: string;
@@ -141,6 +145,7 @@ export function WebAction() {
     supportModels,
     model,
   );
+  const openAIModelLabel = formatModelLabel(model);
 
   const geminiWebEnabled = geminiGoogleSearch || geminiURLContext;
   const xaiSearchEnabled = xaiWebSearch || xaiXSearch;
@@ -168,10 +173,10 @@ export function WebAction() {
               isGeminiModel
                 ? t("chat.gemini-web")
                 : isXAIModel
-                ? t("chat.xai-web")
-                : isOpenAIWebModel
-                ? t("chat.openai-web")
-                : t("chat.web")
+                  ? t("chat.xai-web")
+                  : isOpenAIWebModel
+                    ? t("chat.openai-web", { model: openAIModelLabel })
+                    : t("chat.web")
             }
           >
             <Globe
@@ -473,6 +478,7 @@ export function OpenAIReasoningAction() {
   const enabled = openAIReasoningEffort !== "none";
   const summaryEnabled = openAIReasoningSummary !== "none";
   const currentSummary = summaryEnabled ? openAIReasoningSummary : "auto";
+  const modelLabel = formatModelLabel(model);
   const fallbackEffort = availableEfforts.includes("medium")
     ? "medium"
     : availableEfforts[0];
@@ -487,7 +493,10 @@ export function OpenAIReasoningAction() {
     <Popover>
       <PopoverTrigger asChild>
         <div>
-          <ChatAction active={enabled} text={t("chat.openai-reasoning")}>
+          <ChatAction
+            active={enabled}
+            text={t("chat.openai-reasoning", { model: modelLabel })}
+          >
             <Brain className={cn("h-4 w-4", enabled && "enable")} />
           </ChatAction>
         </div>
@@ -496,7 +505,7 @@ export function OpenAIReasoningAction() {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <Label htmlFor="openai-reasoning-toggle" className="text-sm">
-              {t("chat.openai-reasoning-enable")}
+              {t("chat.openai-reasoning-enable", { model: modelLabel })}
             </Label>
             <Switch
               id="openai-reasoning-toggle"
@@ -600,7 +609,7 @@ export function OpenAIReasoningAction() {
           <div className="rounded-md bg-muted p-2 text-xs">
             <div className="flex items-start">
               <Icon icon={<Info />} className="h-3 w-3 mr-1 mt-0.5 shrink-0" />
-              {t("chat.openai-reasoning-tip")}
+              {t("chat.openai-reasoning-tip", { model: modelLabel })}
             </div>
           </div>
         </div>
