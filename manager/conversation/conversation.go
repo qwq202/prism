@@ -24,6 +24,7 @@ type Conversation struct {
 	WebSearch                bool              `json:"web_search"`
 	URLContext               bool              `json:"url_context"`
 	XSearch                  bool              `json:"x_search"`
+	Fetch                    bool              `json:"fetch"`
 	GeminiThinkingBudget     int               `json:"gemini_thinking_budget"`
 	DeepseekThinkingDisabled bool              `json:"deepseek_thinking_disabled"`
 	DeepseekReasoningEffort  string            `json:"deepseek_reasoning_effort"`
@@ -51,6 +52,7 @@ type FormMessage struct {
 	WebSearch               bool   `json:"web_search"`
 	URLContext              bool   `json:"url_context"`
 	XSearch                 bool   `json:"x_search"`
+	Fetch                   bool   `json:"fetch"`
 	GeminiThinkingBudget    int    `json:"gemini_thinking_budget"`
 	DeepseekThinkingEnabled *bool  `json:"deepseek_thinking_enabled,omitempty"`
 	DeepseekReasoningEffort string `json:"deepseek_reasoning_effort"`
@@ -143,6 +145,10 @@ func (c *Conversation) IsEnableXSearch() bool {
 	return c.XSearch
 }
 
+func (c *Conversation) IsEnableFetch() bool {
+	return c.Fetch
+}
+
 func (c *Conversation) GetGeminiThinkingBudget() *int {
 	return &c.GeminiThinkingBudget
 }
@@ -192,6 +198,10 @@ func (c *Conversation) SetEnableURLContext(enable bool) {
 
 func (c *Conversation) SetEnableXSearch(enable bool) {
 	c.XSearch = enable
+}
+
+func (c *Conversation) SetEnableFetch(enable bool) {
+	c.Fetch = enable
 }
 
 func (c *Conversation) SetGeminiThinkingBudget(budget int) {
@@ -433,6 +443,7 @@ func (c *Conversation) ApplyParam(form *FormMessage) {
 	c.SetEnableWebSearch(utils.Multi(form.Web && !form.WebSearch && !form.URLContext && !form.XSearch, true, form.WebSearch))
 	c.SetEnableURLContext(utils.Multi(form.Web && !form.WebSearch && !form.URLContext && !form.XSearch, true, form.URLContext))
 	c.SetEnableXSearch(form.XSearch)
+	c.SetEnableFetch(form.Fetch)
 	c.SetGeminiThinkingBudget(form.GeminiThinkingBudget)
 	if form.DeepseekThinkingEnabled != nil {
 		c.SetDeepseekThinkingEnabled(*form.DeepseekThinkingEnabled)

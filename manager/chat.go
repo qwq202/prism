@@ -3,6 +3,7 @@ package manager
 import (
 	"chat/adapter"
 	adaptercommon "chat/adapter/common"
+	"chat/addition/fetch"
 	"chat/addition/web"
 	"chat/admin"
 	"chat/auth"
@@ -953,7 +954,9 @@ func ChatHandler(conn *Connection, user *auth.User, instance *conversation.Conve
 
 	model := instance.GetModel()
 	group := auth.GetGroup(db, user)
-	segment := adapter.ClearMessages(model, web.ToChatSearched(instance, restart, group, cache))
+	segment := web.ToChatSearched(instance, restart, group, cache)
+	segment = fetch.ToFetched(instance.IsEnableFetch(), segment)
+	segment = adapter.ClearMessages(model, segment)
 
 	check, plan := auth.CanEnableModelWithSubscription(db, cache, user, model, segment)
 	conn.Send(globals.ChatSegmentResponse{

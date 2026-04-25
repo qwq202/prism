@@ -29,6 +29,7 @@ import { alignSelector } from "@/store/settings.ts";
 import { FileArray } from "@/api/file.ts";
 import {
   DeepSeekThinkingAction,
+  FetchAction,
   GeminiThinkingAction,
   NewConversationAction,
   OpenAIReasoningAction,
@@ -200,6 +201,15 @@ function ChatWrapper() {
                 transition={{ duration: 0.3, delay: 0.1 }}
               >
                 <WebAction />
+              </motion.div>
+              <motion.div
+                key="fetch-action"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                transition={{ duration: 0.3, delay: 0.15 }}
+              >
+                <FetchAction />
               </motion.div>
               <motion.div
                 key="gemini-thinking-action"

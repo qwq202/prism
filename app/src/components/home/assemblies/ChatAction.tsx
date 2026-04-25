@@ -4,6 +4,7 @@ import {
   isGeminiModelId,
   isOpenAIResponsesNativeWebModel,
   isXAIModelId,
+  selectFetch,
   selectDeepSeekReasoningEffort,
   selectDeepSeekThinkingEnabled,
   selectOpenAIReasoningEffort,
@@ -20,6 +21,7 @@ import {
   setOpenAIReasoningEffort,
   setOpenAIReasoningSummary,
   setOpenAIResponsesWebSearch,
+  setFetch,
   setDeepSeekReasoningEffort,
   setDeepSeekThinkingEnabled,
   setGeminiThinkingBudget,
@@ -37,6 +39,7 @@ import {
   Brain,
   Globe,
   Info,
+  Link,
   TriangleAlert,
   MessageSquarePlus,
   Wifi,
@@ -387,6 +390,47 @@ export function WebAction() {
               </div>
             </>
           )}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+export function FetchAction() {
+  const { t } = useTranslation();
+  const dispatch = useDispatch();
+  const fetch = useSelector(selectFetch);
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <div>
+          <ChatAction active={fetch} text={t("chat.fetch")}>
+            <Link className={cn("h-4 w-4", fetch && "enable")} />
+          </ChatAction>
+        </div>
+      </PopoverTrigger>
+      <PopoverContent className="w-64 p-3" side="top" align="start">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="fetch-toggle" className="text-sm">
+              {t("chat.fetch-enable")}
+            </Label>
+            <Switch
+              id="fetch-toggle"
+              checked={fetch}
+              onCheckedChange={(state) => {
+                dispatch(setFetch(state));
+              }}
+            />
+          </div>
+
+          <div className="rounded-md bg-muted p-2 text-xs">
+            <div className="flex items-start">
+              <Icon icon={<Info />} className="h-3 w-3 mr-1 mt-0.5 shrink-0" />
+              {t("chat.fetch-tip")}
+            </div>
+          </div>
         </div>
       </PopoverContent>
     </Popover>

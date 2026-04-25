@@ -2,6 +2,7 @@ package manager
 
 import (
 	adaptercommon "chat/adapter/common"
+	"chat/addition/fetch"
 	"chat/addition/web"
 	"chat/admin"
 	"chat/auth"
@@ -78,6 +79,7 @@ func ChatRelayAPI(c *gin.Context) {
 		enableWeb = true
 	}
 
+	messages = fetch.ToFetched(form.Fetch, messages)
 	messages = web.ToSearched(enableWeb, form.Model, messages, group, cache)
 
 	if strings.HasSuffix(form.Model, "-official") {
