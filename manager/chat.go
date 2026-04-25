@@ -494,6 +494,85 @@ type memoryContext struct {
 	Writable          bool
 }
 
+func appendFunctionTools(target globals.FunctionTools, source *globals.FunctionTools) globals.FunctionTools {
+	if source == nil {
+		return target
+	}
+
+	return append(target, (*source)...)
+}
+
+func buildAvailableToolDefinitions(fetchEnabled bool, memoryWritable bool) *globals.FunctionTools {
+	tools := make(globals.FunctionTools, 0)
+	if memoryWritable {
+		tools = appendFunctionTools(tools, memory.BuildToolDefinition())
+	}
+	if fetchEnabled {
+		tools = appendFunctionTools(tools, fetch.BuildToolDefinition())
+	}
+
+	if len(tools) == 0 {
+		return nil
+	}
+	return &tools
+}
+
+func buildAutoToolChoice() *interface{} {
+	choice := interface{}("auto")
+	return &choice
+}
+
+func unsupportedToolResult(call globals.ToolCall) globals.Message {
+	return globals.Message{
+		Role: globals.Tool,
+		Content: utils.Marshal(map[string]string{
+			"status": "error",
+			"action": call.Function.Name,
+			"error":  "unsupported tool",
+		}),
+		ToolCallId: utils.ToPtr(call.Id),
+	}
+}
+
+func executeAvailableToolCall(db *sql.DB, user *auth.User, call globals.ToolCall) globals.Message {
+	switch call.Function.Name {
+	case memory.MemoryToolName:
+		messages := memory.ExecuteToolCalls(db, user, &globals.ToolCalls{call})
+		if len(messages) > 0 {
+			return messages[0]
+		}
+	case fetch.ToolName:
+		return fetch.ExecuteToolCall(call)
+	}
+
+	return unsupportedToolResult(call)
+}
+
+func executeAvailableToolCalls(db *sql.DB, user *auth.User, calls *globals.ToolCalls) []globals.Message {
+	if calls == nil || len(*calls) == 0 {
+		return nil
+	}
+
+	messages := make([]globals.Message, 0, len(*calls))
+	for _, call := range *calls {
+		messages = append(messages, executeAvailableToolCall(db, user, call))
+	}
+	return messages
+}
+
+func containsMemoryToolCall(calls *globals.ToolCalls) bool {
+	if calls == nil {
+		return false
+	}
+
+	for _, call := range *calls {
+		if call.Function.Name == memory.MemoryToolName {
+			return true
+		}
+	}
+	return false
+}
+
 func summarizeMemoryRecords(memories []memory.Record) string {
 	if len(memories) == 0 {
 		return "[]"
@@ -593,7 +672,7 @@ func buildMemoryContext(db *sql.DB, user *auth.User, instance *conversation.Conv
 	return ctx
 }
 
-func createMemoryToolChatTask(
+func createToolChatTask(
 	conn *Connection,
 	user *auth.User,
 	liveBuffer *utils.Buffer,
@@ -605,12 +684,12 @@ func createMemoryToolChatTask(
 	segment []globals.Message,
 	plan bool,
 	ctx memoryContext,
+	tools *globals.FunctionTools,
 ) (hit bool, err error, interrupted bool) {
 	workingSegment := utils.DeepCopy(segment)
 	memoryPrompt := ctx.MemoryPrompt
 	recentChatsPrompt := ctx.RecentChatsPrompt
-	tools := memory.BuildToolDefinition()
-	toolChoice := memory.BuildAutoToolChoice()
+	toolChoice := buildAutoToolChoice()
 
 	for round := 0; round < memory.MaxToolRounds; round++ {
 		roundBuffer := utils.NewBuffer(model, workingSegment, liveBuffer.GetCharge())
@@ -620,12 +699,13 @@ func createMemoryToolChatTask(
 		}
 
 		globals.Debug(fmt.Sprintf(
-			"[memory] starting tool round %d model=%s memory_prompt_len=%d recent_chats_prompt_len=%d segment_messages=%d",
+			"[tools] starting tool round %d model=%s memory_prompt_len=%d recent_chats_prompt_len=%d segment_messages=%d tools=%d",
 			round+1,
 			model,
 			len(memoryPrompt),
 			len(recentChatsPrompt),
 			len(workingSegment),
+			len(*tools),
 		))
 
 		props := buildChatProps(
@@ -665,7 +745,7 @@ func createMemoryToolChatTask(
 		}
 
 		globals.Debug(fmt.Sprintf(
-			"[memory] round %d received tool calls for model %s: %s",
+			"[tools] round %d received tool calls for model %s: %s",
 			round+1,
 			model,
 			summarizeToolCalls(assistant.ToolCalls),
@@ -675,10 +755,10 @@ func createMemoryToolChatTask(
 			return hit, err, true
 		}
 
-		toolMessages := memory.ExecuteToolCalls(db, user, assistant.ToolCalls)
+		toolMessages := executeAvailableToolCalls(db, user, assistant.ToolCalls)
 		for _, toolMessage := range toolMessages {
 			globals.Debug(fmt.Sprintf(
-				"[memory] round %d tool result for model %s tool_call_id=%s payload=%s",
+				"[tools] round %d tool result for model %s tool_call_id=%s payload=%s",
 				round+1,
 				model,
 				utils.ToString(toolMessage.ToolCallId),
@@ -691,7 +771,7 @@ func createMemoryToolChatTask(
 		workingSegment = append(workingSegment, assistant)
 		workingSegment = append(workingSegment, toolMessages...)
 
-		if instance.IsMemoryEnabled() {
+		if instance.IsMemoryEnabled() && containsMemoryToolCall(assistant.ToolCalls) {
 			memories, listErr := memory.ListByUser(db, user.GetID(db), "", memory.DefaultMemoryLimit)
 			if listErr != nil {
 				globals.Warn(fmt.Sprintf("[memory] failed to refresh memories: %s", listErr.Error()))
@@ -702,7 +782,7 @@ func createMemoryToolChatTask(
 	}
 
 	globals.Warn(fmt.Sprintf(
-		"[memory] exceeded max tool rounds for model %s without final answer",
+		"[tools] exceeded max tool rounds for model %s without final answer",
 		model,
 	))
 
@@ -955,7 +1035,6 @@ func ChatHandler(conn *Connection, user *auth.User, instance *conversation.Conve
 	model := instance.GetModel()
 	group := auth.GetGroup(db, user)
 	segment := web.ToChatSearched(instance, restart, group, cache)
-	segment = fetch.ToFetched(instance.IsEnableFetch(), segment)
 	segment = adapter.ClearMessages(model, segment)
 
 	check, plan := auth.CanEnableModelWithSubscription(db, cache, user, model, segment)
@@ -980,14 +1059,16 @@ func ChatHandler(conn *Connection, user *auth.User, instance *conversation.Conve
 	var hit bool
 	var err error
 	var interrupted bool
-	writableMemory := false
+	toolEnabled := false
 	if globals.IsVideoModel(model) {
 		hit, err, interrupted = createChatTask(conn, user, buffer, db, cache, model, instance, segment, plan)
 	} else {
 		memCtx := buildMemoryContext(db, user, instance, model, group)
-		writableMemory = memCtx.Writable
-		if memCtx.Writable {
-			hit, err, interrupted = createMemoryToolChatTask(conn, user, buffer, db, cache, model, group, instance, segment, plan, memCtx)
+		fetchToolEnabled := instance.IsEnableFetch() && memory.CanUseWritableTools(model, group)
+		tools := buildAvailableToolDefinitions(fetchToolEnabled, memCtx.Writable)
+		toolEnabled = tools != nil
+		if tools != nil {
+			hit, err, interrupted = createToolChatTask(conn, user, buffer, db, cache, model, group, instance, segment, plan, memCtx, tools)
 		} else {
 			props := buildChatProps(conn, instance, model, segment, buffer, memCtx.MemoryPrompt, memCtx.RecentChatsPrompt, nil, nil, false)
 			hit, err, interrupted = createRoundTask(conn, user, buffer, buffer, db, cache, group, props, plan)
@@ -1031,10 +1112,10 @@ func ChatHandler(conn *Connection, user *auth.User, instance *conversation.Conve
 
 	if buffer.IsEmpty() {
 		globals.Warn(fmt.Sprintf(
-			"[chat] empty response for model %s (interrupted=%v, writable_memory=%v)",
+			"[chat] empty response for model %s (interrupted=%v, tool_enabled=%v)",
 			model,
 			interrupted,
-			writableMemory,
+			toolEnabled,
 		))
 		if buffer.HasHiddenMetadataOnly() {
 			conn.Send(globals.ChatSegmentResponse{

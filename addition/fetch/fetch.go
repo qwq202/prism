@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"chat/globals"
+	"chat/utils"
 	"context"
 	"fmt"
 	"html"
@@ -11,7 +12,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"regexp"
 	"strings"
 	"time"
 	"unicode"
@@ -21,14 +21,10 @@ import (
 )
 
 const (
-	maxFetchURLs       = 3
-	maxFetchBytes      = 768 * 1024
-	maxPageTextRunes   = 12000
-	maxTotalPromptRune = 24000
-	fetchPromptPrefix  = "Fetched web page references:"
+	ToolName         = "fetch_webpage"
+	maxFetchBytes    = 768 * 1024
+	maxPageTextRunes = 12000
 )
-
-var urlPattern = regexp.MustCompile(`https?://[^\s<>"'` + "`" + `]+`)
 
 type pageResult struct {
 	URL     string
@@ -37,82 +33,115 @@ type pageResult struct {
 	Error   string
 }
 
-func ToFetched(enable bool, messages []globals.Message) []globals.Message {
-	if !enable || len(messages) == 0 {
-		return messages
-	}
+type ToolInput struct {
+	URL      string `json:"url"`
+	MaxChars *int   `json:"max_chars,omitempty"`
+}
 
-	content, ok := latestUserContent(messages)
-	if !ok {
-		return messages
-	}
+type ToolResult struct {
+	Status  string `json:"status"`
+	Action  string `json:"action"`
+	URL     string `json:"url,omitempty"`
+	Title   string `json:"title,omitempty"`
+	Content string `json:"content,omitempty"`
+	Message string `json:"message,omitempty"`
+	Error   string `json:"error,omitempty"`
+}
 
-	urls := extractURLs(content)
-	if len(urls) == 0 {
-		return messages
-	}
+func BuildToolDefinition() *globals.FunctionTools {
+	required := []string{"url"}
 
-	results := make([]pageResult, 0, len(urls))
-	for _, rawURL := range urls {
-		result := fetchURL(rawURL)
-		results = append(results, result)
-	}
-
-	prompt := buildPrompt(results)
-	if strings.TrimSpace(prompt) == "" {
-		return messages
-	}
-
-	return append([]globals.Message{
+	tools := globals.FunctionTools{
 		{
-			Role:    globals.System,
-			Content: prompt,
+			Type: "function",
+			Function: globals.ToolFunction{
+				Name:        ToolName,
+				Description: "Fetch the readable text content of a public http/https webpage. Use this when the user asks you to open, read, summarize, analyze, or answer questions about a URL.",
+				Parameters: globals.ToolParameters{
+					Type: "object",
+					Properties: globals.ToolProperties{
+						"url": {
+							"type":        "string",
+							"description": "The public http or https URL to fetch.",
+						},
+						"max_chars": {
+							"type":        "integer",
+							"description": "Optional maximum number of characters to return. Defaults to 12000 and is capped by the application.",
+						},
+					},
+					Required: &required,
+				},
+			},
 		},
-	}, messages...)
-}
-
-func latestUserContent(messages []globals.Message) (string, bool) {
-	for index := len(messages) - 1; index >= 0; index-- {
-		if messages[index].Role == globals.User {
-			return messages[index].Content, true
-		}
 	}
-	return "", false
+
+	return &tools
 }
 
-func extractURLs(text string) []string {
-	matches := urlPattern.FindAllString(text, -1)
-	if len(matches) == 0 {
+func toolResultMessage(callID string, result ToolResult) globals.Message {
+	return globals.Message{
+		Role:       globals.Tool,
+		Content:    utils.Marshal(result),
+		ToolCallId: utils.ToPtr(callID),
+	}
+}
+
+func ExecuteToolCall(call globals.ToolCall) globals.Message {
+	result := ToolResult{
+		Status: "error",
+		Action: call.Function.Name,
+	}
+
+	if call.Function.Name != ToolName {
+		result.Error = "unsupported tool"
+		return toolResultMessage(call.Id, result)
+	}
+
+	input, err := utils.UnmarshalString[ToolInput](call.Function.Arguments)
+	if err != nil {
+		result.Error = "invalid tool arguments"
+		return toolResultMessage(call.Id, result)
+	}
+
+	input.URL = strings.TrimSpace(input.URL)
+	if input.URL == "" {
+		result.Error = "url is required"
+		return toolResultMessage(call.Id, result)
+	}
+
+	limit := maxPageTextRunes
+	if input.MaxChars != nil && *input.MaxChars > 0 && *input.MaxChars < limit {
+		limit = *input.MaxChars
+	}
+
+	page := fetchURL(input.URL, limit)
+	result.URL = page.URL
+	result.Title = page.Title
+	result.Content = page.Content
+	if page.Error != "" {
+		result.Error = page.Error
+		return toolResultMessage(call.Id, result)
+	}
+
+	result.Status = "success"
+	result.Message = "webpage fetched"
+	return toolResultMessage(call.Id, result)
+}
+
+func ExecuteToolCalls(calls *globals.ToolCalls) []globals.Message {
+	if calls == nil || len(*calls) == 0 {
 		return nil
 	}
 
-	seen := map[string]struct{}{}
-	urls := make([]string, 0, maxFetchURLs)
-	for _, match := range matches {
-		candidate := strings.TrimRight(match, ".,;:!?)]}")
-		parsed, err := url.Parse(candidate)
-		if err != nil || parsed.Scheme == "" || parsed.Host == "" {
-			continue
-		}
-		if parsed.Scheme != "http" && parsed.Scheme != "https" {
-			continue
-		}
-
-		normalized := parsed.String()
-		if _, ok := seen[normalized]; ok {
-			continue
-		}
-		seen[normalized] = struct{}{}
-		urls = append(urls, normalized)
-		if len(urls) >= maxFetchURLs {
-			break
-		}
+	messages := make([]globals.Message, 0, len(*calls))
+	for _, call := range *calls {
+		messages = append(messages, ExecuteToolCall(call))
 	}
 
-	return urls
+	return messages
 }
 
-func fetchURL(rawURL string) pageResult {
+func fetchURL(rawURL string, maxTextRunes int) pageResult {
 	result := pageResult{URL: rawURL}
 	if err := validateURL(rawURL); err != nil {
 		result.Error = err.Error()
@@ -172,7 +201,7 @@ func fetchURL(rawURL string) pageResult {
 	} else {
 		result.Content = normalizeSpace(utf8Body)
 	}
-	result.Content = limitRunes(result.Content, maxPageTextRunes)
+	result.Content = limitRunes(result.Content, maxTextRunes)
 	if strings.TrimSpace(result.Content) == "" {
 		result.Error = "no readable text content found"
 	}
@@ -356,38 +385,4 @@ func limitRunes(content string, limit int) string {
 		return string(runes)
 	}
 	return string(runes[:limit]) + "\n...[truncated]"
-}
-
-func buildPrompt(results []pageResult) string {
-	var builder strings.Builder
-	builder.WriteString(fetchPromptPrefix)
-	builder.WriteString("\nThe user enabled the app Fetch tool. Use the fetched page content below when it is relevant. If a page failed to fetch, say so instead of pretending you read it.")
-
-	total := 0
-	for index, result := range results {
-		builder.WriteString(fmt.Sprintf("\n\n[%d] URL: %s", index+1, result.URL))
-		if result.Error != "" {
-			builder.WriteString("\nStatus: fetch failed")
-			builder.WriteString("\nError: ")
-			builder.WriteString(result.Error)
-			continue
-		}
-		if result.Title != "" {
-			builder.WriteString("\nTitle: ")
-			builder.WriteString(result.Title)
-		}
-
-		content := result.Content
-		remaining := maxTotalPromptRune - total
-		if remaining <= 0 {
-			builder.WriteString("\nContent: [omitted because fetched content limit was reached]")
-			continue
-		}
-		content = limitRunes(content, remaining)
-		total += len([]rune(content))
-		builder.WriteString("\nContent:\n")
-		builder.WriteString(content)
-	}
-
-	return builder.String()
 }

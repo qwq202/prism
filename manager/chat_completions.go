@@ -79,7 +79,6 @@ func ChatRelayAPI(c *gin.Context) {
 		enableWeb = true
 	}
 
-	messages = fetch.ToFetched(form.Fetch, messages)
 	messages = web.ToSearched(enableWeb, form.Model, messages, group, cache)
 
 	if strings.HasSuffix(form.Model, "-official") {
@@ -103,6 +102,17 @@ func ChatRelayAPI(c *gin.Context) {
 func getChatProps(form RelayForm, messages []globals.Message, buffer *utils.Buffer, enableWeb bool, clientContext string) *adaptercommon.ChatProps {
 	webSearch := utils.Multi(enableWeb && !form.WebSearch && !form.URLContext && !form.XSearch, true, form.WebSearch)
 	urlContext := utils.Multi(enableWeb && !form.WebSearch && !form.URLContext && !form.XSearch, true, form.URLContext)
+	tools := form.Tools
+	if form.Fetch {
+		merged := make(globals.FunctionTools, 0)
+		if tools != nil {
+			merged = append(merged, (*tools)...)
+		}
+		if fetchTools := fetch.BuildToolDefinition(); fetchTools != nil {
+			merged = append(merged, (*fetchTools)...)
+		}
+		tools = &merged
+	}
 
 	return adaptercommon.CreateChatProps(&adaptercommon.ChatProps{
 		Model:                form.Model,
@@ -126,7 +136,7 @@ func getChatProps(form RelayForm, messages []globals.Message, buffer *utils.Buff
 		Thinking:             form.Thinking,
 		Logprobs:             form.Logprobs,
 		TopLogprobs:          form.TopLogprobs,
-		Tools:                form.Tools,
+		Tools:                tools,
 		ToolChoice:           form.ToolChoice,
 		ClientContext:        clientContext,
 	}, buffer)
