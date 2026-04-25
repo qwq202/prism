@@ -34,7 +34,7 @@ import { ThinkContent } from "@/components/ThinkContent";
 import ModelAvatar from "@/components/ModelAvatar.tsx";
 import { selectSupportModels } from "@/store/chat.ts";
 import { ToolCallStatus } from "@/components/ToolCallStatus";
-import { stripThinkTags } from "@/utils/thinking";
+import { parseThinkContent } from "@/utils/thinking";
 
 type MessageProps = {
   index: number;
@@ -270,44 +270,6 @@ function MessageContent({
     avatar: "",
   };
   const useModelAvatar = !isUser && !selected;
-
-  // parse think content
-  const parseThinkContent = (content: string) => {
-    const openMatch = content.match(/<\s*think\s*>/i);
-    if (!openMatch || openMatch.index === undefined) {
-      return null;
-    }
-
-    const openEnd = openMatch.index + openMatch[0].length;
-    const closePattern = /<\s*\/\s*think\s*>/gi;
-    let closeMatch: RegExpExecArray | null = null;
-    let lastCloseMatch: RegExpExecArray | null = null;
-
-    while ((closeMatch = closePattern.exec(content)) !== null) {
-      if (closeMatch.index >= openEnd) {
-        lastCloseMatch = closeMatch;
-      }
-    }
-
-    if (!lastCloseMatch) {
-      return {
-        thinkContent: stripThinkTags(content.substring(openEnd)),
-        restContent: "",
-        isComplete: false,
-      };
-    }
-
-    const thinkContent = content.substring(openEnd, lastCloseMatch.index);
-    const restContent = content
-      .substring(lastCloseMatch.index + lastCloseMatch[0].length)
-      .trim();
-
-    return {
-      thinkContent: stripThinkTags(thinkContent),
-      restContent,
-      isComplete: true,
-    };
-  };
 
   const parsedContent = message.content.length
     ? parseThinkContent(message.content)
