@@ -69,6 +69,30 @@ type Chunk struct {
 	ReasoningContent     *string               `json:"reasoning_content,omitempty"`
 	GeminiHiddenMetadata *GeminiHiddenMetadata `json:"gemini_hidden_metadata,omitempty"` // hidden gemini metadata for replay
 	ClaudeHiddenMetadata *ClaudeHiddenMetadata `json:"claude_hidden_metadata,omitempty"` // hidden claude thinking metadata for replay
+	Usage                *TokenUsage           `json:"usage,omitempty"`
+}
+
+type CompletionTokensDetails struct {
+	ReasoningTokens int `json:"reasoning_tokens,omitempty"`
+}
+
+type TokenUsage struct {
+	PromptTokens            int                     `json:"prompt_tokens,omitempty"`
+	CompletionTokens        int                     `json:"completion_tokens,omitempty"`
+	TotalTokens             int                     `json:"total_tokens,omitempty"`
+	PromptCacheHitTokens    int                     `json:"prompt_cache_hit_tokens,omitempty"`
+	PromptCacheMissTokens   int                     `json:"prompt_cache_miss_tokens,omitempty"`
+	CompletionTokensDetails CompletionTokensDetails `json:"completion_tokens_details,omitempty"`
+}
+
+func (u *TokenUsage) IsEmpty() bool {
+	return u == nil ||
+		(u.PromptTokens == 0 &&
+			u.CompletionTokens == 0 &&
+			u.TotalTokens == 0 &&
+			u.PromptCacheHitTokens == 0 &&
+			u.PromptCacheMissTokens == 0 &&
+			u.CompletionTokensDetails.ReasoningTokens == 0)
 }
 
 type ChatSegmentToolCall struct {

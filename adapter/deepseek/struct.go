@@ -39,16 +39,7 @@ type ChatResponse struct {
 		FinishReason string          `json:"finish_reason"`
 		Logprobs     interface{}     `json:"logprobs,omitempty"`
 	} `json:"choices"`
-	Usage struct {
-		PromptTokens            int `json:"prompt_tokens"`
-		CompletionTokens        int `json:"completion_tokens"`
-		TotalTokens             int `json:"total_tokens"`
-		PromptCacheHitTokens    int `json:"prompt_cache_hit_tokens,omitempty"`
-		PromptCacheMissTokens   int `json:"prompt_cache_miss_tokens,omitempty"`
-		CompletionTokensDetails struct {
-			ReasoningTokens int `json:"reasoning_tokens,omitempty"`
-		} `json:"completion_tokens_details,omitempty"`
-	} `json:"usage"`
+	Usage globals.TokenUsage `json:"usage"`
 }
 
 // ChatStreamResponse is the stream response body for deepseek
@@ -64,16 +55,7 @@ type ChatStreamResponse struct {
 		FinishReason string          `json:"finish_reason"`
 		Logprobs     interface{}     `json:"logprobs,omitempty"`
 	} `json:"choices"`
-	Usage *struct {
-		PromptTokens            int `json:"prompt_tokens"`
-		CompletionTokens        int `json:"completion_tokens"`
-		TotalTokens             int `json:"total_tokens"`
-		PromptCacheHitTokens    int `json:"prompt_cache_hit_tokens,omitempty"`
-		PromptCacheMissTokens   int `json:"prompt_cache_miss_tokens,omitempty"`
-		CompletionTokensDetails struct {
-			ReasoningTokens int `json:"reasoning_tokens,omitempty"`
-		} `json:"completion_tokens_details,omitempty"`
-	} `json:"usage,omitempty"`
+	Usage *globals.TokenUsage `json:"usage,omitempty"`
 }
 
 type ChatStreamErrorResponse struct {

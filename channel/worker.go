@@ -90,6 +90,7 @@ func buildCacheChunk(cacheBuffer *utils.Buffer, liveBuffer *utils.Buffer) *globa
 		ReasoningContent:     cacheBuffer.GetReasoningContent(),
 		GeminiHiddenMetadata: cacheBuffer.GetGeminiHiddenMetadata(),
 		ClaudeHiddenMetadata: cacheBuffer.GetClaudeHiddenMetadata(),
+		Usage:                cacheBuffer.GetUsage(),
 	}
 }
 

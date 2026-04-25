@@ -84,6 +84,9 @@ func (c *ChatInstance) GetChatBody(props *adaptercommon.ChatProps, stream bool) 
 	var streamOptions interface{}
 	if stream {
 		streamOptions = props.StreamOptions
+		if streamOptions == nil {
+			streamOptions = map[string]bool{"include_usage": true}
+		}
 	}
 
 	return ChatRequest{
@@ -187,6 +190,10 @@ func sanitizeDeepseekStreamText(content string) string {
 
 func (c *ChatInstance) getChoices(form *ChatStreamResponse) *globals.Chunk {
 	if len(form.Choices) == 0 {
+		if form.Usage != nil {
+			usage := *form.Usage
+			return &globals.Chunk{Usage: &usage}
+		}
 		return &globals.Chunk{Content: ""}
 	}
 

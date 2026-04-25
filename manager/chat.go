@@ -581,6 +581,7 @@ func syncToolFinalMetadata(liveBuffer *utils.Buffer, responseBuffer *utils.Buffe
 
 	liveBuffer.SetGeminiHiddenMetadata(responseBuffer.GetGeminiHiddenMetadata())
 	liveBuffer.SetClaudeHiddenMetadata(responseBuffer.GetClaudeHiddenMetadata())
+	liveBuffer.MergeUsage(responseBuffer)
 }
 
 func buildToolLimitSystemMessage() globals.Message {
@@ -1139,7 +1140,7 @@ func ChatHandler(conn *Connection, user *auth.User, instance *conversation.Conve
 			buffer.GetTokenName(), model,
 			int64(buffer.CountInputToken()), int64(buffer.CountOutputToken(false)),
 			float64(buffer.GetRecordQuota()), buffer.GetDuration(),
-			"", buffer.GetRecordPrompts(), buffer.GetRecordResponsePrompts(),
+			buffer.GetBillingDetail(), buffer.GetRecordPrompts(), buffer.GetRecordResponsePrompts(),
 			buffer.GetChannelId(), buffer.GetChannelName(),
 		)
 	}

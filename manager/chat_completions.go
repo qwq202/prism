@@ -172,7 +172,7 @@ func sendTranshipmentResponse(c *gin.Context, form RelayForm, messages []globals
 			buffer.GetTokenName(), form.Model,
 			int64(buffer.CountInputToken()), int64(buffer.CountOutputToken(false)),
 			float64(buffer.GetRecordQuota()), buffer.GetDuration(),
-			"", buffer.GetRecordPrompts(), buffer.GetRecordResponsePrompts(),
+			buffer.GetBillingDetail(), buffer.GetRecordPrompts(), buffer.GetRecordResponsePrompts(),
 			buffer.GetChannelId(), buffer.GetChannelName(),
 		)
 	}
@@ -312,7 +312,7 @@ func sendStreamTranshipmentResponse(c *gin.Context, form RelayForm, messages []g
 				buffer.GetTokenName(), form.Model,
 				int64(buffer.CountInputToken()), int64(buffer.CountOutputToken(false)),
 				float64(buffer.GetRecordQuota()), buffer.GetDuration(),
-				"", buffer.GetRecordPrompts(), buffer.GetRecordResponsePrompts(),
+				buffer.GetBillingDetail(), buffer.GetRecordPrompts(), buffer.GetRecordResponsePrompts(),
 				buffer.GetChannelId(), buffer.GetChannelName(),
 			)
 		}

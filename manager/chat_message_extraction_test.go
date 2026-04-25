@@ -76,6 +76,30 @@ func TestExtractAssistantMessageFromBufferPreservesReasoningContent(t *testing.T
 	}
 }
 
+func TestSyncToolFinalMetadataMergesOfficialUsage(t *testing.T) {
+	liveBuffer := &utils.Buffer{}
+	roundBuffer := &utils.Buffer{}
+	roundBuffer.WriteChunk(&globals.Chunk{
+		Usage: &globals.TokenUsage{
+			PromptTokens:          30,
+			CompletionTokens:      7,
+			TotalTokens:           37,
+			PromptCacheHitTokens:  20,
+			PromptCacheMissTokens: 10,
+		},
+	})
+
+	syncToolFinalMetadata(liveBuffer, roundBuffer)
+
+	usage := liveBuffer.GetUsage()
+	if usage == nil {
+		t.Fatalf("expected usage to be merged")
+	}
+	if usage.PromptCacheHitTokens != 20 || usage.PromptCacheMissTokens != 10 {
+		t.Fatalf("unexpected merged usage: %#v", usage)
+	}
+}
+
 func TestExtractAssistantMessageFromBufferPreservesVisibleTextAndToolCalls(t *testing.T) {
 	buffer := &utils.Buffer{}
 	toolCalls := globals.ToolCalls{

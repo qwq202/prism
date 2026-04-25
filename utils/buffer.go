@@ -31,6 +31,7 @@ type Buffer struct {
 	ToolCallsCursor      int                           `json:"tool_calls_cursor"`
 	FunctionCall         *globals.FunctionCall         `json:"function_call"`
 	ReasoningContent     string                        `json:"reasoning_content,omitempty"`
+	Usage                *globals.TokenUsage           `json:"usage,omitempty"`
 	GeminiHiddenMetadata *globals.GeminiHiddenMetadata `json:"gemini_hidden_metadata,omitempty"`
 	ClaudeHiddenMetadata *globals.ClaudeHiddenMetadata `json:"claude_hidden_metadata,omitempty"`
 	StartTime            *time.Time                    `json:"-"`
@@ -118,6 +119,7 @@ func (b *Buffer) WriteChunk(data *globals.Chunk) string {
 	b.AddReasoningContent(data.ReasoningContent)
 	b.SetGeminiHiddenMetadata(data.GeminiHiddenMetadata)
 	b.SetClaudeHiddenMetadata(data.ClaudeHiddenMetadata)
+	b.SetUsage(data.Usage)
 
 	return data.Content
 }
@@ -231,6 +233,73 @@ func (b *Buffer) GetReasoningContent() *string {
 	}
 
 	return ToPtr(b.ReasoningContent)
+}
+
+func cloneTokenUsage(usage *globals.TokenUsage) *globals.TokenUsage {
+	if usage == nil {
+		return nil
+	}
+
+	cloned := *usage
+	return &cloned
+}
+
+func mergeTokenUsage(left *globals.TokenUsage, right *globals.TokenUsage) *globals.TokenUsage {
+	if left.IsEmpty() {
+		return cloneTokenUsage(right)
+	}
+	if right.IsEmpty() {
+		return cloneTokenUsage(left)
+	}
+
+	return &globals.TokenUsage{
+		PromptTokens:          left.PromptTokens + right.PromptTokens,
+		CompletionTokens:      left.CompletionTokens + right.CompletionTokens,
+		TotalTokens:           left.TotalTokens + right.TotalTokens,
+		PromptCacheHitTokens:  left.PromptCacheHitTokens + right.PromptCacheHitTokens,
+		PromptCacheMissTokens: left.PromptCacheMissTokens + right.PromptCacheMissTokens,
+		CompletionTokensDetails: globals.CompletionTokensDetails{
+			ReasoningTokens: left.CompletionTokensDetails.ReasoningTokens + right.CompletionTokensDetails.ReasoningTokens,
+		},
+	}
+}
+
+func (b *Buffer) SetUsage(usage *globals.TokenUsage) {
+	if usage.IsEmpty() {
+		return
+	}
+
+	b.Usage = cloneTokenUsage(usage)
+}
+
+func (b *Buffer) AddUsage(usage *globals.TokenUsage) {
+	if usage.IsEmpty() {
+		return
+	}
+
+	b.Usage = mergeTokenUsage(b.Usage, usage)
+}
+
+func (b *Buffer) MergeUsage(source *Buffer) {
+	if source == nil {
+		return
+	}
+
+	b.AddUsage(source.Usage)
+}
+
+func (b *Buffer) GetUsage() *globals.TokenUsage {
+	return cloneTokenUsage(b.Usage)
+}
+
+func (b *Buffer) GetBillingDetail() string {
+	if b.Usage.IsEmpty() {
+		return ""
+	}
+
+	return Marshal(map[string]interface{}{
+		"official_usage": b.Usage,
+	})
 }
 
 func cloneGeminiHiddenMetadata(metadata *globals.GeminiHiddenMetadata) *globals.GeminiHiddenMetadata {

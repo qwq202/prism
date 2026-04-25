@@ -4,6 +4,7 @@ import (
 	adaptercommon "chat/adapter/common"
 	"chat/globals"
 	"chat/utils"
+	"reflect"
 	"testing"
 )
 
@@ -68,11 +69,70 @@ func TestGetChatBodyKeepsSamplingForDeepseekV4NonThinking(t *testing.T) {
 	}
 }
 
+func TestGetChatBodyRequestsStreamUsageByDefault(t *testing.T) {
+	instance := NewChatInstance("https://api.deepseek.com", "secret")
+
+	body, ok := instance.GetChatBody(&adaptercommon.ChatProps{
+		Model:   globals.DeepseekV4Flash,
+		Message: []globals.Message{{Role: globals.User, Content: "hello"}},
+	}, true).(ChatRequest)
+	if !ok {
+		t.Fatalf("expected ChatRequest body")
+	}
+
+	options, ok := body.StreamOptions.(map[string]bool)
+	if !ok || !options["include_usage"] {
+		t.Fatalf("expected stream_options.include_usage to be enabled, got %#v", body.StreamOptions)
+	}
+}
+
+func TestGetChatBodyPreservesExplicitStreamOptions(t *testing.T) {
+	instance := NewChatInstance("https://api.deepseek.com", "secret")
+	streamOptions := map[string]interface{}{"include_usage": false}
+
+	body, ok := instance.GetChatBody(&adaptercommon.ChatProps{
+		Model:         globals.DeepseekV4Flash,
+		Message:       []globals.Message{{Role: globals.User, Content: "hello"}},
+		StreamOptions: streamOptions,
+	}, true).(ChatRequest)
+	if !ok {
+		t.Fatalf("expected ChatRequest body")
+	}
+
+	if !reflect.DeepEqual(body.StreamOptions, streamOptions) {
+		t.Fatalf("expected explicit stream options to be preserved, got %#v", body.StreamOptions)
+	}
+}
+
 func TestSanitizeDSMLToolMarkup(t *testing.T) {
 	input := "Let me fetch it. </ | DSML | tool_calls>\n< | DSML | invoke name=\"fetch_webpage\">"
 	got := sanitizeDSMLToolMarkup(input)
 	if got != "Let me fetch it. " {
 		t.Fatalf("expected DSML markup to be stripped, got %q", got)
+	}
+}
+
+func TestGetChoicesReturnsUsageOnlyChunk(t *testing.T) {
+	instance := NewChatInstance("https://api.deepseek.com", "secret")
+
+	chunk := instance.getChoices(&ChatStreamResponse{
+		Usage: &globals.TokenUsage{
+			PromptTokens:          30,
+			CompletionTokens:      7,
+			TotalTokens:           37,
+			PromptCacheHitTokens:  20,
+			PromptCacheMissTokens: 10,
+		},
+	})
+
+	if chunk.Usage == nil {
+		t.Fatalf("expected usage to be preserved")
+	}
+	if chunk.Usage.PromptCacheHitTokens != 20 || chunk.Usage.PromptCacheMissTokens != 10 {
+		t.Fatalf("unexpected prompt cache usage: %#v", chunk.Usage)
+	}
+	if chunk.Content != "" || chunk.ToolCall != nil {
+		t.Fatalf("expected usage-only chunk to have no visible payload, got %#v", chunk)
 	}
 }
 
