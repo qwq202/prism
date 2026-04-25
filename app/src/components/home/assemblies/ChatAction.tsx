@@ -478,8 +478,10 @@ export function OpenAIReasoningAction() {
 
   const availableEfforts =
     model.trim().toLowerCase() === "gpt-5" && openAIResponsesWebSearch
-      ? capabilities.reasoningEfforts.filter((item) => item !== "minimal")
-      : capabilities.reasoningEfforts;
+      ? capabilities.reasoningEfforts.filter(
+          (item) => item !== "minimal" && item !== "none",
+        )
+      : capabilities.reasoningEfforts.filter((item) => item !== "none");
   const enabled = openAIReasoningEffort !== "none";
   const summaryEnabled = openAIReasoningSummary !== "none";
   const currentSummary = summaryEnabled ? openAIReasoningSummary : "auto";
