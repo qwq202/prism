@@ -56,6 +56,27 @@ function getSpeechRecognitionConstructor() {
   return speechWindow.SpeechRecognition ?? speechWindow.webkitSpeechRecognition;
 }
 
+function getSpeechRecognitionErrorKey(error: string) {
+  switch (error) {
+    case "no-speech":
+      return "chat.voice-error-no-speech";
+    case "audio-capture":
+      return "chat.voice-error-audio-capture";
+    case "network":
+      return "chat.voice-error-network";
+    case "not-allowed":
+    case "service-not-allowed":
+      return "chat.voice-error-not-allowed";
+    case "aborted":
+      return "chat.voice-error-aborted";
+    case "language-not-supported":
+    case "phrases-not-supported":
+      return "chat.voice-error-language";
+    default:
+      return "chat.voice-error";
+  }
+}
+
 function appendTranscript(value: string, transcript: string) {
   const text = transcript.trim();
   if (text.length === 0) return value;
@@ -107,6 +128,11 @@ export function VoiceAction({
   }
 
   function startRecognition() {
+    if (!window.isSecureContext) {
+      toast.error(t("chat.voice-insecure-context"));
+      return;
+    }
+
     const SpeechRecognition = getSpeechRecognitionConstructor();
     if (!SpeechRecognition) {
       toast.error(t("chat.voice-unsupported"));
@@ -146,11 +172,11 @@ export function VoiceAction({
       updateInput(`${finalTranscript}${interimTranscript}`);
     };
 
-    recognition.onerror = () => {
+    recognition.onerror = (event) => {
       manuallyStoppingRef.current = false;
       setListening(false);
       recognitionRef.current = null;
-      toast.error(t("chat.voice-error"));
+      toast.error(t(getSpeechRecognitionErrorKey(event.error)));
     };
 
     recognition.onend = () => {
