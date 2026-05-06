@@ -14,7 +14,7 @@ export const sendKeys = ["Ctrl + Enter", "Enter"];
 export const initialSettings = {
   context: true,
   align: false,
-  history: 8,
+  history: 5,
   sender: !isMobile(), // default [mobile: Ctrl + Enter, pc: Enter]
   max_tokens: 0,
   temperature: 0.6,
@@ -38,6 +38,12 @@ export const initialSettings = {
   persona_about_user: "",
   memory_enabled: false,
   memory_history_enabled: false,
+};
+
+const normalizeHistoryCount = (value: number): number => {
+  if (!Number.isFinite(value)) return initialSettings.history;
+
+  return Math.max(1, Math.floor(value));
 };
 
 export type PersonalizationSettings = {
@@ -124,7 +130,9 @@ export const settingsSlice = createSlice({
     dialog: false,
     context: getBooleanMemory("context", true), // keep context
     align: getBooleanMemory("align", false), // chat textarea align center
-    history: getNumberMemory("history_context", 8), // max history context length
+    history: normalizeHistoryCount(
+      getNumberMemory("history_context", initialSettings.history),
+    ), // context message count
     sender: getBooleanMemory("sender", !isMobile()), // sender (false: Ctrl + Enter, true: Enter)
     max_tokens: getNumberMemory("max_tokens", 0), // max tokens, 0 means unlimited
     temperature: getNumberMemory("temperature", 0.6), // temperature
@@ -198,8 +206,9 @@ export const settingsSlice = createSlice({
       setBooleanMemory("align", action.payload);
     },
     setHistory: (state, action) => {
-      state.history = action.payload as number;
-      setNumberMemory("history_context", action.payload);
+      const history = normalizeHistoryCount(action.payload as number);
+      state.history = history;
+      setNumberMemory("history_context", history);
     },
     setSender: (state, action) => {
       state.sender = action.payload as boolean;

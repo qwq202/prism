@@ -52,6 +52,33 @@ func (c requestTestChannelConfig) GetProxy() globals.ProxyConfig {
 	return globals.ProxyConfig{}
 }
 
+func TestSanitizeChatMessagesForRequestStripsContextClearMarker(t *testing.T) {
+	props := &adaptercommon.ChatProps{
+		OriginalModel: "deepseek-v3",
+		Message: []globals.Message{
+			{
+				Role:           globals.User,
+				Content:        "hello",
+				ContextCleared: true,
+			},
+		},
+	}
+
+	restore := sanitizeChatMessagesForRequest(requestTestChannelConfig{
+		channelType:    globals.DeepseekChannelType,
+		reflectedModel: "deepseek-v3",
+	}, props)
+
+	if props.Message[0].ContextCleared {
+		t.Fatalf("expected request-only context clear marker to be stripped")
+	}
+
+	restore()
+	if !props.Message[0].ContextCleared {
+		t.Fatalf("expected original context clear marker to be restored")
+	}
+}
+
 func TestSanitizeChatMessagesForRequestStripsNonGeminiMetadata(t *testing.T) {
 	props := &adaptercommon.ChatProps{
 		OriginalModel: "gpt-4o",

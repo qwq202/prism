@@ -60,6 +60,7 @@ type Message struct {
 	ReasoningContent     *string               `json:"reasoning_content,omitempty"`      // only for deepseek reasoner models
 	GeminiHiddenMetadata *GeminiHiddenMetadata `json:"gemini_hidden_metadata,omitempty"` // hidden gemini metadata for replay
 	ClaudeHiddenMetadata *ClaudeHiddenMetadata `json:"claude_hidden_metadata,omitempty"` // hidden claude thinking metadata for replay
+	ContextCleared       bool                  `json:"context_cleared,omitempty"`        // internal marker for context window resets
 }
 
 type Chunk struct {

@@ -743,7 +743,7 @@
     "language": "语言",
     "sender": "发送键",
     "context": "保留上下文",
-    "history": "最大历史会话数",
+    "history": "上下文数",
     "align": "聊天框居中",
     "hide-model": "隐藏模型选择区",
     "hide-toolbar": "默认隐藏工具栏",

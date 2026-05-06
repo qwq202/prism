@@ -543,7 +543,7 @@
     "language": "顯示語言",
     "sender": "傳送鍵",
     "context": "保留上下文",
-    "history": "最大歷史對話數",
+    "history": "上下文數",
     "align": "對話方塊置中",
     "memory": "記憶體用量",
     "max-tokens": "最大回覆 Token 數",

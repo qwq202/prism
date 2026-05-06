@@ -471,7 +471,7 @@
     "language": "言語",
     "sender": "キーを送信",
     "context": "コンテキストを保持",
-    "history": "最大履歴セッション数",
+    "history": "コンテキスト数",
     "align": "チャットボックスを中央に配置",
     "memory": "メモリ使用量",
     "temperature": "温度",

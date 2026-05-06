@@ -55,6 +55,25 @@ func stripHiddenMetadata(messages []globals.Message, stripGemini bool, stripClau
 	return sanitized, true
 }
 
+func stripInternalMessageMetadata(messages []globals.Message) ([]globals.Message, bool) {
+	sanitized := make([]globals.Message, len(messages))
+	changed := false
+
+	for idx, message := range messages {
+		sanitized[idx] = message
+		if message.ContextCleared {
+			sanitized[idx].ContextCleared = false
+			changed = true
+		}
+	}
+
+	if !changed {
+		return messages, false
+	}
+
+	return sanitized, true
+}
+
 func stripVisibleThinkingReplay(messages []globals.Message, allowReasoningReplay bool) ([]globals.Message, bool) {
 	sanitized := make([]globals.Message, len(messages))
 	changed := false
@@ -193,6 +212,10 @@ func sanitizeChatMessagesForRequest(conf globals.ChannelConfig, props *adapterco
 
 	sanitized := props.Message
 	changed := false
+
+	next, internalChanged := stripInternalMessageMetadata(sanitized)
+	sanitized = next
+	changed = changed || internalChanged
 
 	if stripGemini || stripClaude {
 		next, metadataChanged := stripHiddenMetadata(sanitized, stripGemini, stripClaude)

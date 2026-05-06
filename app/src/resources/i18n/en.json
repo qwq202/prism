@@ -471,7 +471,7 @@
     "language": "Language",
     "sender": "Send Key",
     "context": "Keep Context",
-    "history": "Max History Conversations",
+    "history": "Context Messages",
     "align": "Input Box Centered",
     "memory": "Memory Usage",
     "temperature": "Temperature",

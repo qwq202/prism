@@ -10,7 +10,7 @@ import (
 )
 
 const defaultConversationName = "new chat"
-const defaultConversationContext = 8
+const defaultConversationContext = 5
 
 type Conversation struct {
 	Auth                     bool              `json:"auth"`
@@ -348,10 +348,61 @@ func (c *Conversation) GetMessageLength() int {
 }
 
 func (c *Conversation) GetMessageSegment(length int) []globals.Message {
-	if length > len(c.Message) {
-		return c.Message
+	return selectRecentContextMessages(c.Message, length)
+}
+
+func hasMessagePayload(message globals.Message) bool {
+	return strings.TrimSpace(message.Content) != "" ||
+		message.FunctionCall != nil ||
+		message.ToolCallId != nil ||
+		(message.ToolCalls != nil && len(*message.ToolCalls) > 0) ||
+		message.ReasoningContent != nil ||
+		message.GeminiHiddenMetadata != nil ||
+		message.ClaudeHiddenMetadata != nil
+}
+
+func cleanContextMessages(messages []globals.Message) []globals.Message {
+	cleaned := make([]globals.Message, 0, len(messages))
+	for _, message := range messages {
+		if !hasMessagePayload(message) {
+			continue
+		}
+
+		cleaned = append(cleaned, message)
 	}
-	return c.Message[len(c.Message)-length:]
+
+	lastClearIndex := -1
+	for index, message := range cleaned {
+		if message.ContextCleared {
+			lastClearIndex = index
+		}
+	}
+	if lastClearIndex >= 0 {
+		cleaned = cleaned[lastClearIndex:]
+	}
+
+	result := make([]globals.Message, 0, len(cleaned))
+	for index, message := range cleaned {
+		if message.Role == globals.Assistant && index+1 < len(cleaned) && cleaned[index+1].Role == globals.Assistant {
+			continue
+		}
+
+		result = append(result, message)
+	}
+
+	return result
+}
+
+func selectRecentContextMessages(messages []globals.Message, length int) []globals.Message {
+	cleaned := cleanContextMessages(messages)
+	if length <= 0 {
+		length = defaultConversationContext
+	}
+	if length > len(cleaned) {
+		return cleaned
+	}
+
+	return cleaned[len(cleaned)-length:]
 }
 
 func (c *Conversation) GetChatMessage(restart bool) []globals.Message {
@@ -369,11 +420,7 @@ func (c *Conversation) GetChatMessage(restart bool) []globals.Message {
 			cp = cp[:index+1]
 		}
 
-		if c.GetContextLength() > len(cp) {
-			return cp
-		}
-
-		return cp[len(cp)-c.GetContextLength():]
+		return selectRecentContextMessages(cp, c.GetContextLength())
 	}
 
 	return c.GetMessageSegment(c.GetContextLength())
@@ -471,22 +518,31 @@ func (c *Conversation) AddMessageFromByte(data []byte) (string, error) {
 	form, err := utils.Unmarshal[FormMessage](data)
 	if err != nil {
 		return "", err
-	} else if len(form.Message) == 0 {
+	}
+	form.Message = strings.TrimSpace(form.Message)
+	if len(form.Message) == 0 {
 		return "", errors.New("message is empty")
 	}
 
-	c.AddMessageFromUser(form.Message)
-	c.ApplyParam(&form)
+	if err := c.AddMessageFromForm(&form); err != nil {
+		return "", err
+	}
 
 	return form.Message, nil
 }
 
 func (c *Conversation) AddMessageFromForm(form *FormMessage) error {
+	form.Message = strings.TrimSpace(form.Message)
 	if len(form.Message) == 0 {
 		return errors.New("message is empty")
 	}
 
-	c.AddMessageFromUser(form.Message)
+	message := globals.Message{
+		Role:           globals.User,
+		Content:        form.Message,
+		ContextCleared: form.IgnoreContext,
+	}
+	c.AddMessage(message)
 	c.ApplyParam(form)
 
 	return nil

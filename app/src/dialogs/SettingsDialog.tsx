@@ -225,13 +225,10 @@ function SettingsDialog() {
                       <div className={`name`}>{t("settings.history")}</div>
                       <div className={`grow`} />
                       <NumberInput
-                        className={cn(
-                          `value`,
-                          history === 0 && `text-destructive`,
-                        )}
+                        className={`value`}
                         value={history}
                         acceptNaN={false}
-                        min={0}
+                        min={1}
                         max={999}
                         onValueChange={(value: number) => {
                           dispatch(settings.setHistory(value));

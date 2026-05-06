@@ -130,3 +130,99 @@ func TestSaveConversationQuerySqlitePreflightUpdatesModelColumn(t *testing.T) {
 		t.Fatalf("expected sqlite save conversation query to remove mysql upsert syntax, got %q", query)
 	}
 }
+
+func TestDefaultConversationContextIsFive(t *testing.T) {
+	instance := NewAnonymousConversation()
+	if got := instance.GetContextLength(); got != 5 {
+		t.Fatalf("expected default context length 5, got %d", got)
+	}
+}
+
+func TestGetChatMessageTruncatesCleanedHistory(t *testing.T) {
+	instance := NewAnonymousConversation()
+	instance.SetContextLength(3, false)
+	instance.Message = []globals.Message{
+		{Role: globals.User, Content: "u1"},
+		{Role: globals.Assistant, Content: "a1"},
+		{Role: globals.Assistant, Content: "   "},
+		{Role: globals.User, Content: "u2"},
+		{Role: globals.Assistant, Content: "a2"},
+		{Role: globals.User, Content: "u3"},
+	}
+
+	got := instance.GetChatMessage(false)
+	if len(got) != 3 {
+		t.Fatalf("expected 3 context messages, got %#v", got)
+	}
+
+	if got[0].Content != "u2" || got[1].Content != "a2" || got[2].Content != "u3" {
+		t.Fatalf("unexpected context messages: %#v", got)
+	}
+}
+
+func TestGetChatMessageStartsAfterLastContextClear(t *testing.T) {
+	instance := NewAnonymousConversation()
+	instance.SetContextLength(10, false)
+	instance.Message = []globals.Message{
+		{Role: globals.User, Content: "old user"},
+		{Role: globals.Assistant, Content: "old assistant"},
+		{Role: globals.User, Content: "fresh user", ContextCleared: true},
+		{Role: globals.Assistant, Content: "fresh assistant"},
+		{Role: globals.User, Content: "current user"},
+	}
+
+	got := instance.GetChatMessage(false)
+	if len(got) != 3 {
+		t.Fatalf("expected messages after context clear, got %#v", got)
+	}
+
+	if got[0].Content != "fresh user" || !got[0].ContextCleared {
+		t.Fatalf("expected context clear message first, got %#v", got[0])
+	}
+	if got[1].Content != "fresh assistant" || got[2].Content != "current user" {
+		t.Fatalf("unexpected messages after context clear: %#v", got)
+	}
+}
+
+func TestGetChatMessageDropsAbandonedConsecutiveAssistantReply(t *testing.T) {
+	instance := NewAnonymousConversation()
+	instance.SetContextLength(10, false)
+	instance.Message = []globals.Message{
+		{Role: globals.User, Content: "question"},
+		{Role: globals.Assistant, Content: "old answer"},
+		{Role: globals.Assistant, Content: "regenerated answer"},
+		{Role: globals.User, Content: "follow up"},
+	}
+
+	got := instance.GetChatMessage(false)
+	if len(got) != 3 {
+		t.Fatalf("expected one abandoned assistant reply to be dropped, got %#v", got)
+	}
+
+	if got[1].Content != "regenerated answer" {
+		t.Fatalf("expected regenerated answer to be kept, got %#v", got)
+	}
+}
+
+func TestAddMessageFromFormMarksContextClear(t *testing.T) {
+	instance := NewAnonymousConversation()
+	form := &FormMessage{
+		Message:       " reset here ",
+		IgnoreContext: true,
+	}
+
+	if err := instance.AddMessageFromForm(form); err != nil {
+		t.Fatalf("unexpected add message error: %v", err)
+	}
+
+	got := instance.GetLastMessage()
+	if got.Content != "reset here" {
+		t.Fatalf("expected trimmed user content, got %q", got.Content)
+	}
+	if !got.ContextCleared {
+		t.Fatalf("expected context clear marker on user message")
+	}
+	if instance.GetContextLength() != 1 {
+		t.Fatalf("expected ignore context to use current message only, got %d", instance.GetContextLength())
+	}
+}
