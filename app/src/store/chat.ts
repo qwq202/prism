@@ -76,7 +76,17 @@ function resolveOpenAIReasoningEffortForRequest(
     const requested = (effort || "").trim().toLowerCase();
     if (!requested || requested === "none") return undefined;
 
-    return capabilities.reasoningEfforts.find((item) => item !== "none");
+    const fallback = capabilities.reasoningEfforts.find(
+      (item) => item !== "none",
+    );
+    console.warn("[openai-responses] unsupported reasoning effort fallback", {
+      model,
+      requested,
+      fallback,
+      supported: capabilities.reasoningEfforts,
+    });
+
+    return fallback;
   }
 
   if (

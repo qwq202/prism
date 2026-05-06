@@ -235,7 +235,7 @@ function SettingsDialog() {
                           dispatch(settings.setHistory(value[0]));
                         }}
                       />
-                      <p className={`slider-value`}>{history.toFixed()}</p>
+                      <p className={`slider-value`}>{history}</p>
                     </div>
                   )}
                   <div className={`item`}>
