@@ -11,10 +11,12 @@ import { RootState } from "@/store/index.ts";
 import { isMobile } from "@/utils/device.ts";
 
 export const sendKeys = ["Ctrl + Enter", "Enter"];
+export const minHistoryContext = 5;
+export const maxHistoryContext = 25;
 export const initialSettings = {
   context: true,
   align: false,
-  history: 5,
+  history: minHistoryContext,
   sender: !isMobile(), // default [mobile: Ctrl + Enter, pc: Enter]
   max_tokens: 0,
   temperature: 0.6,
@@ -43,7 +45,10 @@ export const initialSettings = {
 const normalizeHistoryCount = (value: number): number => {
   if (!Number.isFinite(value)) return initialSettings.history;
 
-  return Math.max(1, Math.floor(value));
+  return Math.min(
+    maxHistoryContext,
+    Math.max(minHistoryContext, Math.floor(value)),
+  );
 };
 
 export type PersonalizationSettings = {

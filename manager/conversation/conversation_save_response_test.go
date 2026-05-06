@@ -138,9 +138,23 @@ func TestDefaultConversationContextIsFive(t *testing.T) {
 	}
 }
 
+func TestConversationContextLengthBounds(t *testing.T) {
+	instance := NewAnonymousConversation()
+
+	instance.SetContextLength(3, false)
+	if got := instance.GetContextLength(); got != 5 {
+		t.Fatalf("expected context length below minimum to clamp to 5, got %d", got)
+	}
+
+	instance.SetContextLength(30, false)
+	if got := instance.GetContextLength(); got != 25 {
+		t.Fatalf("expected context length above maximum to clamp to 25, got %d", got)
+	}
+}
+
 func TestGetChatMessageTruncatesCleanedHistory(t *testing.T) {
 	instance := NewAnonymousConversation()
-	instance.SetContextLength(3, false)
+	instance.SetContextLength(5, false)
 	instance.Message = []globals.Message{
 		{Role: globals.User, Content: "u1"},
 		{Role: globals.Assistant, Content: "a1"},
@@ -148,15 +162,20 @@ func TestGetChatMessageTruncatesCleanedHistory(t *testing.T) {
 		{Role: globals.User, Content: "u2"},
 		{Role: globals.Assistant, Content: "a2"},
 		{Role: globals.User, Content: "u3"},
+		{Role: globals.Assistant, Content: "a3"},
+		{Role: globals.User, Content: "u4"},
 	}
 
 	got := instance.GetChatMessage(false)
-	if len(got) != 3 {
-		t.Fatalf("expected 3 context messages, got %#v", got)
+	if len(got) != 5 {
+		t.Fatalf("expected 5 context messages, got %#v", got)
 	}
 
-	if got[0].Content != "u2" || got[1].Content != "a2" || got[2].Content != "u3" {
-		t.Fatalf("unexpected context messages: %#v", got)
+	want := []string{"u2", "a2", "u3", "a3", "u4"}
+	for index, content := range want {
+		if got[index].Content != content {
+			t.Fatalf("expected message %d content %q, got %#v", index, content, got)
+		}
 	}
 }
 

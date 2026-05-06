@@ -224,16 +224,18 @@ function SettingsDialog() {
                     <div className={`item`}>
                       <div className={`name`}>{t("settings.history")}</div>
                       <div className={`grow`} />
-                      <NumberInput
-                        className={`value`}
-                        value={history}
-                        acceptNaN={false}
-                        min={1}
-                        max={999}
-                        onValueChange={(value: number) => {
-                          dispatch(settings.setHistory(value));
+                      <Slider
+                        value={[history]}
+                        min={settings.minHistoryContext}
+                        max={settings.maxHistoryContext}
+                        step={1}
+                        className={`value ml-2 max-w-[10rem] mr-2`}
+                        classNameThumb={`h-4 w-4`}
+                        onValueChange={(value: number[]) => {
+                          dispatch(settings.setHistory(value[0]));
                         }}
                       />
+                      <p className={`slider-value`}>{history.toFixed()}</p>
                     </div>
                   )}
                   <div className={`item`}>

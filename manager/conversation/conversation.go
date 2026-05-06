@@ -10,7 +10,9 @@ import (
 )
 
 const defaultConversationName = "new chat"
-const defaultConversationContext = 5
+const minConversationContext = 5
+const maxConversationContext = 25
+const defaultConversationContext = minConversationContext
 
 type Conversation struct {
 	Auth                     bool              `json:"auth"`
@@ -170,11 +172,7 @@ func (c *Conversation) GetOpenAIReasoningSummary() string {
 }
 
 func (c *Conversation) GetContextLength() int {
-	if c.Context <= 0 {
-		return defaultConversationContext
-	}
-
-	return c.Context
+	return normalizeContextLength(c.Context)
 }
 
 func (c *Conversation) SetModel(model string) {
@@ -283,8 +281,8 @@ func (c *Conversation) SetMaxTokens(maxTokens *int) {
 func (c *Conversation) SetContextLength(context int, ignore bool) {
 	if ignore {
 		context = 1
-	} else if context <= 0 {
-		context = defaultConversationContext
+	} else {
+		context = normalizeContextLength(context)
 	}
 
 	c.Context = context
@@ -395,14 +393,30 @@ func cleanContextMessages(messages []globals.Message) []globals.Message {
 
 func selectRecentContextMessages(messages []globals.Message, length int) []globals.Message {
 	cleaned := cleanContextMessages(messages)
-	if length <= 0 {
-		length = defaultConversationContext
-	}
+	length = normalizeContextLength(length)
 	if length > len(cleaned) {
 		return cleaned
 	}
 
 	return cleaned[len(cleaned)-length:]
+}
+
+func normalizeContextLength(length int) int {
+	if length == 1 {
+		// ignore_context uses 1 as the current-message-only sentinel.
+		return length
+	}
+	if length <= 0 {
+		return defaultConversationContext
+	}
+	if length < minConversationContext {
+		return minConversationContext
+	}
+	if length > maxConversationContext {
+		return maxConversationContext
+	}
+
+	return length
 }
 
 func (c *Conversation) GetChatMessage(restart bool) []globals.Message {
