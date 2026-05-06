@@ -919,6 +919,7 @@
     "billing-chart": "收入统计",
     "error-chart": "错误统计",
     "channel-health-chart": "渠道健康（今日）",
+    "today": "今日",
     "active-user-chart": "日活用户趋势",
     "registration-chart": "新注册用户",
     "conversion-funnel": "订阅转化漏斗",

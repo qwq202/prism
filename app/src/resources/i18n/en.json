@@ -621,6 +621,7 @@
     "billing-chart": "Revenue Statistics",
     "error-chart": "Error Statistics",
     "channel-health-chart": "Channel Health (Today)",
+    "today": "Today",
     "active-user-chart": "Daily Active Users",
     "registration-chart": "New Registrations",
     "conversion-funnel": "Conversion Funnel",
