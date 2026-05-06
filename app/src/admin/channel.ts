@@ -121,6 +121,7 @@ export const ChannelInfos: Record<string, ChannelInfo> = {
       "gpt-4.1",
       "gpt-4.1-mini",
       "gpt-4.1-nano",
+      "gpt-5.5",
       "gpt-5.4",
       "gpt-5.4-pro",
       "gpt-5.4-mini",

@@ -130,6 +130,8 @@ func applyXAICapabilities(capabilities *ModelCapabilities, model string) {
 
 func isOpenAIResponsesNativeWebModel(model string) bool {
 	switch {
+	case model == "gpt-5.5" || strings.HasPrefix(model, "gpt-5.5-"):
+		return true
 	case strings.HasPrefix(model, "gpt-5.4"):
 		return true
 	case model == "gpt-5.3-chat-latest":
@@ -150,6 +152,8 @@ func isOpenAIResponsesNativeWebModel(model string) bool {
 func openAIResponsesReasoningEfforts(model string) []string {
 	var efforts []string
 	switch {
+	case model == "gpt-5.5" || strings.HasPrefix(model, "gpt-5.5-"):
+		efforts = []string{"none", "low", "medium", "high", "xhigh"}
 	case strings.HasPrefix(model, "gpt-5.4-pro"):
 		efforts = []string{"medium", "high", "xhigh"}
 	case strings.HasPrefix(model, "gpt-5.4-mini"):
@@ -187,6 +191,8 @@ func openAIResponsesReasoningEfforts(model string) []string {
 
 func openAIResponsesSamplingRestriction(model string) SamplingRestriction {
 	switch {
+	case model == "gpt-5.5" || strings.HasPrefix(model, "gpt-5.5-"):
+		return SamplingRestrictionWithReasoning
 	case strings.HasPrefix(model, "gpt-5.4-pro"):
 		return SamplingRestrictionAlways
 	case model == "gpt-5.2-pro" || strings.HasPrefix(model, "gpt-5.2-pro-"):

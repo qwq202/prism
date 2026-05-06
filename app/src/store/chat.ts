@@ -192,6 +192,12 @@ export function getOpenAIResponsesCapabilities(
   }
 
   const normalized = model.trim().toLowerCase();
+  if (normalized === "gpt-5.5" || normalized.startsWith("gpt-5.5-")) {
+    return {
+      nativeWeb: true,
+      reasoningEfforts: ["none", "low", "medium", "high", "xhigh"],
+    };
+  }
   if (normalized.startsWith("gpt-5.4-pro")) {
     return {
       nativeWeb: true,

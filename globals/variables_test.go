@@ -6,6 +6,10 @@ import (
 )
 
 func TestIsOpenAIResponsesNativeWebModel(t *testing.T) {
+	if !IsOpenAIResponsesNativeWebModel("gpt-5.5") {
+		t.Fatalf("expected gpt-5.5 to support native web")
+	}
+
 	if !IsOpenAIResponsesNativeWebModel("gpt-5.3-chat-latest") {
 		t.Fatalf("expected gpt-5.3-chat-latest to support native web")
 	}
@@ -30,6 +34,10 @@ func TestNormalizeOpenAIResponsesReasoningEffort(t *testing.T) {
 
 	if got := NormalizeOpenAIResponsesReasoningEffort("gpt-5.4-pro", "medium", false); got != "medium" {
 		t.Fatalf("expected medium for gpt-5.4-pro, got %q", got)
+	}
+
+	if got := NormalizeOpenAIResponsesReasoningEffort("gpt-5.5", "xhigh", false); got != "xhigh" {
+		t.Fatalf("expected xhigh for gpt-5.5, got %q", got)
 	}
 
 	if got := NormalizeOpenAIResponsesReasoningEffort("gpt-5-pro", "low", false); got != "" {
@@ -75,6 +83,13 @@ func TestCapabilitiesForOpenAIResponsesModels(t *testing.T) {
 		reasoningEfforts    []string
 		samplingRestriction SamplingRestriction
 	}{
+		{
+			name:                "gpt 5.5 reasoning model",
+			model:               "gpt-5.5",
+			nativeWebSearch:     true,
+			reasoningEfforts:    []string{"none", "low", "medium", "high", "xhigh"},
+			samplingRestriction: SamplingRestrictionWithReasoning,
+		},
 		{
 			name:                "gpt 5.4 reasoning model",
 			model:               "gpt-5.4",
