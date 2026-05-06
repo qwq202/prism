@@ -70,6 +70,38 @@ func TestBuildThinkingConfigDoesNotRequestSummaryForNone(t *testing.T) {
 	}
 }
 
+func TestBuildThinkingConfigEnablesXiaomiTokenPlanThinking(t *testing.T) {
+	instance := &conversation.Conversation{}
+	instance.SetOpenAIReasoningEffort("high")
+	instance.SetOpenAIReasoningSummary("detailed")
+
+	config, ok := buildThinkingConfig(instance, "mimo-v2.5-pro").(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected xiaomi thinking config map, got %#v", config)
+	}
+
+	if config["type"] != "enabled" {
+		t.Fatalf("expected xiaomi thinking to be enabled, got %#v", config["type"])
+	}
+	if _, ok := config["summary"]; ok {
+		t.Fatalf("expected no OpenAI reasoning summary for xiaomi thinking, got %#v", config)
+	}
+}
+
+func TestBuildThinkingConfigDisablesXiaomiTokenPlanThinking(t *testing.T) {
+	instance := &conversation.Conversation{}
+	instance.SetOpenAIReasoningEffort("none")
+
+	config, ok := buildThinkingConfig(instance, "mimo-v2.5").(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected xiaomi thinking config map, got %#v", config)
+	}
+
+	if config["type"] != "disabled" {
+		t.Fatalf("expected xiaomi thinking to be disabled, got %#v", config["type"])
+	}
+}
+
 func TestBuildDeepseekThinkingConfigRequestsReasoningEffort(t *testing.T) {
 	instance := &conversation.Conversation{}
 	instance.SetDeepseekThinkingEnabled(true)

@@ -753,7 +753,9 @@ export function OpenAIReasoningAction() {
           (item) => item !== "minimal" && item !== "none",
         )
       : capabilities.reasoningEfforts.filter((item) => item !== "none");
-  const enabled = openAIReasoningEffort !== "none";
+  const enabled =
+    openAIReasoningEffort !== "none" && availableEfforts.length > 0;
+  const supportsReasoningSummary = capabilities.reasoningSummary;
   const summaryEnabled = openAIReasoningSummary !== "none";
   const currentSummary = summaryEnabled ? openAIReasoningSummary : "auto";
   const currentSummaryIndex = Math.max(
@@ -800,113 +802,126 @@ export function OpenAIReasoningAction() {
             />
           </div>
 
-          <div className={cn("space-y-2", !enabled && "opacity-50")}>
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span>{t("chat.openai-reasoning-depth")}</span>
-              <span>
-                {enabled
-                  ? t(`chat.openai-reasoning-level-${currentEffort}`)
-                  : t("chat.openai-reasoning-level-none")}
-              </span>
-            </div>
-
-            <Slider
-              disabled={!enabled}
-              value={[levelIndex]}
-              min={0}
-              max={Math.max(availableEfforts.length - 1, 0)}
-              step={1}
-              onValueChange={(value) => {
-                const next = availableEfforts[value[0]];
-                next && dispatch(setOpenAIReasoningEffort(next));
-              }}
-            />
-
-            <div className="relative h-4 text-[11px] text-muted-foreground">
-              {availableEfforts.map((effort, index) => (
-                <span
-                  key={effort}
-                  className="absolute top-0 -translate-x-1/2 whitespace-nowrap"
-                  style={{
-                    left: getStepPosition(index, availableEfforts.length),
-                  }}
-                >
-                  {t(`chat.openai-reasoning-level-${effort}`)}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          <div className={cn("space-y-2", !enabled && "opacity-50")}>
-            <div className="flex items-center justify-between">
-              <Label
-                htmlFor="openai-reasoning-summary-toggle"
-                className="text-sm"
-              >
-                {t("chat.openai-reasoning-summary-enable")}
-              </Label>
-              <Switch
-                id="openai-reasoning-summary-toggle"
-                disabled={!enabled}
-                checked={summaryEnabled}
-                onCheckedChange={(state) => {
-                  dispatch(
-                    setOpenAIReasoningSummary(state ? currentSummary : "none"),
-                  );
-                }}
-              />
-            </div>
-
-            <div
-              className={cn(
-                "space-y-2",
-                (!enabled || !summaryEnabled) && "opacity-50",
-              )}
-            >
+          {availableEfforts.length > 1 && (
+            <div className={cn("space-y-2", !enabled && "opacity-50")}>
               <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>{t("chat.openai-reasoning-summary-detail")}</span>
+                <span>{t("chat.openai-reasoning-depth")}</span>
                 <span>
-                  {t(`chat.openai-reasoning-summary-level-${currentSummary}`)}
+                  {enabled
+                    ? t(`chat.openai-reasoning-level-${currentEffort}`)
+                    : t("chat.openai-reasoning-level-none")}
                 </span>
               </div>
 
-              <div className="relative grid grid-cols-3 gap-1 overflow-hidden rounded-md border border-black/10 bg-white p-1 dark:border-white/15 dark:bg-black">
-                <span
-                  className="absolute inset-y-1 left-1 rounded-sm bg-black transition-transform duration-300 ease-out dark:bg-white"
-                  style={{
-                    width: "calc((100% - 1rem) / 3)",
-                    transform:
-                      currentSummaryIndex === 0
-                        ? "translateX(0)"
-                        : `translateX(calc(${currentSummaryIndex * 100}% + ${
-                            currentSummaryIndex * 0.25
-                          }rem))`,
-                  }}
-                />
-                {openAIReasoningSummaryLevels.map((summary) => (
-                  <button
-                    key={summary}
-                    type="button"
-                    disabled={!enabled || !summaryEnabled}
-                    onClick={() => dispatch(setOpenAIReasoningSummary(summary))}
-                    className={cn(
-                      "relative z-10 h-8 rounded-sm text-xs font-medium transition-colors duration-200 disabled:cursor-not-allowed",
-                      currentSummary === summary
-                        ? "text-white dark:text-black"
-                        : "text-black/70 hover:text-black dark:text-white/70 dark:hover:text-white",
-                    )}
+              <Slider
+                disabled={!enabled}
+                value={[levelIndex]}
+                min={0}
+                max={Math.max(availableEfforts.length - 1, 0)}
+                step={1}
+                onValueChange={(value) => {
+                  const next = availableEfforts[value[0]];
+                  next && dispatch(setOpenAIReasoningEffort(next));
+                }}
+              />
+
+              <div className="relative h-4 text-[11px] text-muted-foreground">
+                {availableEfforts.map((effort, index) => (
+                  <span
+                    key={effort}
+                    className="absolute top-0 -translate-x-1/2 whitespace-nowrap"
+                    style={{
+                      left: getStepPosition(index, availableEfforts.length),
+                    }}
                   >
-                    {t(`chat.openai-reasoning-summary-level-${summary}`)}
-                  </button>
+                    {t(`chat.openai-reasoning-level-${effort}`)}
+                  </span>
                 ))}
               </div>
             </div>
-          </div>
+          )}
+
+          {supportsReasoningSummary && (
+            <div className={cn("space-y-2", !enabled && "opacity-50")}>
+              <div className="flex items-center justify-between">
+                <Label
+                  htmlFor="openai-reasoning-summary-toggle"
+                  className="text-sm"
+                >
+                  {t("chat.openai-reasoning-summary-enable")}
+                </Label>
+                <Switch
+                  id="openai-reasoning-summary-toggle"
+                  disabled={!enabled}
+                  checked={summaryEnabled}
+                  onCheckedChange={(state) => {
+                    dispatch(
+                      setOpenAIReasoningSummary(
+                        state ? currentSummary : "none",
+                      ),
+                    );
+                  }}
+                />
+              </div>
+
+              <div
+                className={cn(
+                  "space-y-2",
+                  (!enabled || !summaryEnabled) && "opacity-50",
+                )}
+              >
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>{t("chat.openai-reasoning-summary-detail")}</span>
+                  <span>
+                    {t(`chat.openai-reasoning-summary-level-${currentSummary}`)}
+                  </span>
+                </div>
+
+                <div className="relative grid grid-cols-3 gap-1 overflow-hidden rounded-md border border-black/10 bg-white p-1 dark:border-white/15 dark:bg-black">
+                  <span
+                    className="absolute inset-y-1 left-1 rounded-sm bg-black transition-transform duration-300 ease-out dark:bg-white"
+                    style={{
+                      width: "calc((100% - 1rem) / 3)",
+                      transform:
+                        currentSummaryIndex === 0
+                          ? "translateX(0)"
+                          : `translateX(calc(${currentSummaryIndex * 100}% + ${
+                              currentSummaryIndex * 0.25
+                            }rem))`,
+                    }}
+                  />
+                  {openAIReasoningSummaryLevels.map((summary) => (
+                    <button
+                      key={summary}
+                      type="button"
+                      disabled={!enabled || !summaryEnabled}
+                      onClick={() =>
+                        dispatch(setOpenAIReasoningSummary(summary))
+                      }
+                      className={cn(
+                        "relative z-10 h-8 rounded-sm text-xs font-medium transition-colors duration-200 disabled:cursor-not-allowed",
+                        currentSummary === summary
+                          ? "text-white dark:text-black"
+                          : "text-black/70 hover:text-black dark:text-white/70 dark:hover:text-white",
+                      )}
+                    >
+                      {t(`chat.openai-reasoning-summary-level-${summary}`)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="rounded-md bg-muted p-2 text-xs">
             <div className="flex items-start">
               <Icon icon={<Info />} className="h-3 w-3 mr-1 mt-0.5 shrink-0" />
-              {t("chat.openai-reasoning-tip", { model: modelLabel })}
+              {t(
+                supportsReasoningSummary
+                  ? "chat.openai-reasoning-tip"
+                  : "chat.openai-reasoning-switch-tip",
+                { model: modelLabel },
+              )}
             </div>
           </div>
         </div>

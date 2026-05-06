@@ -45,6 +45,8 @@ func CapabilitiesFor(channelType string, model string) ModelCapabilities {
 		applyOpenAIResponsesCapabilities(&capabilities, normalizedModel)
 	case XAIChannelType:
 		applyXAICapabilities(&capabilities, normalizedModel)
+	case XiaomiTokenPlanCNChannelType:
+		applyXiaomiTokenPlanCapabilities(&capabilities, normalizedModel)
 	}
 
 	capabilities.Search = capabilities.NativeWebSearch || capabilities.XSearch
@@ -126,6 +128,20 @@ func applyXAICapabilities(capabilities *ModelCapabilities, model string) {
 
 	capabilities.NativeWebSearch = true
 	capabilities.XSearch = true
+}
+
+func applyXiaomiTokenPlanCapabilities(capabilities *ModelCapabilities, model string) {
+	if !isXiaomiMiMoModel(model) {
+		return
+	}
+
+	capabilities.ReasoningEfforts = []string{"none", "high"}
+	capabilities.SamplingRestriction = SamplingRestrictionWithReasoning
+}
+
+func isXiaomiMiMoModel(model string) bool {
+	model = strings.TrimPrefix(normalizeModelName(model), "xiaomi/")
+	return strings.HasPrefix(model, "mimo-v2") && !strings.Contains(model, "tts")
 }
 
 func isOpenAIResponsesNativeWebModel(model string) bool {

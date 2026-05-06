@@ -237,11 +237,25 @@ func SupportOpenAIResponsesReasoningControl(model string) bool {
 	return CapabilitiesFor(OpenAIResponsesChannelType, model).ReasoningControl
 }
 
+func SupportXiaomiTokenPlanThinkingControl(model string) bool {
+	return CapabilitiesFor(XiaomiTokenPlanCNChannelType, model).ReasoningControl
+}
+
 func NormalizeOpenAIResponsesReasoningEffort(model string, effort string, nativeWebEnabled bool) string {
 	capabilities := CapabilitiesFor(OpenAIResponsesChannelType, model)
 	normalized := NormalizeReasoningEffort(capabilities, effort)
 	if nativeWebEnabled && normalizeModelName(model) == "gpt-5" && normalized == "minimal" {
 		return "low"
+	}
+
+	return normalized
+}
+
+func NormalizeXiaomiTokenPlanThinkingEffort(model string, effort string) string {
+	capabilities := CapabilitiesFor(XiaomiTokenPlanCNChannelType, model)
+	normalized := NormalizeReasoningEffort(capabilities, effort)
+	if normalized == "" && strings.TrimSpace(effort) == "" {
+		return "none"
 	}
 
 	return normalized

@@ -66,12 +66,18 @@ function resolveOpenAIReasoningEffortForRequest(
   effort: string,
   nativeWebEnabled: boolean,
 ): string | undefined {
+  const capabilities = getOpenAIResponsesCapabilities(supportModels, model);
   const normalized = normalizeOpenAIResponsesReasoningEffort(
     supportModels,
     model,
     effort,
   );
-  if (!normalized) return undefined;
+  if (!normalized) {
+    const requested = (effort || "").trim().toLowerCase();
+    if (!requested || requested === "none") return undefined;
+
+    return capabilities.reasoningEfforts.find((item) => item !== "none");
+  }
 
   if (
     nativeWebEnabled &&
@@ -174,104 +180,143 @@ function getDeepSeekV4ModelKey(
 export type OpenAIResponsesCapabilities = {
   nativeWeb: boolean;
   reasoningEfforts: string[];
+  reasoningSummary: boolean;
 };
+
+function emptyOpenAIResponsesCapabilities(): OpenAIResponsesCapabilities {
+  return { nativeWeb: false, reasoningEfforts: [], reasoningSummary: false };
+}
+
+function isXiaomiMiMoModel(model: string): boolean {
+  const normalized = model.trim().toLowerCase().replace(/^xiaomi\//, "");
+  return normalized.startsWith("mimo-v2") && !normalized.includes("tts");
+}
 
 export function getOpenAIResponsesCapabilities(
   supportModels: Model[],
   model: string | undefined | null,
 ): OpenAIResponsesCapabilities {
   if (!model) {
-    return { nativeWeb: false, reasoningEfforts: [] };
+    return emptyOpenAIResponsesCapabilities();
   }
   const current = supportModels.find((item) => item.id === model);
-  if (
-    !current ||
-    (current.channel_type || "").toLowerCase() !== "openai-responses"
-  ) {
-    return { nativeWeb: false, reasoningEfforts: [] };
+  if (!current) {
+    return emptyOpenAIResponsesCapabilities();
   }
 
+  const channelType = (current.channel_type || "").toLowerCase();
   const normalized = model.trim().toLowerCase();
+  if (channelType === "xiaomi-token-plan-cn") {
+    return isXiaomiMiMoModel(normalized)
+      ? {
+          nativeWeb: false,
+          reasoningEfforts: ["none", "high"],
+          reasoningSummary: false,
+        }
+      : emptyOpenAIResponsesCapabilities();
+  }
+
+  if (channelType !== "openai-responses") {
+    return emptyOpenAIResponsesCapabilities();
+  }
+
   if (normalized === "gpt-5.5" || normalized.startsWith("gpt-5.5-")) {
     return {
       nativeWeb: true,
       reasoningEfforts: ["none", "low", "medium", "high", "xhigh"],
+      reasoningSummary: true,
     };
   }
   if (normalized.startsWith("gpt-5.4-pro")) {
     return {
       nativeWeb: true,
       reasoningEfforts: ["medium", "high", "xhigh"],
+      reasoningSummary: true,
     };
   }
   if (normalized.startsWith("gpt-5.4-mini")) {
     return {
       nativeWeb: true,
       reasoningEfforts: ["none", "low", "medium", "high", "xhigh"],
+      reasoningSummary: true,
     };
   }
   if (normalized.startsWith("gpt-5.4-nano")) {
-    return { nativeWeb: true, reasoningEfforts: [] };
+    return { nativeWeb: true, reasoningEfforts: [], reasoningSummary: true };
   }
   if (normalized === "gpt-5.2-pro" || normalized.startsWith("gpt-5.2-pro-")) {
     return {
       nativeWeb: true,
       reasoningEfforts: ["medium", "high", "xhigh"],
+      reasoningSummary: true,
     };
   }
   if (normalized === "gpt-5.2-chat-latest") {
-    return { nativeWeb: true, reasoningEfforts: [] };
+    return { nativeWeb: true, reasoningEfforts: [], reasoningSummary: true };
   }
   if (normalized === "gpt-5-pro" || normalized.startsWith("gpt-5-pro-")) {
     return {
       nativeWeb: true,
       reasoningEfforts: ["high"],
+      reasoningSummary: true,
     };
   }
   if (normalized === "gpt-5-mini" || normalized.startsWith("gpt-5-mini-")) {
-    return { nativeWeb: true, reasoningEfforts: [] };
+    return { nativeWeb: true, reasoningEfforts: [], reasoningSummary: true };
   }
   if (normalized === "gpt-5-nano" || normalized.startsWith("gpt-5-nano-")) {
-    return { nativeWeb: true, reasoningEfforts: [] };
+    return { nativeWeb: true, reasoningEfforts: [], reasoningSummary: true };
   }
   if (normalized.startsWith("gpt-5.4")) {
     return {
       nativeWeb: true,
       reasoningEfforts: ["none", "low", "medium", "high", "xhigh"],
+      reasoningSummary: true,
     };
   }
   if (normalized.startsWith("gpt-5.2")) {
     return {
       nativeWeb: true,
       reasoningEfforts: ["none", "low", "medium", "high", "xhigh"],
+      reasoningSummary: true,
     };
   }
   if (normalized.startsWith("gpt-5.1")) {
     return {
       nativeWeb: true,
       reasoningEfforts: ["none", "low", "medium", "high"],
+      reasoningSummary: true,
     };
   }
   if (normalized === "gpt-5") {
     return {
       nativeWeb: true,
       reasoningEfforts: ["minimal", "low", "medium", "high"],
+      reasoningSummary: true,
     };
   }
   if (normalized === "gpt-5.3-chat-latest") {
-    return { nativeWeb: true, reasoningEfforts: [] };
+    return { nativeWeb: true, reasoningEfforts: [], reasoningSummary: true };
   }
   if (normalized === "o3" || normalized.startsWith("o3-")) {
-    return { nativeWeb: true, reasoningEfforts: ["low", "medium", "high"] };
+    return {
+      nativeWeb: true,
+      reasoningEfforts: ["low", "medium", "high"],
+      reasoningSummary: true,
+    };
   }
   if (normalized === "o1" || normalized.startsWith("o1-")) {
-    return { nativeWeb: false, reasoningEfforts: ["low", "medium", "high"] };
+    return {
+      nativeWeb: false,
+      reasoningEfforts: ["low", "medium", "high"],
+      reasoningSummary: true,
+    };
   }
   if (normalized.startsWith("gpt-4.5")) {
-    return { nativeWeb: false, reasoningEfforts: [] };
+    return emptyOpenAIResponsesCapabilities();
   }
 
-  return { nativeWeb: false, reasoningEfforts: [] };
+  return emptyOpenAIResponsesCapabilities();
 }
 
 export function isOpenAIResponsesNativeWebModel(
@@ -1139,12 +1184,13 @@ export function useMessageActions() {
       const enableGeminiNativeWeb = isGeminiModelId(targetModel);
       const enableXAINativeWeb = isXAIModelId(targetModel);
       const enableDeepSeekThinkingControl = isDeepSeekV4ModelId(targetModel);
-      const enableOpenAINativeWeb = isOpenAIResponsesNativeWebModel(
+      const openAIReasoningCapabilities = getOpenAIResponsesCapabilities(
         support_models,
         targetModel,
       );
+      const enableOpenAINativeWeb = openAIReasoningCapabilities.nativeWeb;
       const enableOpenAIReasoningControl =
-        supportsOpenAIResponsesReasoningControl(support_models, targetModel);
+        openAIReasoningCapabilities.reasoningEfforts.length > 0;
       const targetDeepSeekThinkingEnabled =
         getDeepSeekThinkingEnabledForModel(
           deepseek_thinking_enabled_by_model,
@@ -1210,7 +1256,7 @@ export function useMessageActions() {
         openai_reasoning_effort: enableOpenAIReasoningControl
           ? openAIReasoningEffortForRequest
           : undefined,
-        openai_reasoning_summary: enableOpenAIReasoningControl
+        openai_reasoning_summary: openAIReasoningCapabilities.reasoningSummary
           ? openai_reasoning_summary
           : undefined,
         model: targetModel,
@@ -1251,12 +1297,13 @@ export function useMessageActions() {
       const enableGeminiNativeWeb = isGeminiModelId(model);
       const enableXAINativeWeb = isXAIModelId(model);
       const enableDeepSeekThinkingControl = isDeepSeekV4ModelId(model);
-      const enableOpenAINativeWeb = isOpenAIResponsesNativeWebModel(
+      const openAIReasoningCapabilities = getOpenAIResponsesCapabilities(
         support_models,
         model,
       );
+      const enableOpenAINativeWeb = openAIReasoningCapabilities.nativeWeb;
       const enableOpenAIReasoningControl =
-        supportsOpenAIResponsesReasoningControl(support_models, model);
+        openAIReasoningCapabilities.reasoningEfforts.length > 0;
       const currentDeepSeekThinkingEnabled =
         getDeepSeekThinkingEnabledForModel(
           deepseek_thinking_enabled_by_model,
@@ -1308,7 +1355,7 @@ export function useMessageActions() {
         openai_reasoning_effort: enableOpenAIReasoningControl
           ? openAIReasoningEffortForRequest
           : undefined,
-        openai_reasoning_summary: enableOpenAIReasoningControl
+        openai_reasoning_summary: openAIReasoningCapabilities.reasoningSummary
           ? openai_reasoning_summary
           : undefined,
         model,

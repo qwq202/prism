@@ -204,6 +204,7 @@
     "openai-web-enable-tip": "Using OpenAI native Web Search may incur extra built-in tool costs or token usage.",
     "fetch-tip": "When enabled, webpage links in your message are fetched by the app and provided to the AI for reading. Only public http/https pages are supported.",
     "openai-reasoning-tip": "{{model}} supports thinking effort and reasoning summaries. When summaries are off, the model can still think without showing a summary; auto uses the most suitable summary available for the model.",
+    "openai-reasoning-switch-tip": "{{model}} supports a native thinking switch. Turning it off uses non-thinking mode; turning it on lets the model return reasoning_content and show it as the thinking process.",
     "deepseek-thinking-tip": "DeepSeek thinking mode is supported. Turning it off uses non-thinking mode; turning it on uses the selected thinking effort.",
     "deepseek-pro-max-warning-title": "DeepSeek-V4 Pro Max thinking uses many tokens",
     "deepseek-pro-max-warning-desc": "Max thinking enables Pro hard reasoning. It is useful for complex tasks, but can significantly increase token usage, latency, and cost. Please confirm before enabling it.",

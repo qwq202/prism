@@ -97,6 +97,18 @@ func buildThinkingConfig(instance *conversation.Conversation, model string) inte
 		return nil
 	}
 
+	if globals.SupportXiaomiTokenPlanThinkingControl(model) {
+		effort := globals.NormalizeXiaomiTokenPlanThinkingEffort(model, instance.GetOpenAIReasoningEffort())
+		if effort == "" {
+			return nil
+		}
+		if effort == "none" {
+			return map[string]interface{}{"type": "disabled"}
+		}
+
+		return map[string]interface{}{"type": "enabled"}
+	}
+
 	if !globals.SupportOpenAIResponsesReasoningControl(model) {
 		return nil
 	}
