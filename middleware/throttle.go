@@ -58,7 +58,7 @@ func GetPrefixMap[T comparable](s string, p map[string]T) *T {
 
 func ThrottleMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		ip := c.ClientIP()
+		ip := requestRemoteIP(c)
 		path := c.Request.URL.Path
 		cache := utils.GetCacheFromContext(c)
 

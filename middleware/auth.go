@@ -24,7 +24,7 @@ func ProcessToken(c *gin.Context, token string) *auth.User {
 }
 
 func ProcessKey(c *gin.Context, key string) *auth.User {
-	addr := c.ClientIP()
+	addr := requestRemoteIP(c)
 	cache := utils.GetCacheFromContext(c)
 
 	if utils.IsInBlackList(cache, addr) {
