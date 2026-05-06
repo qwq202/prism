@@ -55,8 +55,8 @@ function Forgot() {
       description: t("auth.reset-success-prompt"),
     });
 
-    sessionStorage.setItem("username", form.email);
-    sessionStorage.setItem("password", form.password);
+    sessionStorage.removeItem("username");
+    sessionStorage.removeItem("password");
     await router.navigate("/login");
   };
 

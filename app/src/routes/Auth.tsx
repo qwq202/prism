@@ -85,9 +85,14 @@ function Login() {
   const { t } = useTranslation();
   const globalDispatch = useDispatch();
   const [form, dispatch] = useReducer(formReducer<LoginForm>(), {
-    username: sessionStorage.getItem("username") || "",
-    password: sessionStorage.getItem("password") || "",
+    username: "",
+    password: "",
   });
+
+  useEffect(() => {
+    sessionStorage.removeItem("username");
+    sessionStorage.removeItem("password");
+  }, []);
 
   const onSubmit = useCallback(async () => {
     if (
