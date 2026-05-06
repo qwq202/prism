@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/dgrijalva/jwt-go"
 	_ "github.com/mattn/go-sqlite3"
@@ -72,6 +73,75 @@ func TestGenerateTokenOmitsPasswordHash(t *testing.T) {
 	}
 	if _, ok := claims["password"]; ok {
 		t.Fatalf("expected token claims to omit password hash")
+	}
+}
+
+func TestJWTSigningKeyRejectsUnexpectedAlgorithm(t *testing.T) {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS384, jwt.MapClaims{
+		"username": "alice",
+		"exp":      time.Now().Add(time.Hour).Unix(),
+	})
+
+	if _, err := jwtSigningKey(token); err == nil {
+		t.Fatalf("expected non-HS256 jwt signing method to be rejected")
+	}
+}
+
+func TestParseTokenClaimsRejectsMalformedClaims(t *testing.T) {
+	now := time.Unix(100, 0)
+	tests := []struct {
+		name   string
+		claims jwt.MapClaims
+	}{
+		{
+			name:   "missing exp",
+			claims: jwt.MapClaims{"username": "alice"},
+		},
+		{
+			name:   "string exp",
+			claims: jwt.MapClaims{"username": "alice", "exp": "200"},
+		},
+		{
+			name:   "expired exp",
+			claims: jwt.MapClaims{"username": "alice", "exp": float64(99)},
+		},
+		{
+			name:   "missing username",
+			claims: jwt.MapClaims{"exp": float64(200)},
+		},
+		{
+			name:   "non-string username",
+			claims: jwt.MapClaims{"username": 123, "exp": float64(200)},
+		},
+		{
+			name:   "blank username",
+			claims: jwt.MapClaims{"username": "  ", "exp": float64(200)},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if user, ok := parseTokenClaims(tt.claims, now); ok || user != nil {
+				t.Fatalf("expected malformed claims to be rejected, got ok=%v user=%#v", ok, user)
+			}
+		})
+	}
+}
+
+func TestParseTokenClaimsAcceptsSafeClaims(t *testing.T) {
+	user, ok := parseTokenClaims(jwt.MapClaims{
+		"username": " alice ",
+		"password": utils.Sha2Encrypt("legacy"),
+		"exp":      float64(time.Now().Add(time.Hour).Unix()),
+	}, time.Now())
+	if !ok {
+		t.Fatalf("expected safe claims to parse")
+	}
+	if user.Username != "alice" {
+		t.Fatalf("expected trimmed username, got %q", user.Username)
+	}
+	if user.Password == "" {
+		t.Fatalf("expected legacy password claim to remain compatible")
 	}
 }
 

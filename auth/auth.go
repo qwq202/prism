@@ -6,6 +6,7 @@ import (
 	"chat/utils"
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -17,27 +18,57 @@ import (
 	"github.com/spf13/viper"
 )
 
+func jwtSigningKey(token *jwt.Token) (interface{}, error) {
+	if token.Method == nil || token.Method.Alg() != jwt.SigningMethodHS256.Alg() {
+		return nil, fmt.Errorf("unexpected jwt signing method: %v", token.Header["alg"])
+	}
+
+	return []byte(viper.GetString("secret")), nil
+}
+
+func parseJWTExpiration(value interface{}) (int64, bool) {
+	switch exp := value.(type) {
+	case float64:
+		return int64(exp), true
+	case json.Number:
+		value, err := exp.Int64()
+		return value, err == nil
+	default:
+		return 0, false
+	}
+}
+
+func parseTokenClaims(claims jwt.MapClaims, now time.Time) (*User, bool) {
+	exp, ok := parseJWTExpiration(claims["exp"])
+	if !ok || exp < now.Unix() {
+		return nil, false
+	}
+
+	username, ok := claims["username"].(string)
+	username = strings.TrimSpace(username)
+	if !ok || username == "" {
+		return nil, false
+	}
+
+	user := &User{
+		Username: username,
+	}
+	if password, ok := claims["password"].(string); ok {
+		user.Password = password
+	}
+
+	return user, true
+}
+
 func ParseToken(c *gin.Context, token string) *User {
-	instance, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
-		return []byte(viper.GetString("secret")), nil
-	})
+	instance, err := jwt.Parse(token, jwtSigningKey)
 	if err != nil {
 		return nil
 	}
 	if claims, ok := instance.Claims.(jwt.MapClaims); ok && instance.Valid {
-		exp, ok := claims["exp"].(float64)
-		if !ok || int64(exp) < time.Now().Unix() {
+		user, ok := parseTokenClaims(claims, time.Now())
+		if !ok {
 			return nil
-		}
-		username, ok := claims["username"].(string)
-		if !ok || strings.TrimSpace(username) == "" {
-			return nil
-		}
-		user := &User{
-			Username: username,
-		}
-		if password, ok := claims["password"].(string); ok {
-			user.Password = password
 		}
 		if !user.Validate(c) {
 			return nil
