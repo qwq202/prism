@@ -13,6 +13,7 @@ import (
 	"chat/manager/conversation"
 	"chat/manager/memory"
 	"chat/utils"
+	"context"
 	"time"
 
 	"database/sql"
@@ -244,13 +245,14 @@ type partialChunk struct {
 	Error error
 }
 
-func createStopSignal(conn *Connection) chan bool {
+func createStopSignal(conn *Connection) (<-chan bool, context.CancelFunc) {
+	ctx, cancel := context.WithCancel(context.Background())
 	stopSignal := make(chan bool, 1)
 	go func(conn *Connection, stopSignal chan bool) {
 		ticker := time.NewTicker(100 * time.Millisecond)
 		defer func() {
 			ticker.Stop()
-			if r := recover(); r != nil && !strings.Contains(fmt.Sprintf("%s", r), "closed channel") {
+			if r := recover(); r != nil {
 				stack := debug.Stack()
 				globals.Warn(fmt.Sprintf("caught panic from stop signal: %s\n%s", r, stack))
 			}
@@ -258,6 +260,8 @@ func createStopSignal(conn *Connection) chan bool {
 
 		for {
 			select {
+			case <-ctx.Done():
+				return
 			case <-ticker.C:
 				state := conn.PeekStop() != nil // check the stop state
 
@@ -266,7 +270,10 @@ func createStopSignal(conn *Connection) chan bool {
 					case <-stopSignal:
 					default:
 					}
-					stopSignal <- true
+					select {
+					case stopSignal <- true:
+					case <-ctx.Done():
+					}
 					return
 				}
 
@@ -278,7 +285,7 @@ func createStopSignal(conn *Connection) chan bool {
 		}
 	}(conn, stopSignal)
 
-	return stopSignal
+	return stopSignal, cancel
 }
 
 func cloneChatPropsWithBuffer(props *adaptercommon.ChatProps, buffer *utils.Buffer) *adaptercommon.ChatProps {
@@ -393,10 +400,10 @@ func createRoundTask(
 ) (hit bool, err error, interrupted bool) {
 	chunkChan := make(chan partialChunk, 24)
 	interruptSignal := make(chan error, 1)
-	stopSignal := createStopSignal(conn)
+	stopSignal, stopPolling := createStopSignal(conn)
 
 	defer func() {
-		close(stopSignal)
+		stopPolling()
 	}()
 
 	go func() {
@@ -854,13 +861,10 @@ func createChatTask(
 ) (hit bool, err error, interrupted bool) {
 	chunkChan := make(chan partialChunk, 24) // the channel to send the chunk data
 	interruptSignal := make(chan error, 1)   // the signal to interrupt the chat task routine
-	stopSignal := createStopSignal(conn)     // the signal to stop from the client
+	stopSignal, stopPolling := createStopSignal(conn)
 
 	defer func() {
-		// close all channels
-		close(interruptSignal)
-		close(stopSignal)
-		close(chunkChan)
+		stopPolling()
 	}()
 
 	// create a new chat request routine
@@ -1011,7 +1015,8 @@ func createChatTask(
 			if data.Chunk != nil && data.Chunk.ToolCall != nil {
 				if err := sendToolCallEvents(conn, data.Chunk.ToolCall, "start", buffer.GetQuota(), plan); err != nil {
 					globals.Warn(fmt.Sprintf("failed to send tool call event to client: %s", err.Error()))
-					interruptSignal <- err
+					signalInterrupt(interruptSignal, err)
+					waitForRoundTaskEnd(chunkChan)
 					return hit, nil, true
 				}
 			}
@@ -1024,7 +1029,8 @@ func createChatTask(
 				Plan:    plan,
 			}); err != nil {
 				globals.Warn(fmt.Sprintf("failed to send message to client: %s", err.Error()))
-				interruptSignal <- err
+				signalInterrupt(interruptSignal, err)
+				waitForRoundTaskEnd(chunkChan)
 				return hit, nil, true
 			}
 
@@ -1037,7 +1043,8 @@ func createChatTask(
 					End:   true,
 					Plan:  plan,
 				})
-				interruptSignal <- errors.New("signal")
+				signalInterrupt(interruptSignal, errors.New("signal"))
+				waitForRoundTaskEnd(chunkChan)
 
 				return hit, nil, true
 			}

@@ -543,6 +543,11 @@ type WarmupForm struct {
 	Urls []string `json:"urls" binding:"required"`
 }
 
+const (
+	maxWarmupUrls        = 100
+	maxWarmupConcurrency = 8
+)
+
 type WarmupResult struct {
 	Url    string `json:"url"`
 	Status int    `json:"status"`
@@ -565,14 +570,23 @@ func WarmupAPI(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": false, "message": "urls are required"})
 		return
 	}
+	if len(form.Urls) > maxWarmupUrls {
+		c.JSON(http.StatusOK, gin.H{"status": false, "message": "too many urls"})
+		return
+	}
 
 	results := make([]WarmupResult, len(form.Urls))
 	var wg sync.WaitGroup
+	sem := make(chan struct{}, maxWarmupConcurrency)
 
 	for i, url := range form.Urls {
+		sem <- struct{}{}
 		wg.Add(1)
 		go func(idx int, target string) {
-			defer wg.Done()
+			defer func() {
+				<-sem
+				wg.Done()
+			}()
 			results[idx] = warmupUrl(target)
 		}(i, url)
 	}
