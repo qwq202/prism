@@ -157,7 +157,7 @@ func openAIResponsesReasoningEfforts(model string) []string {
 	case strings.HasPrefix(model, "gpt-5.4-pro"):
 		efforts = []string{"medium", "high", "xhigh"}
 	case strings.HasPrefix(model, "gpt-5.4-mini"):
-		return nil
+		efforts = []string{"none", "low", "medium", "high", "xhigh"}
 	case strings.HasPrefix(model, "gpt-5.4-nano"):
 		return nil
 	case strings.HasPrefix(model, "gpt-5.4"):

@@ -36,6 +36,10 @@ func TestNormalizeOpenAIResponsesReasoningEffort(t *testing.T) {
 		t.Fatalf("expected medium for gpt-5.4-pro, got %q", got)
 	}
 
+	if got := NormalizeOpenAIResponsesReasoningEffort("gpt-5.4-mini", "xhigh", false); got != "xhigh" {
+		t.Fatalf("expected xhigh for gpt-5.4-mini, got %q", got)
+	}
+
 	if got := NormalizeOpenAIResponsesReasoningEffort("gpt-5.5", "xhigh", false); got != "xhigh" {
 		t.Fatalf("expected xhigh for gpt-5.5, got %q", got)
 	}
@@ -93,6 +97,13 @@ func TestCapabilitiesForOpenAIResponsesModels(t *testing.T) {
 		{
 			name:                "gpt 5.4 reasoning model",
 			model:               "gpt-5.4",
+			nativeWebSearch:     true,
+			reasoningEfforts:    []string{"none", "low", "medium", "high", "xhigh"},
+			samplingRestriction: SamplingRestrictionWithReasoning,
+		},
+		{
+			name:                "gpt 5.4 mini reasoning model",
+			model:               "gpt-5.4-mini",
 			nativeWebSearch:     true,
 			reasoningEfforts:    []string{"none", "low", "medium", "high", "xhigh"},
 			samplingRestriction: SamplingRestrictionWithReasoning,

@@ -122,6 +122,33 @@ func TestGetChatBodySupportsGPT55ReasoningAndWebSearch(t *testing.T) {
 	}
 }
 
+func TestGetChatBodySupportsGPT54MiniReasoningAndWebSearch(t *testing.T) {
+	instance := &ChatInstance{}
+	temperature := float32(0.2)
+	topP := float32(0.8)
+	props := &adaptercommon.ChatProps{
+		Model:           "gpt-5.4-mini",
+		Temperature:     &temperature,
+		TopP:            &topP,
+		Thinking:        map[string]interface{}{"effort": "xhigh"},
+		EnableWebSearch: true,
+		Message: []globals.Message{
+			{Role: globals.User, Content: "联网查一下 OpenAI 文档"},
+		},
+	}
+
+	body := instance.GetChatBody(props, false)
+	if body.Temperature != nil || body.TopP != nil {
+		t.Fatalf("expected sampling params to be stripped for gpt-5.4-mini reasoning, got temp=%#v topP=%#v", body.Temperature, body.TopP)
+	}
+	if body.Reasoning == nil {
+		t.Fatalf("expected gpt-5.4-mini reasoning config to pass through")
+	}
+	if len(body.Tools) != 1 || body.Tools[0].Type != "web_search" {
+		t.Fatalf("expected gpt-5.4-mini to use hosted web_search tool, got %#v", body.Tools)
+	}
+}
+
 func TestGetChatBodyKeepsSamplingForGPT55NoReasoning(t *testing.T) {
 	instance := &ChatInstance{}
 	temperature := float32(0.2)

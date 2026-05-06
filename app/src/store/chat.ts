@@ -205,7 +205,10 @@ export function getOpenAIResponsesCapabilities(
     };
   }
   if (normalized.startsWith("gpt-5.4-mini")) {
-    return { nativeWeb: true, reasoningEfforts: [] };
+    return {
+      nativeWeb: true,
+      reasoningEfforts: ["none", "low", "medium", "high", "xhigh"],
+    };
   }
   if (normalized.startsWith("gpt-5.4-nano")) {
     return { nativeWeb: true, reasoningEfforts: [] };
