@@ -139,7 +139,16 @@ func TestDefaultConversationContextIsFive(t *testing.T) {
 }
 
 func TestConversationContextLengthBounds(t *testing.T) {
+	if got := normalizeContextLength(1); got != 5 {
+		t.Fatalf("expected generic normalization to clamp 1 to 5, got %d", got)
+	}
+
 	instance := NewAnonymousConversation()
+
+	instance.SetContextLength(1, false)
+	if got := instance.GetContextLength(); got != 5 {
+		t.Fatalf("expected non-ignore context length 1 to clamp to 5, got %d", got)
+	}
 
 	instance.SetContextLength(3, false)
 	if got := instance.GetContextLength(); got != 5 {

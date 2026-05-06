@@ -172,7 +172,11 @@ func (c *Conversation) GetOpenAIReasoningSummary() string {
 }
 
 func (c *Conversation) GetContextLength() int {
-	return normalizeContextLength(c.Context)
+	if c.Context <= 0 {
+		return defaultConversationContext
+	}
+
+	return c.Context
 }
 
 func (c *Conversation) SetModel(model string) {
@@ -280,12 +284,11 @@ func (c *Conversation) SetMaxTokens(maxTokens *int) {
 
 func (c *Conversation) SetContextLength(context int, ignore bool) {
 	if ignore {
-		context = 1
-	} else {
-		context = normalizeContextLength(context)
+		c.Context = 1
+		return
 	}
 
-	c.Context = context
+	c.Context = normalizeContextLength(context)
 }
 
 func (c *Conversation) GetCustomInstruction() string {
@@ -393,7 +396,9 @@ func cleanContextMessages(messages []globals.Message) []globals.Message {
 
 func selectRecentContextMessages(messages []globals.Message, length int) []globals.Message {
 	cleaned := cleanContextMessages(messages)
-	length = normalizeContextLength(length)
+	if length <= 0 {
+		length = defaultConversationContext
+	}
 	if length > len(cleaned) {
 		return cleaned
 	}
@@ -402,10 +407,6 @@ func selectRecentContextMessages(messages []globals.Message, length int) []globa
 }
 
 func normalizeContextLength(length int) int {
-	if length == 1 {
-		// ignore_context uses 1 as the current-message-only sentinel.
-		return length
-	}
 	if length <= 0 {
 		return defaultConversationContext
 	}
