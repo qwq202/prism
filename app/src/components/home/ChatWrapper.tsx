@@ -271,7 +271,11 @@ function ChatWrapper() {
                 exit={{ opacity: 0, scale: 0.8 }}
                 transition={{ duration: 0.3, delay: 0.4 }}
               >
-                <VoiceAction />
+                <VoiceAction
+                  value={input}
+                  onValueChange={setInput}
+                  target={target}
+                />
               </motion.div>
               <motion.div
                 key="scroll-action"
