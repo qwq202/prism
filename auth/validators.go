@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"net/mail"
 	"regexp"
 	"strings"
 )
@@ -23,12 +24,39 @@ func validatePassword(password string) bool {
 }
 
 func validateEmail(email string) bool {
+	email = strings.TrimSpace(email)
 	if !isInRange(email, 1, 255) {
 		return false
 	}
 
-	exp := regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
-	return exp.MatchString(email)
+	addr, err := mail.ParseAddress(email)
+	if err != nil || addr.Address != email {
+		return false
+	}
+
+	parts := strings.Split(email, "@")
+	if len(parts) != 2 || parts[0] == "" {
+		return false
+	}
+
+	domain := strings.TrimSuffix(strings.ToLower(parts[1]), ".")
+	labels := strings.Split(domain, ".")
+	if len(labels) < 2 {
+		return false
+	}
+
+	labelExp := regexp.MustCompile(`^[a-z0-9-]+$`)
+	tldExp := regexp.MustCompile(`^[a-z]{2,}$`)
+	for _, label := range labels {
+		if label == "" ||
+			strings.HasPrefix(label, "-") ||
+			strings.HasSuffix(label, "-") ||
+			!labelExp.MatchString(label) {
+			return false
+		}
+	}
+
+	return tldExp.MatchString(labels[len(labels)-1])
 }
 
 func validateCode(code string) bool {

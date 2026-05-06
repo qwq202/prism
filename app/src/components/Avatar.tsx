@@ -1,73 +1,12 @@
 import { deeptrainApiEndpoint, useDeeptrain } from "@/conf/env.ts";
-import {
-  ImgHTMLAttributes,
-  useCallback,
-  useMemo,
-  useState,
-  useEffect,
-} from "react";
+import { ImgHTMLAttributes, useMemo } from "react";
 import { cn } from "@/components/ui/lib/utils.ts";
-import { getUserInfo, UserInfo, initialUserInfo } from "@/api/auth.ts";
-import md5 from "crypto-js/md5";
-import { getConfig } from "@/admin/api/system";
-import { useSelector, useDispatch } from "react-redux";
-import { setAvatar } from "@/store/avatar";
-import { RootState } from "@/store";
 
 export interface AvatarProps extends ImgHTMLAttributes<HTMLElement> {
   username: string;
 }
 
-async function checkGravatar(
-  gravatar_endpoint: string,
-  email: string,
-): Promise<boolean> {
-  if (!email || email === "root@example.com") {
-    return false;
-  }
-
-  const trimmedEmail = email.trim().toLowerCase();
-  const hash = md5(trimmedEmail).toString();
-  const uri = `${gravatar_endpoint}/avatar/${hash}?d=404`;
-
-  try {
-    const response = await fetch(uri);
-
-    if (response.ok) {
-      return true;
-    }
-    console.info("[avatar] gravatar not found:", trimmedEmail);
-    return false;
-  } catch (error) {
-    console.error("[avatar] request failed:", error);
-    return false;
-  }
-}
 function Avatar({ username, ...props }: AvatarProps) {
-  const dispatch = useDispatch();
-  const cachedAvatarBlob = useSelector(
-    (state: RootState) => state.avatar.avatars[username],
-  );
-
-  const [userInfo, setUserInfo] = useState<UserInfo>(initialUserInfo);
-  const [hasAvatar, setHasAvatar] = useState(false);
-  const [gravatar_endpoint, setGravatarEndpoint] = useState<string>("");
-
-  useEffect(() => {
-    getUserInfo().then((info) => setUserInfo(info?.data ?? initialUserInfo));
-  }, []);
-
-  useEffect(() => {
-    getConfig().then((config) => {
-      const gravatarEndpoint = config.data?.general.gravatar;
-      if (!gravatarEndpoint) {
-        setGravatarEndpoint("");
-        return;
-      }
-      setGravatarEndpoint(gravatarEndpoint);
-    });
-  }, []);
-
   const code = useMemo(
     () => (username?.length > 0 ? username[0].toUpperCase() : "A"),
     [username],
@@ -86,49 +25,10 @@ function Avatar({ username, ...props }: AvatarProps) {
     const index = code.charCodeAt(0) % colors.length;
     return colors[index];
   }, [code]);
-  const getGravatarUrl = useCallback(
-    (email: string | undefined) => {
-      if (!email) return "";
-      const trimmedEmail = email.trim().toLowerCase();
-      const hash = md5(trimmedEmail).toString();
-      if (!gravatar_endpoint) return "";
-      return `${gravatar_endpoint}/avatar/${hash}?d=identicon`;
-    },
-    [gravatar_endpoint],
-  );
-
-  useEffect(() => {
-    if (cachedAvatarBlob !== null) {
-      setHasAvatar(true);
-      return;
-    }
-    checkGravatar(gravatar_endpoint, userInfo.email).then((hasAvatar) => {
-      setHasAvatar(hasAvatar);
-      if (hasAvatar) {
-        const avatarUrl = getGravatarUrl(userInfo.email);
-        fetch(avatarUrl)
-          .then((response) => response.blob())
-          .then((blob) => {
-            dispatch(setAvatar({ username, blob }));
-          });
-      }
-    });
-  }, [
-    cachedAvatarBlob,
-    dispatch,
-    getGravatarUrl,
-    gravatar_endpoint,
-    userInfo.email,
-    username,
-  ]);
 
   const avatarSrc =
     useDeeptrain && username.length > 0
       ? `${deeptrainApiEndpoint}/avatar/${username}`
-      : hasAvatar && cachedAvatarBlob
-      ? URL.createObjectURL(cachedAvatarBlob)
-      : hasAvatar && userInfo.email
-      ? getGravatarUrl(userInfo.email)
       : "";
 
   return avatarSrc ? (

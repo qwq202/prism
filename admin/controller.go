@@ -138,11 +138,32 @@ func UserTypeAnalysisAPI(c *gin.Context) {
 	}
 }
 
-func RedeemListAPI(c *gin.Context) {
-	db := utils.GetDBFromContext(c)
+func parsePageQuery(c *gin.Context) (int64, bool) {
+	raw := strings.TrimSpace(c.Query("page"))
+	if raw == "" {
+		return 0, true
+	}
 
-	page, _ := strconv.Atoi(c.Query("page"))
-	c.JSON(http.StatusOK, GetRedeemData(db, int64(page)))
+	page, err := strconv.Atoi(raw)
+	if err != nil || page < 0 {
+		c.JSON(http.StatusOK, gin.H{
+			"status": false,
+			"error":  "invalid page",
+		})
+		return 0, false
+	}
+
+	return int64(page), true
+}
+
+func RedeemListAPI(c *gin.Context) {
+	page, ok := parsePageQuery(c)
+	if !ok {
+		return
+	}
+
+	db := utils.GetDBFromContext(c)
+	c.JSON(http.StatusOK, GetRedeemData(db, page))
 }
 
 func DeleteRedeemAPI(c *gin.Context) {
@@ -165,10 +186,14 @@ func DeleteRedeemAPI(c *gin.Context) {
 }
 
 func InvitationPaginationAPI(c *gin.Context) {
+	page, ok := parsePageQuery(c)
+	if !ok {
+		return
+	}
+
 	db := utils.GetDBFromContext(c)
 
-	page, _ := strconv.Atoi(c.Query("page"))
-	c.JSON(http.StatusOK, GetInvitationPagination(db, int64(page)))
+	c.JSON(http.StatusOK, GetInvitationPagination(db, page))
 }
 
 func DeleteInvitationAPI(c *gin.Context) {
@@ -220,11 +245,15 @@ func GenerateRedeemAPI(c *gin.Context) {
 }
 
 func UserPaginationAPI(c *gin.Context) {
+	page, ok := parsePageQuery(c)
+	if !ok {
+		return
+	}
+
 	db := utils.GetDBFromContext(c)
 
-	page, _ := strconv.Atoi(c.Query("page"))
 	search := strings.TrimSpace(c.Query("search"))
-	c.JSON(http.StatusOK, getUsersForm(db, int64(page), search))
+	c.JSON(http.StatusOK, getUsersForm(db, page, search))
 }
 
 func UpdatePasswordAPI(c *gin.Context) {

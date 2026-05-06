@@ -12,6 +12,9 @@ func TestOriginIsAllowedRejectsExternalOriginWhenAllowListEmpty(t *testing.T) {
 	if OriginIsAllowed("https://evil.example") {
 		t.Fatalf("expected empty allow list to reject external origin")
 	}
+	if OriginIsAllowed("http://%zz") {
+		t.Fatalf("expected malformed origin to be rejected")
+	}
 	if !OriginIsAllowed("http://localhost:5173") {
 		t.Fatalf("expected localhost to remain allowed for local development")
 	}

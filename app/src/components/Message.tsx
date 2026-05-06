@@ -66,8 +66,8 @@ function MessageSegment(props: MessageProps) {
           if (isContainDom(ref.current, event.relatedTarget as HTMLElement))
             return;
           props.onFocusLeave && props.onFocusLeave(event);
-        } catch (e) {
-          console.debug(`[message] cannot leave focus: ${e}`);
+        } catch {
+          props.onFocusLeave && props.onFocusLeave(event);
         }
       }}
     >

@@ -76,8 +76,8 @@ func IsConfiguredVisionModel(model string) bool {
 }
 
 func OriginIsAllowed(uri string) bool {
-	instance, _ := url.Parse(uri)
-	if instance == nil {
+	instance, err := url.Parse(uri)
+	if err != nil || instance == nil {
 		return false
 	}
 

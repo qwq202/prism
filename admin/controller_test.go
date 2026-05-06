@@ -43,3 +43,27 @@ func TestWarmupAPIRejectsTooManyUrls(t *testing.T) {
 		t.Fatalf("expected too many urls rejection, got %#v", body)
 	}
 }
+
+func TestRedeemListAPIRejectsInvalidPage(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodGet, "/admin/redeem?page=invalid", nil)
+
+	RedeemListAPI(c)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", w.Code)
+	}
+	var body struct {
+		Status bool   `json:"status"`
+		Error  string `json:"error"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if body.Status || body.Error != "invalid page" {
+		t.Fatalf("expected invalid page rejection, got %#v", body)
+	}
+}
