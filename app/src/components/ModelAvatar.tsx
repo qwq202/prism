@@ -40,6 +40,32 @@ type AvatarComponent = React.ComponentType<
 >;
 type OpenAIAvatarType = React.ComponentProps<typeof OpenAI.Avatar>["type"];
 
+function XiaomiAvatar({
+  size,
+  className,
+}: Pick<IconAvatarProps, "size" | "className">) {
+  const fontSize = Math.max(Math.round(size * 0.42), 10);
+
+  return (
+    <div
+      aria-label="Xiaomi"
+      className={cn(
+        "flex shrink-0 items-center justify-center rounded-full bg-[#ff6900] font-semibold leading-none text-white",
+        className,
+      )}
+      style={{
+        width: size,
+        height: size,
+        minWidth: size,
+        minHeight: size,
+        fontSize,
+      }}
+    >
+      mi
+    </div>
+  );
+}
+
 const builtinAvatars: Record<string, AvatarComponent> = {
   openai: OpenAI.Avatar,
   "gpt-3.5": OpenAI.Avatar,
@@ -96,6 +122,10 @@ const builtinAvatars: Record<string, AvatarComponent> = {
   copilot: GithubCopilot.Avatar,
 
   suno: Suno.Avatar,
+
+  "xiaomi-token-plan": XiaomiAvatar,
+  xiaomi: XiaomiAvatar,
+  mimo: XiaomiAvatar,
 };
 
 function getAvatarType(id: string): OpenAIAvatarType {
