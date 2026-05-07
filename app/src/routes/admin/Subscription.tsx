@@ -7,7 +7,6 @@ import {
 import { useTranslation } from "react-i18next";
 import { useEffect, useMemo, useReducer, useState } from "react";
 import {
-  getExternalPlanConfig,
   getPlanConfig,
   type PlanConfig,
   setPlanConfig,
@@ -15,7 +14,6 @@ import {
 import { useEffectAsync } from "@/utils/hook.ts";
 import { Switch } from "@/components/ui/switch.tsx";
 import {
-  Activity,
   ChevronDown,
   ChevronUp,
   Coins,
@@ -37,8 +35,6 @@ import { dispatchSubscriptionData } from "@/store/globals.ts";
 import { useDispatch } from "react-redux";
 import { cn } from "@/components/ui/lib/utils.ts";
 import { useAllModels } from "@/admin/hook.tsx";
-import PopupDialog, { popupTypes } from "@/components/PopupDialog.tsx";
-import { PopupAlertDialog } from "@/components/PopupDialogComponent.tsx";
 import { getUniqueList } from "@/utils/base.ts";
 import {
   Tabs,
@@ -811,31 +807,6 @@ function PlanConfig() {
   const { allModels, update } = useAllModels();
   const availableModels = useMemo(() => getUniqueList(allModels), [allModels]);
 
-  const [open, setOpen] = useState(false);
-  const [syncOpen, setSyncOpen] = useState(false);
-  const [conf, setConf] = useState<PlanConfig | null>(null);
-
-  const confRules = useMemo(
-    () => (conf ? conf.plans.flatMap((p: Plan) => p.items) : []),
-    [conf],
-  );
-  const confAllModelPlanCount = useMemo(
-    () =>
-      conf
-        ? conf.plans.filter(
-            (plan) => hasPlanPointPool(plan) && plan.items.length === 0,
-          ).length
-        : 0,
-    [conf],
-  );
-  const confIncluding = useMemo(
-    () => getUniqueList(confRules.flatMap((i: PlanItem) => i.models)),
-    [confRules],
-  );
-  const confRuleCount = confRules.length + confAllModelPlanCount;
-  const confModelCount =
-    confAllModelPlanCount > 0 ? availableModels.length : confIncluding.length;
-
   const refresh = async (ignoreUpdate?: boolean) => {
     setLoading(true);
     const res = await getPlanConfig();
@@ -868,41 +839,6 @@ function PlanConfig() {
 
   return (
     <>
-      <PopupDialog
-        type={popupTypes.Text}
-        title={t("admin.plan.sync")}
-        name={t("admin.plan.sync-site")}
-        placeholder={t("admin.plan.sync-placeholder")}
-        open={open}
-        setOpen={setOpen}
-        defaultValue={"https://api.chatnio.net"}
-        alert={t("admin.format-only")}
-        onSubmit={async (endpoint): Promise<boolean> => {
-          const conf = normalizeWindowQuotaConfig(
-            await getExternalPlanConfig(endpoint),
-          );
-          setConf(conf);
-          setSyncOpen(true);
-          return true;
-        }}
-      />
-      <PopupAlertDialog
-        title={t("admin.plan.sync")}
-        description={t("admin.plan.sync-result", {
-          length: confRuleCount,
-          models: confModelCount,
-        })}
-        open={syncOpen}
-        setOpen={setSyncOpen}
-        destructive={true}
-        onSubmit={async () => {
-          if (!conf) return false;
-          formDispatch({ type: "set", payload: conf });
-          await save(conf);
-          return true;
-        }}
-      />
-
       <div className="space-y-5">
         {/* ── Top toolbar ── */}
         <div className="flex items-center justify-between">
@@ -923,17 +859,12 @@ function PlanConfig() {
           </div>
 
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
-              <Activity className="h-3.5 w-3.5 mr-1.5" />
-              {t("admin.plan.sync")}
-            </Button>
-
             <Button
               variant="ghost"
               size="icon"
               className="h-8 w-8"
               onClick={() => refresh()}
-              title={t("admin.plan.sync")}
+              title={t("plugin.refresh")}
             >
               <RotateCw
                 className={cn("h-3.5 w-3.5", loading && "animate-spin")}

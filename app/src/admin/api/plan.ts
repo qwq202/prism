@@ -2,7 +2,6 @@ import { Plan } from "@/api/types.tsx";
 import axios from "axios";
 import { CommonResponse } from "@/api/common.ts";
 import { getErrorMessage } from "@/utils/base.ts";
-import { getApiPlans } from "@/api/v1.ts";
 
 export type PlanConfig = {
   enabled: boolean;
@@ -23,13 +22,6 @@ export async function getPlanConfig(): Promise<PlanConfig> {
     console.warn(e);
     return { enabled: false, plans: [] };
   }
-}
-
-export async function getExternalPlanConfig(
-  endpoint: string,
-): Promise<PlanConfig> {
-  const response = await getApiPlans({ endpoint });
-  return { enabled: response.length > 0, plans: response };
 }
 
 export async function setPlanConfig(
