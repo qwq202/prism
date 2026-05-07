@@ -688,6 +688,10 @@
     "generate": "バッチ生成",
     "generate-result": "結果を生成する",
     "error": "要求失敗",
+    "selected": "{{count}} 人を選択中",
+    "batch-success": "{{count}} 人のユーザーを更新しました",
+    "ban": "ブロック",
+    "unban": "ブロック解除",
     "channels": {
       "id": "チャンネルID",
       "name": "名称",

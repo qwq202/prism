@@ -708,6 +708,7 @@
     "generate-result": "Generate Result",
     "error": "Request Failed",
     "selected": "{{count}} selected",
+    "batch-success": "Successfully updated {{count}} users",
     "ban": "Ban",
     "unban": "Unban",
     "channels": {

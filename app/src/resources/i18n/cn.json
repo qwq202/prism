@@ -1046,6 +1046,7 @@
     "generate-result": "生成结果",
     "error": "请求失败",
     "selected": "已选择 {{count}} 人",
+    "batch-success": "已成功操作 {{count}} 个用户",
     "ban": "封禁",
     "unban": "解封",
     "default-password": "密码修改提示",
