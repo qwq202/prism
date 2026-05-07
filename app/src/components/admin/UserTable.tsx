@@ -79,7 +79,7 @@ import {
   DialogCancel,
 } from "@/components/ui/dialog.tsx";
 import { RadioBox } from "@/components/ui/radio-box.tsx";
-import { formReducer } from "@/utils/form.ts";
+import { formReducer, isEmailValid } from "@/utils/form.ts";
 import { Separator } from "@/components/ui/separator.tsx";
 import { toast } from "sonner";
 import { Badge } from "../ui/badge";
@@ -461,10 +461,42 @@ function UserTable() {
   };
 
   async function createUser() {
+    const username = createForm.username.trim();
+    const email = createForm.email.trim();
+    const password = createForm.password.trim();
+
+    if (!username || !email || !password) {
+      toast.error(t("admin.operate-failed"), {
+        description: t("admin.add-user-required"),
+      });
+      return;
+    }
+
+    if (username.length < 2 || username.length > 24) {
+      toast.error(t("admin.operate-failed"), {
+        description: t("admin.add-user-username-invalid"),
+      });
+      return;
+    }
+
+    if (!isEmailValid(email)) {
+      toast.error(t("admin.operate-failed"), {
+        description: t("auth.invalid-email"),
+      });
+      return;
+    }
+
+    if (password.length < 6 || password.length > 36) {
+      toast.error(t("admin.operate-failed"), {
+        description: t("admin.add-user-password-invalid"),
+      });
+      return;
+    }
+
     const resp = await createUserOperation(
-      createForm.username,
-      createForm.email,
-      createForm.password,
+      username,
+      email,
+      password,
     );
     doToast(t, resp);
 
