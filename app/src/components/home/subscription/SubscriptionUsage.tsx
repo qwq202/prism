@@ -94,6 +94,7 @@ function SubscriptionUsage({ name, usage, blockedBy, absoluteReset, fallbackRese
 
   const used = usage.used;
   const total = isInfinity ? "∞" : usage.total;
+  const hasFiniteTotal = !isInfinity && usage.total > 0;
   const remaining = isInfinity ? 0 : Math.max(0, usage.total - used);
 
   return (
@@ -107,12 +108,14 @@ function SubscriptionUsage({ name, usage, blockedBy, absoluteReset, fallbackRese
           ) : (
             <>
               <p>{t("sub.times-remaining", { remaining })}</p>
-              <p className="text-secondary !font-normal text-sm">/{total}</p>
+              {hasFiniteTotal && (
+                <p className="text-secondary !font-normal text-sm">/{total}</p>
+              )}
             </>
           )}
         </div>
       </div>
-      {!isInfinity && (
+      {hasFiniteTotal && (
         <ValuableProgress
           className="w-full h-2"
           value={remaining}
