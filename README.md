@@ -92,18 +92,17 @@
 > 运行成功后, 宿主机映射地址为 `http://localhost:8000`
 
 ```shell
-git clone --depth=1 --branch=main --single-branch https://github.com/coaidev/coai.git
-cd coai
-docker-compose up -d # 运行服务
-# 如需使用 stable 版本, 请使用 docker-compose -f docker-compose.stable.yaml up -d 替代
-# 如需使用 watchtower 自动更新, 请使用 docker-compose -f docker-compose.watch.yaml up -d 替代
+git clone --depth=1 --branch=main --single-branch https://github.com/qwq202/prism.git
+cd prism
+docker compose up -d # 运行服务
+# 如需使用 watchtower 自动更新, 请使用 docker compose -f docker-compose.watch.yaml up -d 替代
 ```
 
 版本更新（_开启 Watchtower 自动更新的情况下, 无需手动更新_）：
 ```shell
-docker-compose down
-docker-compose pull
-docker-compose up -d
+docker compose down
+docker compose pull
+docker compose up -d
 ```
 
 > - MySQL 数据库挂载目录项目 ~/**db**
@@ -115,21 +114,21 @@ docker-compose up -d
 > 运行成功后, 宿主机地址为 `http://localhost:8094`
 
 ```shell
-docker run -d --name coai \
+docker run -d --name prism \
    --network host \
    -v ~/config:/config \
    -v ~/logs:/logs \
    -v ~/storage:/storage \
    -e MYSQL_HOST=localhost \
    -e MYSQL_PORT=3306 \
-   -e MYSQL_DB=coai \
+   -e MYSQL_DB=prism \
    -e MYSQL_USER=root \
-   -e MYSQL_PASSWORD=chatnio123456 \
+   -e MYSQL_PASSWORD=your_mysql_password \
    -e REDIS_HOST=localhost \
    -e REDIS_PORT=6379 \
    -e SECRET=secret \
    -e SERVE_STATIC=true \
-   programzmh/chatnio:latest
+   qunqin45/prism:latest
 ```
 
 > - *--network host* 指使用宿主机网络, 使 Docker 容器使用宿主机的网络, 可自行修改
@@ -140,10 +139,11 @@ docker run -d --name coai \
 
 版本更新：
 ```shell
-docker stop coai
-docker rm coai
-docker pull programzmh/chatnio:latest
+docker stop prism
+docker rm prism
+docker pull qunqin45/prism:latest
 ```
+然后按上方 `docker run` 命令重新启动容器。
 
 ## ❓ 常见问题 Q&A
 1. **为什么我部署后的站点可以访问页面, 可以登录注册, 但是无法使用聊天 (一直在转圈)？**
@@ -155,8 +155,8 @@ docker pull programzmh/chatnio:latest
    - Redis: 存储用户快速鉴权信息, IP 速率限制, 订阅配额, 邮箱验证码等数据。
    - 环境未配置好的情况下, 会导致服务无法正常运行, 请确保你的 MySQL 和 Redis 服务已正常运行 (Docker 部署, 编译部署需自行搭建外部服务)。
 3. **我的机器为 ARM 架构, 该项目支持 ARM 架构吗？**
-   - 支持。CoAI.Dev 项目使用 BuildX 构建多架构镜像, 你可以直接使用 docker-compose 或 docker 运行, 无需额外配置。
-   - 如果你使用编译安装, 直接在 ARM 机器上编译即可, 无需欸外配置。如果你使用 x86 机器编译, 请使用 `GOARCH=arm64 go build -o chatnio` 进行交叉编译并上传至 ARM 机器上运行。
+   - 当前公开镜像 `qunqin45/prism:latest` 由 GitHub Actions 自动构建并发布 `linux/amd64` 版本。
+   - ARM 机器可在本机源码构建，或自行使用 BuildX 构建 `linux/arm64` 镜像；如果你使用 x86 机器编译, 请使用 `GOARCH=arm64 go build -o prism` 进行交叉编译并上传至 ARM 机器上运行。
 4. **如何修改 Root 默认密码？**
    - 请点击右上角头像或侧边栏底部用户框进入后台管理, 点击系统设置下常规设置操作栏的 修改 Root 密码 进行修改。或者选择在 用户管理 中选定 root 用户进行修改密码操作。
 5. **系统设置中的后端域名是什么？**

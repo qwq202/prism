@@ -29,7 +29,7 @@ services:
       - chatnio-network
 
   chatnio:
-      image: programzmh/chatnio
+      image: qunqin45/prism:latest
       container_name: chatnio
       restart: always
       ports:
