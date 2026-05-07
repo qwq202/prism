@@ -113,6 +113,7 @@ export type PlanItem = {
 export type Plan = {
   level: number;
   price: number;
+  sellable?: boolean;
   quota?: number;
   reset_interval?: number;
   weekly_quota?: number;

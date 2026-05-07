@@ -150,6 +150,11 @@ func BuySubscription(db *sql.DB, cache *redis.Client, user *User, level int, mon
 		return errors.New("invalid subscription params")
 	}
 
+	targetPlan := channel.PlanInstance.GetPlan(level)
+	if !targetPlan.IsSellable() {
+		return errors.New("subscription plan is not available for sale")
+	}
+
 	before := user.GetSubscriptionLevel(db)
 	if before == 0 || before == level {
 		// buy new subscription or renew subscription

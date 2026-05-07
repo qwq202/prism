@@ -48,7 +48,12 @@ import { useAllModels } from "@/admin/hook.tsx";
 import PopupDialog, { popupTypes } from "@/components/PopupDialog.tsx";
 import { PopupAlertDialog } from "@/components/PopupDialogComponent.tsx";
 import { getUniqueList } from "@/utils/base.ts";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs.tsx";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs.tsx";
 import { Label } from "@/components/ui/label.tsx";
 
 const planInitialConfig: PlanConfig = {
@@ -86,10 +91,20 @@ type PlanItemPayload = PlanLevelPayload & { index: number };
 type PlanConfigAction =
   | { type: "set"; payload: PlanConfig }
   | { type: "set-enabled"; payload: boolean }
+  | {
+      type: "set-plan-sellable";
+      payload: PlanLevelPayload & { sellable: boolean };
+    }
   | { type: "set-price"; payload: PlanLevelPayload & { price: number } }
   | { type: "set-plan-quota"; payload: PlanLevelPayload & { quota: number } }
-  | { type: "set-weekly-quota"; payload: PlanLevelPayload & { weeklyQuota: number } }
-  | { type: "set-plan-reset-interval"; payload: PlanLevelPayload & { resetInterval: number } }
+  | {
+      type: "set-weekly-quota";
+      payload: PlanLevelPayload & { weeklyQuota: number };
+    }
+  | {
+      type: "set-plan-reset-interval";
+      payload: PlanLevelPayload & { resetInterval: number };
+    }
   | { type: "set-item-id"; payload: PlanItemPayload & { id: string } }
   | { type: "set-item-name"; payload: PlanItemPayload & { name: string } }
   | { type: "set-item-value"; payload: PlanItemPayload & { value: number } }
@@ -99,10 +114,16 @@ type PlanConfigAction =
   | { type: "remove-item"; payload: PlanItemPayload }
   | { type: "upward-item"; payload: PlanItemPayload }
   | { type: "downward-item"; payload: PlanItemPayload }
-  | { type: "set-discount"; payload: PlanLevelPayload & { month: string; value: number } }
+  | {
+      type: "set-discount";
+      payload: PlanLevelPayload & { month: string; value: number };
+    }
   | { type: "remove-discount"; payload: PlanLevelPayload & { month: string } };
 
-function sanitizePlanConfigModels(config: PlanConfig, availableModels: string[]): PlanConfig {
+function sanitizePlanConfigModels(
+  config: PlanConfig,
+  availableModels: string[],
+): PlanConfig {
   if (availableModels.length === 0) return config;
   const availableSet = new Set(availableModels);
   let changed = false;
@@ -110,7 +131,9 @@ function sanitizePlanConfigModels(config: PlanConfig, availableModels: string[])
     let planChanged = false;
     const items = plan.items.map((item: PlanItem) => {
       const rawModels = item.models ?? [];
-      const filteredModels = getUniqueList(rawModels.filter((model) => availableSet.has(model)));
+      const filteredModels = getUniqueList(
+        rawModels.filter((model) => availableSet.has(model)),
+      );
       const sameModels =
         filteredModels.length === rawModels.length &&
         filteredModels.every((model, index) => model === rawModels[index]);
@@ -132,25 +155,40 @@ function reducer(state: PlanConfig, action: PlanConfigAction): PlanConfig {
       return action.payload;
     case "set-enabled":
       return { ...state, enabled: action.payload };
+    case "set-plan-sellable":
+      return {
+        ...state,
+        plans: state.plans.map((plan: Plan) =>
+          plan.level === action.payload.level
+            ? { ...plan, sellable: action.payload.sellable }
+            : plan,
+        ),
+      };
     case "set-price":
       return {
         ...state,
         plans: state.plans.map((plan: Plan) =>
-          plan.level === action.payload.level ? { ...plan, price: action.payload.price } : plan
+          plan.level === action.payload.level
+            ? { ...plan, price: action.payload.price }
+            : plan,
         ),
       };
     case "set-plan-quota":
       return {
         ...state,
         plans: state.plans.map((plan: Plan) =>
-          plan.level === action.payload.level ? { ...plan, quota: action.payload.quota } : plan
+          plan.level === action.payload.level
+            ? { ...plan, quota: action.payload.quota }
+            : plan,
         ),
       };
     case "set-weekly-quota":
       return {
         ...state,
         plans: state.plans.map((plan: Plan) =>
-          plan.level === action.payload.level ? { ...plan, weekly_quota: action.payload.weeklyQuota } : plan
+          plan.level === action.payload.level
+            ? { ...plan, weekly_quota: action.payload.weeklyQuota }
+            : plan,
         ),
       };
     case "set-plan-reset-interval":
@@ -159,7 +197,7 @@ function reducer(state: PlanConfig, action: PlanConfigAction): PlanConfig {
         plans: state.plans.map((plan: Plan) =>
           plan.level === action.payload.level
             ? { ...plan, reset_interval: action.payload.resetInterval }
-            : plan
+            : plan,
         ),
       };
     case "set-item-id":
@@ -170,10 +208,12 @@ function reducer(state: PlanConfig, action: PlanConfigAction): PlanConfig {
             ? {
                 ...plan,
                 items: plan.items.map((item: PlanItem, index: number) =>
-                  index === action.payload.index ? { ...item, id: action.payload.id } : item
+                  index === action.payload.index
+                    ? { ...item, id: action.payload.id }
+                    : item,
                 ),
               }
-            : plan
+            : plan,
         ),
       };
     case "set-item-name":
@@ -184,10 +224,12 @@ function reducer(state: PlanConfig, action: PlanConfigAction): PlanConfig {
             ? {
                 ...plan,
                 items: plan.items.map((item: PlanItem, index: number) =>
-                  index === action.payload.index ? { ...item, name: action.payload.name } : item
+                  index === action.payload.index
+                    ? { ...item, name: action.payload.name }
+                    : item,
                 ),
               }
-            : plan
+            : plan,
         ),
       };
     case "set-item-value":
@@ -198,10 +240,12 @@ function reducer(state: PlanConfig, action: PlanConfigAction): PlanConfig {
             ? {
                 ...plan,
                 items: plan.items.map((item: PlanItem, index: number) =>
-                  index === action.payload.index ? { ...item, value: action.payload.value } : item
+                  index === action.payload.index
+                    ? { ...item, value: action.payload.value }
+                    : item,
                 ),
               }
-            : plan
+            : plan,
         ),
       };
     case "set-item-icon":
@@ -212,10 +256,12 @@ function reducer(state: PlanConfig, action: PlanConfigAction): PlanConfig {
             ? {
                 ...plan,
                 items: plan.items.map((item: PlanItem, index: number) =>
-                  index === action.payload.index ? { ...item, icon: action.payload.icon } : item
+                  index === action.payload.index
+                    ? { ...item, icon: action.payload.icon }
+                    : item,
                 ),
               }
-            : plan
+            : plan,
         ),
       };
     case "add-item":
@@ -223,8 +269,14 @@ function reducer(state: PlanConfig, action: PlanConfigAction): PlanConfig {
         ...state,
         plans: state.plans.map((plan: Plan) =>
           plan.level === action.payload.level
-            ? { ...plan, items: [...plan.items, { id: "", name: "", value: 0, icon: "", models: [] }] }
-            : plan
+            ? {
+                ...plan,
+                items: [
+                  ...plan.items,
+                  { id: "", name: "", value: 0, icon: "", models: [] },
+                ],
+              }
+            : plan,
         ),
       };
     case "set-item-models":
@@ -235,10 +287,12 @@ function reducer(state: PlanConfig, action: PlanConfigAction): PlanConfig {
             ? {
                 ...plan,
                 items: plan.items.map((item: PlanItem, index: number) =>
-                  index === action.payload.index ? { ...item, models: action.payload.models } : item
+                  index === action.payload.index
+                    ? { ...item, models: action.payload.models }
+                    : item,
                 ),
               }
-            : plan
+            : plan,
         ),
       };
     case "remove-item":
@@ -246,8 +300,14 @@ function reducer(state: PlanConfig, action: PlanConfigAction): PlanConfig {
         ...state,
         plans: state.plans.map((plan: Plan) =>
           plan.level === action.payload.level
-            ? { ...plan, items: plan.items.filter((_: PlanItem, index: number) => index !== action.payload.index) }
-            : plan
+            ? {
+                ...plan,
+                items: plan.items.filter(
+                  (_: PlanItem, index: number) =>
+                    index !== action.payload.index,
+                ),
+              }
+            : plan,
         ),
       };
     case "upward-item":
@@ -257,7 +317,11 @@ function reducer(state: PlanConfig, action: PlanConfigAction): PlanConfig {
           if (plan.level !== action.payload.level) return plan;
           const items = [...plan.items];
           const index = action.payload.index;
-          if (index > 0) { const tmp = items[index]; items[index] = items[index - 1]; items[index - 1] = tmp; }
+          if (index > 0) {
+            const tmp = items[index];
+            items[index] = items[index - 1];
+            items[index - 1] = tmp;
+          }
           return { ...plan, items };
         }),
       };
@@ -268,7 +332,11 @@ function reducer(state: PlanConfig, action: PlanConfigAction): PlanConfig {
           if (plan.level !== action.payload.level) return plan;
           const items = [...plan.items];
           const index = action.payload.index;
-          if (index < items.length - 1) { const tmp = items[index]; items[index] = items[index + 1]; items[index + 1] = tmp; }
+          if (index < items.length - 1) {
+            const tmp = items[index];
+            items[index] = items[index + 1];
+            items[index + 1] = tmp;
+          }
           return { ...plan, items };
         }),
       };
@@ -277,7 +345,10 @@ function reducer(state: PlanConfig, action: PlanConfigAction): PlanConfig {
         ...state,
         plans: state.plans.map((plan: Plan) => {
           if (plan.level !== action.payload.level) return plan;
-          const discounts = { ...(plan.discounts || {}), [action.payload.month]: action.payload.value };
+          const discounts = {
+            ...(plan.discounts || {}),
+            [action.payload.month]: action.payload.value,
+          };
           return { ...plan, discounts };
         }),
       };
@@ -285,7 +356,8 @@ function reducer(state: PlanConfig, action: PlanConfigAction): PlanConfig {
       return {
         ...state,
         plans: state.plans.map((plan: Plan) => {
-          if (plan.level !== action.payload.level || !plan.discounts) return plan;
+          if (plan.level !== action.payload.level || !plan.discounts)
+            return plan;
           const discounts = { ...plan.discounts };
           delete discounts[action.payload.month];
           return { ...plan, discounts };
@@ -327,7 +399,12 @@ function BillingModeSelector({
           )}
         />
         <div className="min-w-0">
-          <p className={cn("text-sm font-medium truncate", !isPointsMode ? "text-primary" : "text-foreground")}>
+          <p
+            className={cn(
+              "text-sm font-medium truncate",
+              !isPointsMode ? "text-primary" : "text-foreground",
+            )}
+          >
             {t("admin.plan.mode-requests")}
           </p>
           <p className="text-xs text-muted-foreground truncate">
@@ -353,7 +430,14 @@ function BillingModeSelector({
           )}
         />
         <div className="min-w-0">
-          <p className={cn("text-sm font-medium truncate", isPointsMode ? "text-amber-600 dark:text-amber-400" : "text-foreground")}>
+          <p
+            className={cn(
+              "text-sm font-medium truncate",
+              isPointsMode
+                ? "text-amber-600 dark:text-amber-400"
+                : "text-foreground",
+            )}
+          >
             {t("admin.plan.mode-points")}
           </p>
           <p className="text-xs text-muted-foreground truncate">
@@ -374,7 +458,8 @@ function CreditsPoolSettings({
   formDispatch: React.Dispatch<PlanConfigAction>;
 }) {
   const { t } = useTranslation();
-  const hasWeeklyPool = (plan.weekly_quota ?? 0) > 0 || plan.weekly_quota === -1;
+  const hasWeeklyPool =
+    (plan.weekly_quota ?? 0) > 0 || plan.weekly_quota === -1;
 
   return (
     <div className="rounded-lg border border-amber-200/60 dark:border-amber-800/40 bg-amber-50/20 dark:bg-amber-950/10 overflow-hidden">
@@ -391,7 +476,10 @@ function CreditsPoolSettings({
             <div className="flex items-center justify-between h-5">
               <Label className="text-xs text-muted-foreground flex items-center gap-1">
                 {t("admin.plan.plan-quota")}
-                <Tips className="inline-block" content={t("admin.plan.plan-quota-tip")} />
+                <Tips
+                  className="inline-block"
+                  content={t("admin.plan.plan-quota-tip")}
+                />
               </Label>
             </div>
             <NumberInput
@@ -399,24 +487,37 @@ function CreditsPoolSettings({
               min={-1}
               acceptNegative={true}
               onValueChange={(value) =>
-                formDispatch({ type: "set-plan-quota", payload: { level: plan.level, quota: value } })
+                formDispatch({
+                  type: "set-plan-quota",
+                  payload: { level: plan.level, quota: value },
+                })
               }
             />
-            <p className="text-xs text-muted-foreground">{t("admin.plan.plan-quota-hint")}</p>
+            <p className="text-xs text-muted-foreground">
+              {t("admin.plan.plan-quota-hint")}
+            </p>
           </div>
 
           <div className="space-y-1.5">
             <div className="flex items-center justify-between h-5">
               <Label className="text-xs text-muted-foreground flex items-center gap-1">
                 {t("admin.plan.weekly-quota")}
-                <Tips className="inline-block" content={t("admin.plan.weekly-quota-tip")} />
+                <Tips
+                  className="inline-block"
+                  content={t("admin.plan.weekly-quota-tip")}
+                />
               </Label>
               <Switch
                 checked={hasWeeklyPool}
                 onCheckedChange={(checked) =>
                   formDispatch({
                     type: "set-weekly-quota",
-                    payload: { level: plan.level, weeklyQuota: checked ? getFinitePointQuota(plan.weekly_quota) : 0 },
+                    payload: {
+                      level: plan.level,
+                      weeklyQuota: checked
+                        ? getFinitePointQuota(plan.weekly_quota)
+                        : 0,
+                    },
                   })
                 }
               />
@@ -428,10 +529,15 @@ function CreditsPoolSettings({
                   min={-1}
                   acceptNegative={true}
                   onValueChange={(value) =>
-                    formDispatch({ type: "set-weekly-quota", payload: { level: plan.level, weeklyQuota: value } })
+                    formDispatch({
+                      type: "set-weekly-quota",
+                      payload: { level: plan.level, weeklyQuota: value },
+                    })
                   }
                 />
-                <p className="text-xs text-muted-foreground">{t("admin.plan.weekly-quota-hint")}</p>
+                <p className="text-xs text-muted-foreground">
+                  {t("admin.plan.weekly-quota-hint")}
+                </p>
               </>
             )}
           </div>
@@ -456,12 +562,30 @@ function PlanEditor({
 
   const handleModeSwitch = (mode: "requests" | "points") => {
     if (mode === "requests") {
-      formDispatch({ type: "set-plan-quota", payload: { level: plan.level, quota: 0 } });
-      formDispatch({ type: "set-weekly-quota", payload: { level: plan.level, weeklyQuota: 0 } });
+      formDispatch({
+        type: "set-plan-quota",
+        payload: { level: plan.level, quota: 0 },
+      });
+      formDispatch({
+        type: "set-weekly-quota",
+        payload: { level: plan.level, weeklyQuota: 0 },
+      });
     } else {
-      formDispatch({ type: "set-plan-quota", payload: { level: plan.level, quota: getFinitePointQuota(plan.quota) } });
-      formDispatch({ type: "set-plan-reset-interval", payload: { level: plan.level, resetInterval: 18000 } });
-      formDispatch({ type: "set-weekly-quota", payload: { level: plan.level, weeklyQuota: getFinitePointQuota(plan.weekly_quota) } });
+      formDispatch({
+        type: "set-plan-quota",
+        payload: { level: plan.level, quota: getFinitePointQuota(plan.quota) },
+      });
+      formDispatch({
+        type: "set-plan-reset-interval",
+        payload: { level: plan.level, resetInterval: 18000 },
+      });
+      formDispatch({
+        type: "set-weekly-quota",
+        payload: {
+          level: plan.level,
+          weeklyQuota: getFinitePointQuota(plan.weekly_quota),
+        },
+      });
     }
   };
 
@@ -471,10 +595,34 @@ function PlanEditor({
 
   return (
     <div className="space-y-5">
-      {/* ── Section 1: Billing Mode ── */}
-      <BillingModeSelector isPointsMode={isPointsMode} onSwitch={handleModeSwitch} />
+      {/* ── Section 1: Sale Status ── */}
+      <div className="flex items-start justify-between gap-4 rounded-lg border bg-muted/20 p-4">
+        <div className="space-y-1">
+          <Label className="text-sm font-medium">
+            {t("admin.plan.sellable")}
+          </Label>
+          <p className="text-xs text-muted-foreground">
+            {t("admin.plan.sellable-tip")}
+          </p>
+        </div>
+        <Switch
+          checked={plan.sellable !== false}
+          onCheckedChange={(checked) =>
+            formDispatch({
+              type: "set-plan-sellable",
+              payload: { level: plan.level, sellable: checked },
+            })
+          }
+        />
+      </div>
 
-      {/* ── Section 2: Pricing & Quotas ── */}
+      {/* ── Section 2: Billing Mode ── */}
+      <BillingModeSelector
+        isPointsMode={isPointsMode}
+        onSwitch={handleModeSwitch}
+      />
+
+      {/* ── Section 3: Pricing & Quotas ── */}
       <div className="space-y-3">
         <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
           {t("admin.plan.price")}
@@ -485,12 +633,18 @@ function PlanEditor({
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground flex items-center gap-1">
                 {t("admin.plan.price")}
-                <Tips className="inline-block" content={t("admin.plan.price-tip")} />
+                <Tips
+                  className="inline-block"
+                  content={t("admin.plan.price-tip")}
+                />
               </Label>
               <NumberInput
                 value={plan.price}
                 onValueChange={(value) =>
-                  formDispatch({ type: "set-price", payload: { level: plan.level, price: value } })
+                  formDispatch({
+                    type: "set-price",
+                    payload: { level: plan.level, price: value },
+                  })
                 }
               />
             </div>
@@ -501,12 +655,18 @@ function PlanEditor({
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground flex items-center gap-1">
                 {t("admin.plan.price")}
-                <Tips className="inline-block" content={t("admin.plan.price-tip")} />
+                <Tips
+                  className="inline-block"
+                  content={t("admin.plan.price-tip")}
+                />
               </Label>
               <NumberInput
                 value={plan.price}
                 onValueChange={(value) =>
-                  formDispatch({ type: "set-price", payload: { level: plan.level, price: value } })
+                  formDispatch({
+                    type: "set-price",
+                    payload: { level: plan.level, price: value },
+                  })
                 }
               />
             </div>
@@ -514,7 +674,10 @@ function PlanEditor({
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground flex items-center gap-1">
                 {t("admin.plan.plan-reset")}
-                <Tips className="inline-block" content={t("admin.plan.plan-reset-tip")} />
+                <Tips
+                  className="inline-block"
+                  content={t("admin.plan.plan-reset-tip")}
+                />
               </Label>
               <Select
                 value={getPlanResetPreset(plan)}
@@ -523,7 +686,10 @@ function PlanEditor({
                     value === "custom"
                       ? Math.max(plan.reset_interval ?? 3600, 1)
                       : Number(value);
-                  formDispatch({ type: "set-plan-reset-interval", payload: { level: plan.level, resetInterval } });
+                  formDispatch({
+                    type: "set-plan-reset-interval",
+                    payload: { level: plan.level, resetInterval },
+                  });
                 }}
               >
                 <SelectTrigger>
@@ -545,7 +711,10 @@ function PlanEditor({
                   onValueChange={(value) =>
                     formDispatch({
                       type: "set-plan-reset-interval",
-                      payload: { level: plan.level, resetInterval: Math.max(1, Math.round(value * 3600)) },
+                      payload: {
+                        level: plan.level,
+                        resetInterval: Math.max(1, Math.round(value * 3600)),
+                      },
                     })
                   }
                 />
@@ -560,16 +729,22 @@ function PlanEditor({
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              {isPointsMode ? t("admin.plan.items-points-title") : t("admin.plan.items-requests-title")}
+              {isPointsMode
+                ? t("admin.plan.items-points-title")
+                : t("admin.plan.items-requests-title")}
             </h3>
             <p className="text-xs text-muted-foreground mt-0.5">
-              {isPointsMode ? t("admin.plan.items-points-desc") : t("admin.plan.items-requests-desc")}
+              {isPointsMode
+                ? t("admin.plan.items-points-desc")
+                : t("admin.plan.items-requests-desc")}
             </p>
           </div>
           <Button
             size="sm"
             variant="outline"
-            onClick={() => formDispatch({ type: "add-item", payload: { level: plan.level } })}
+            onClick={() =>
+              formDispatch({ type: "add-item", payload: { level: plan.level } })
+            }
           >
             <Plus className="h-3.5 w-3.5 mr-1" />
             {t("admin.plan.add-item")}
@@ -579,7 +754,11 @@ function PlanEditor({
         {plan.items.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 border border-dashed rounded-lg text-muted-foreground text-sm gap-1.5">
             <Plus className="h-6 w-6 opacity-30" />
-            <span>{t("admin.plan.no-items")}</span>
+            <span>
+              {isPointsMode
+                ? t("admin.plan.no-items-points")
+                : t("admin.plan.no-items")}
+            </span>
           </div>
         ) : (
           <div className="rounded-lg border overflow-hidden">
@@ -620,7 +799,14 @@ function PlanEditor({
                   <Input
                     value={item.id}
                     onChange={(e) =>
-                      formDispatch({ type: "set-item-id", payload: { level: plan.level, id: e.target.value, index } })
+                      formDispatch({
+                        type: "set-item-id",
+                        payload: {
+                          level: plan.level,
+                          id: e.target.value,
+                          index,
+                        },
+                      })
                     }
                     placeholder={t("admin.plan.item-id-placeholder")}
                     className="h-9 text-sm"
@@ -629,7 +815,14 @@ function PlanEditor({
                   <Input
                     value={item.name}
                     onChange={(e) =>
-                      formDispatch({ type: "set-item-name", payload: { level: plan.level, name: e.target.value, index } })
+                      formDispatch({
+                        type: "set-item-name",
+                        payload: {
+                          level: plan.level,
+                          name: e.target.value,
+                          index,
+                        },
+                      })
                     }
                     placeholder={t("admin.plan.item-name-placeholder")}
                     className="h-9 text-sm"
@@ -641,7 +834,10 @@ function PlanEditor({
                       min={-1}
                       acceptNegative={true}
                       onValueChange={(value) =>
-                        formDispatch({ type: "set-item-value", payload: { level: plan.level, value, index } })
+                        formDispatch({
+                          type: "set-item-value",
+                          payload: { level: plan.level, value, index },
+                        })
                       }
                       className="h-9 text-sm"
                     />
@@ -651,10 +847,17 @@ function PlanEditor({
                     align="start"
                     value={item.models}
                     onChange={(value: string[]) =>
-                      formDispatch({ type: "set-item-models", payload: { level: plan.level, models: value, index } })
+                      formDispatch({
+                        type: "set-item-models",
+                        payload: { level: plan.level, models: value, index },
+                      })
                     }
-                    placeholder={t("admin.plan.item-models-placeholder", { length: item.models.length })}
-                    searchPlaceholder={t("admin.plan.item-models-search-placeholder")}
+                    placeholder={t("admin.plan.item-models-placeholder", {
+                      length: item.models.length,
+                    })}
+                    searchPlaceholder={t(
+                      "admin.plan.item-models-search-placeholder",
+                    )}
                     list={availableModels}
                     className="w-full max-w-full h-9 text-sm"
                   />
@@ -664,7 +867,12 @@ function PlanEditor({
                       variant="ghost"
                       size="icon"
                       className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                      onClick={() => formDispatch({ type: "upward-item", payload: { level: plan.level, index } })}
+                      onClick={() =>
+                        formDispatch({
+                          type: "upward-item",
+                          payload: { level: plan.level, index },
+                        })
+                      }
                       disabled={index === 0}
                       title={t("upward")}
                     >
@@ -674,7 +882,12 @@ function PlanEditor({
                       variant="ghost"
                       size="icon"
                       className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                      onClick={() => formDispatch({ type: "downward-item", payload: { level: plan.level, index } })}
+                      onClick={() =>
+                        formDispatch({
+                          type: "downward-item",
+                          payload: { level: plan.level, index },
+                        })
+                      }
                       disabled={index === plan.items.length - 1}
                       title={t("downward")}
                     >
@@ -684,7 +897,12 @@ function PlanEditor({
                       variant="ghost"
                       size="icon"
                       className="h-7 w-7 text-destructive/70 hover:text-destructive hover:bg-destructive/10"
-                      onClick={() => formDispatch({ type: "remove-item", payload: { level: plan.level, index } })}
+                      onClick={() =>
+                        formDispatch({
+                          type: "remove-item",
+                          payload: { level: plan.level, index },
+                        })
+                      }
                       title={t("remove")}
                     >
                       <Trash2 className="h-3.5 w-3.5" />
@@ -708,18 +926,25 @@ function PlanEditor({
             const key = month.toString();
             const hasDiscount = plan.discounts?.[key] !== undefined;
             const discountValue = hasDiscount ? plan.discounts![key] : null;
-            const pct = discountValue !== null ? Math.round((1 - discountValue) * 100) : 0;
+            const pct =
+              discountValue !== null
+                ? Math.round((1 - discountValue) * 100)
+                : 0;
 
             return (
               <div
                 key={month}
                 className={cn(
                   "rounded-lg border p-2.5 transition-colors",
-                  hasDiscount ? "border-primary/30 bg-primary/5" : "bg-muted/10"
+                  hasDiscount
+                    ? "border-primary/30 bg-primary/5"
+                    : "bg-muted/10",
                 )}
               >
                 <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-xs font-medium">{t(`sub.time.${month}`)}</span>
+                  <span className="text-xs font-medium">
+                    {t(`sub.time.${month}`)}
+                  </span>
                   <Switch
                     checked={hasDiscount}
                     onCheckedChange={(checked) => {
@@ -727,10 +952,17 @@ function PlanEditor({
                         const defaultPct = DEFAULT_DISCOUNTS[month] ?? 0;
                         formDispatch({
                           type: "set-discount",
-                          payload: { level: plan.level, month: key, value: 1 - defaultPct / 100 },
+                          payload: {
+                            level: plan.level,
+                            month: key,
+                            value: 1 - defaultPct / 100,
+                          },
                         });
                       } else {
-                        formDispatch({ type: "remove-discount", payload: { level: plan.level, month: key } });
+                        formDispatch({
+                          type: "remove-discount",
+                          payload: { level: plan.level, month: key },
+                        });
                       }
                     }}
                   />
@@ -749,7 +981,11 @@ function PlanEditor({
                       onValueChange={(value) =>
                         formDispatch({
                           type: "set-discount",
-                          payload: { level: plan.level, month: key, value: 1 - value / 100 },
+                          payload: {
+                            level: plan.level,
+                            month: key,
+                            value: 1 - value / 100,
+                          },
                         })
                       }
                       className="h-7 text-xs"
@@ -801,7 +1037,8 @@ function PlanConfig() {
     if (payload !== (data ?? form)) formDispatch({ type: "set", payload });
     const res = await setPlanConfig(payload);
     withNotify(t, res, true);
-    if (res.status) dispatchSubscriptionData(dispatch, payload.enabled ? payload.plans : []);
+    if (res.status)
+      dispatchSubscriptionData(dispatch, payload.enabled ? payload.plans : []);
   };
 
   useEffectAsync(async () => await refresh(true), []);
@@ -860,7 +1097,10 @@ function PlanConfig() {
                 formDispatch({ type: "set-enabled", payload: checked })
               }
             />
-            <Label htmlFor="plan-enable" className="text-sm font-medium cursor-pointer select-none">
+            <Label
+              htmlFor="plan-enable"
+              className="text-sm font-medium cursor-pointer select-none"
+            >
               {t("admin.plan.enable")}
             </Label>
           </div>
@@ -878,7 +1118,9 @@ function PlanConfig() {
               onClick={() => refresh()}
               title={t("admin.plan.sync")}
             >
-              <RotateCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
+              <RotateCw
+                className={cn("h-3.5 w-3.5", loading && "animate-spin")}
+              />
             </Button>
 
             <Button size="sm" onClick={() => save()} loading={true}>
@@ -895,15 +1137,28 @@ function PlanConfig() {
               {activePlans.map((plan) => {
                 const isPoints = hasPlanPointPool(plan);
                 return (
-                  <TabsTrigger key={plan.level} value={plan.level.toString()} className="gap-1.5">
+                  <TabsTrigger
+                    key={plan.level}
+                    value={plan.level.toString()}
+                    className="gap-1.5"
+                  >
                     <span>{t(`sub.${getPlanName(plan.level)}`)}</span>
-                    <span className={cn(
-                      "text-[10px] font-normal px-1.5 py-0.5 rounded",
-                      isPoints
-                        ? "text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30"
-                        : "text-muted-foreground bg-muted",
-                    )}>
-                      {isPoints ? t("admin.plan.mode-points-short") : t("admin.plan.mode-requests-short")}
+                    {plan.sellable === false && (
+                      <span className="text-[10px] font-normal px-1.5 py-0.5 rounded text-muted-foreground bg-muted">
+                        {t("admin.plan.sellable-off")}
+                      </span>
+                    )}
+                    <span
+                      className={cn(
+                        "text-[10px] font-normal px-1.5 py-0.5 rounded",
+                        isPoints
+                          ? "text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30"
+                          : "text-muted-foreground bg-muted",
+                      )}
+                    >
+                      {isPoints
+                        ? t("admin.plan.mode-points-short")
+                        : t("admin.plan.mode-requests-short")}
                     </span>
                   </TabsTrigger>
                 );
@@ -911,7 +1166,11 @@ function PlanConfig() {
             </TabsList>
 
             {activePlans.map((plan) => (
-              <TabsContent key={plan.level} value={plan.level.toString()} className="mt-4">
+              <TabsContent
+                key={plan.level}
+                value={plan.level.toString()}
+                className="mt-4"
+              >
                 <PlanEditor
                   plan={plan}
                   availableModels={availableModels}

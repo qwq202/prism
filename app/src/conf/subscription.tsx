@@ -15,11 +15,17 @@ export function getPlanModels(data: Plans, level: number): string[] {
   return getPlan(data, level).items.flatMap((item) => item.models);
 }
 
+export function hasPlanPointPool(plan: Plan): boolean {
+  return (plan.quota ?? 0) > 0 || plan.quota === -1;
+}
+
 export function includingModelFromPlan(
   data: Plans,
   level: number,
   model: string,
 ): boolean {
+  const plan = getPlan(data, level);
+  if (hasPlanPointPool(plan) && plan.items.length === 0) return true;
   return getPlanModels(data, level).includes(model);
 }
 
@@ -29,4 +35,8 @@ export function getPlanPrice(data: Plans, level: number): number {
 
 export function getPlanName(level: number): string {
   return subscriptionType[level] || "none";
+}
+
+export function isPlanSellable(plan: Plan): boolean {
+  return plan.sellable !== false;
 }

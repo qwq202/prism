@@ -36,14 +36,18 @@ import {
 import { subscriptionDataSelector } from "@/store/globals.ts";
 import { motion } from "framer-motion";
 import { useInView } from "react-intersection-observer";
-import { getPlan, getPlanName } from "@/conf/subscription.tsx";
+import {
+  getPlan,
+  getPlanName,
+  hasPlanPointPool,
+  isPlanSellable,
+} from "@/conf/subscription.tsx";
 import { Upgrade } from "@/components/home/subscription/UpgradePlan.tsx";
 import SubscriptionUsage from "@/components/home/subscription/SubscriptionUsage.tsx";
 import WalletQuotaBox from "@/routes/wallet/WalletQuotaBox.tsx";
 import ModelAvatar from "@/components/ModelAvatar";
 import Icon from "@/components/utils/Icon";
 import Tips from "@/components/Tips";
-import type { Plan } from "@/api/types.tsx";
 
 type SubscriptionUsageValue = {
   used: number;
@@ -54,10 +58,6 @@ type SubscriptionUsageValue = {
 };
 
 const pointResetInterval = 5 * 60 * 60;
-
-function hasPlanPointPool(plan: Plan): boolean {
-  return (plan.quota ?? 0) > 0 || plan.quota === -1;
-}
 
 function toSubscriptionUsage(
   value: unknown,
@@ -95,7 +95,10 @@ function toSubscriptionUsage(
   return null;
 }
 
-function getPlanResetLabel(t: (key: string) => string, resetInterval?: number): string {
+function getPlanResetLabel(
+  t: (key: string) => string,
+  resetInterval?: number,
+): string {
   const s = resetInterval ?? 0;
   if (s === 0) return t("admin.plan.plan-reset-18000");
   if (s === 18000) return t("admin.plan.plan-reset-18000");
@@ -105,8 +108,13 @@ function getPlanResetLabel(t: (key: string) => string, resetInterval?: number): 
   return `${hours}h`;
 }
 
-function normalizePointWindowUsage(usage: SubscriptionUsageValue | null, total: number): SubscriptionUsageValue {
-  const resetAt = new Date(Date.now() + pointResetInterval * 1000).toISOString();
+function normalizePointWindowUsage(
+  usage: SubscriptionUsageValue | null,
+  total: number,
+): SubscriptionUsageValue {
+  const resetAt = new Date(
+    Date.now() + pointResetInterval * 1000,
+  ).toISOString();
   if (!usage) {
     return {
       used: 0,
@@ -117,7 +125,11 @@ function normalizePointWindowUsage(usage: SubscriptionUsageValue | null, total: 
     };
   }
 
-  if (!usage.reset_interval || usage.reset_interval === 0 || usage.reset_interval > pointResetInterval) {
+  if (
+    !usage.reset_interval ||
+    usage.reset_interval === 0 ||
+    usage.reset_interval > pointResetInterval
+  ) {
     return {
       ...usage,
       reset_interval: pointResetInterval,
@@ -128,11 +140,16 @@ function normalizePointWindowUsage(usage: SubscriptionUsageValue | null, total: 
   return usage;
 }
 
-function getFallbackTimesUsage(usage: Record<string, number | SubscriptionUsageValue>): SubscriptionUsageValue {
+function getFallbackTimesUsage(
+  usage: Record<string, number | SubscriptionUsageValue>,
+): SubscriptionUsageValue {
   const entries = Object.entries(usage)
     .filter(([id]) => id !== "plan_points" && id !== "plan_points_weekly")
     .map(([, value]) => toSubscriptionUsage(value, 0))
-    .filter((value): value is SubscriptionUsageValue => value !== null && value.unit !== "points");
+    .filter(
+      (value): value is SubscriptionUsageValue =>
+        value !== null && value.unit !== "points",
+    );
 
   if (entries.some((value) => value.total === -1)) {
     return {
@@ -203,7 +220,16 @@ function PlanItem({ level, isYearly }: PlanItemProps) {
     return isYearly ? 20 : 0;
   }, [subscriptionData, level, isYearly]);
 
-  const iconEl = level === 1 ? <Zap /> : level === 2 ? <Rocket /> : level === 3 ? <Crown /> : <Star />;
+  const iconEl =
+    level === 1 ? (
+      <Zap />
+    ) : level === 2 ? (
+      <Rocket />
+    ) : level === 3 ? (
+      <Crown />
+    ) : (
+      <Star />
+    );
 
   return (
     <motion.div
@@ -225,17 +251,16 @@ function PlanItem({ level, isYearly }: PlanItemProps) {
       )}
 
       {/* Header */}
-      <div className={cn(
-        "px-5 pt-5 pb-4",
-        isHighlight && "pt-6",
-      )}>
+      <div className={cn("px-5 pt-5 pb-4", isHighlight && "pt-6")}>
         <div className="flex items-center gap-2.5 mb-3">
           <Icon
             icon={iconEl}
             className={cn("w-8 h-8 p-1.5 rounded-lg", {
-              "bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400": level === 1,
+              "bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400":
+                level === 1,
               "bg-primary/10 text-primary": level === 2,
-              "bg-amber-50 text-amber-500 dark:bg-amber-900/20 dark:text-amber-400": level === 3,
+              "bg-amber-50 text-amber-500 dark:bg-amber-900/20 dark:text-amber-400":
+                level === 3,
               "bg-muted text-muted-foreground": level === 0,
             })}
           />
@@ -244,7 +269,9 @@ function PlanItem({ level, isYearly }: PlanItemProps) {
 
         {/* Price */}
         <div className="flex items-baseline gap-0.5">
-          <span className="text-sm font-medium text-muted-foreground">{symbol}</span>
+          <span className="text-sm font-medium text-muted-foreground">
+            {symbol}
+          </span>
           <motion.span
             className="text-3xl font-bold tracking-tight"
             key={`${pricing}-${isYearly}`}
@@ -254,7 +281,9 @@ function PlanItem({ level, isYearly }: PlanItemProps) {
           >
             {pricing}
           </motion.span>
-          <span className="text-sm text-muted-foreground ml-0.5">/{t("sub.month")}</span>
+          <span className="text-sm text-muted-foreground ml-0.5">
+            /{t("sub.month")}
+          </span>
           {discountPercent > 0 && (
             <span className="ml-auto text-[11px] font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200/60 dark:border-emerald-800/40 px-1.5 py-0.5 rounded">
               {t("sub.year-earn-tip", { percent: `${discountPercent}%` })}
@@ -280,9 +309,13 @@ function PlanItem({ level, isYearly }: PlanItemProps) {
               <span className="text-xs font-medium text-amber-700 dark:text-amber-400">
                 {t("sub.plan-points-pool")}
               </span>
-              <span className="text-amber-300 dark:text-amber-700 text-xs mx-0.5">/</span>
+              <span className="text-amber-300 dark:text-amber-700 text-xs mx-0.5">
+                /
+              </span>
               <span className="text-[11px] text-amber-600/70 dark:text-amber-500/70">
-                {t("sub.plan-points-reset", { period: getPlanResetLabel(t, plan.reset_interval) })}
+                {t("sub.plan-points-reset", {
+                  period: getPlanResetLabel(t, plan.reset_interval),
+                })}
               </span>
             </div>
             <div>
@@ -291,18 +324,28 @@ function PlanItem({ level, isYearly }: PlanItemProps) {
                 <Tips content={t("sub.including-model-tip")} />
               </p>
               <div className="flex flex-wrap gap-1.5">
-                {plan.items.map((item, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center gap-1.5 pl-1 pr-2.5 py-1 rounded-full border border-border/60 bg-muted/30 text-xs"
-                  >
-                    <ModelAvatar
-                      model={{ id: item.id, name: item.name, avatar: item.icon }}
-                      size={16}
-                    />
-                    <span>{item.name}</span>
+                {plan.items.length === 0 ? (
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-border/60 bg-muted/30 text-xs">
+                    {t("sub.all-models")}
                   </div>
-                ))}
+                ) : (
+                  plan.items.map((item, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center gap-1.5 pl-1 pr-2.5 py-1 rounded-full border border-border/60 bg-muted/30 text-xs"
+                    >
+                      <ModelAvatar
+                        model={{
+                          id: item.id,
+                          name: item.name,
+                          avatar: item.icon,
+                        }}
+                        size={16}
+                      />
+                      <span>{item.name}</span>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </div>
@@ -313,15 +356,14 @@ function PlanItem({ level, isYearly }: PlanItemProps) {
               <Tips content={t("sub.including-model-tip")} />
             </p>
             {plan.items.map((item, index) => (
-              <div
-                key={index}
-                className="flex items-center py-1.5"
-              >
+              <div key={index} className="flex items-center py-1.5">
                 <ModelAvatar
                   model={{ id: item.id, name: item.name, avatar: item.icon }}
                   size={20}
                 />
-                <span className="text-sm ml-2 mr-auto truncate">{item.name}</span>
+                <span className="text-sm ml-2 mr-auto truncate">
+                  {item.name}
+                </span>
                 <span className="text-sm font-medium tabular-nums shrink-0">
                   {item.value !== -1
                     ? t("sub.plan-item-usage", { times: item.value })
@@ -364,6 +406,11 @@ function WalletPlanBox() {
   );
 
   const enablePlanFlag = subscriptionData.length > 0;
+  const sellablePlans = useMemo(
+    () =>
+      subscriptionData.filter((plan) => plan.level > 0 && isPlanSellable(plan)),
+    [subscriptionData],
+  );
 
   if (!enablePlanFlag) {
     return null;
@@ -381,7 +428,9 @@ function WalletPlanBox() {
       <div className="px-5 pt-5 pb-4 space-y-3">
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-xs text-muted-foreground mb-1">{t("sub.dialog-title")}</p>
+            <p className="text-xs text-muted-foreground mb-1">
+              {t("sub.dialog-title")}
+            </p>
             <div className="flex items-center gap-2">
               <Icon
                 icon={isSubscribed ? <BadgeCheck /> : <BadgeMinus />}
@@ -392,7 +441,9 @@ function WalletPlanBox() {
                     : "text-muted-foreground fill-muted-foreground/20",
                 )}
               />
-              <span className="text-xl font-semibold">{t(`sub.${planName}`)}</span>
+              <span className="text-xl font-semibold">
+                {t(`sub.${planName}`)}
+              </span>
             </div>
           </div>
         </div>
@@ -433,11 +484,15 @@ function WalletPlanBox() {
                 <div className="flex items-center gap-3 mr-auto">
                   <CalendarClock className="h-5 w-5 stroke-[1.5] text-muted-foreground shrink-0 !rotate-0" />
                   <div className="text-left">
-                    <h3 className="text-sm font-medium">{t("sub.quota-manage")}</h3>
+                    <h3 className="text-sm font-medium">
+                      {t("sub.quota-manage")}
+                    </h3>
                     <p className="text-xs text-muted-foreground">
                       {t("sub.expired-days", { days: expired })}
                       {refresh > 0 && (
-                        <span className="ml-2">{t("sub.refresh-days", { refresh_days: refresh })}</span>
+                        <span className="ml-2">
+                          {t("sub.refresh-days", { refresh_days: refresh })}
+                        </span>
                       )}
                     </p>
                   </div>
@@ -453,7 +508,10 @@ function WalletPlanBox() {
                     />
                   )}
                   {plan.items.map((item, index) => {
-                    const itemUsage = toSubscriptionUsage(usage?.[item.id], item.value) ?? {
+                    const itemUsage = toSubscriptionUsage(
+                      usage?.[item.id],
+                      item.value,
+                    ) ?? {
                       used: 0,
                       total: item.value,
                       unit: "times" as const,
@@ -471,9 +529,16 @@ function WalletPlanBox() {
                     if (!hasPlanPointPool(plan)) return null;
                     const planQuota = plan.quota ?? 0;
                     const weeklyQuota = plan.weekly_quota ?? 0;
-                    const hasWeekly = weeklyQuota > 0 || plan.weekly_quota === -1;
-                    const pointUsage = normalizePointWindowUsage(toSubscriptionUsage(usage?.plan_points, planQuota), planQuota);
-                    const weeklyUsage = toSubscriptionUsage(usage?.plan_points_weekly, weeklyQuota);
+                    const hasWeekly =
+                      weeklyQuota > 0 || plan.weekly_quota === -1;
+                    const pointUsage = normalizePointWindowUsage(
+                      toSubscriptionUsage(usage?.plan_points, planQuota),
+                      planQuota,
+                    );
+                    const weeklyUsage = toSubscriptionUsage(
+                      usage?.plan_points_weekly,
+                      weeklyQuota,
+                    );
                     const weeklyName = t("sub.plan-points-weekly");
                     const weeklyExhausted =
                       hasWeekly &&
@@ -486,7 +551,9 @@ function WalletPlanBox() {
                           name={t("sub.plan-points")}
                           usage={pointUsage}
                           blockedBy={weeklyExhausted ? weeklyName : undefined}
-                          fallbackResetLabel={t("sub.plan-points-reset", { period: getPlanResetLabel(t, plan.reset_interval) })}
+                          fallbackResetLabel={t("sub.plan-points-reset", {
+                            period: getPlanResetLabel(t, plan.reset_interval),
+                          })}
                         />
                         {hasWeekly && (
                           <SubscriptionUsage
@@ -499,7 +566,9 @@ function WalletPlanBox() {
                               }
                             }
                             absoluteReset
-                            fallbackResetLabel={t("sub.plan-points-weekly-reset")}
+                            fallbackResetLabel={t(
+                              "sub.plan-points-weekly-reset",
+                            )}
                           />
                         )}
                       </div>
@@ -514,37 +583,59 @@ function WalletPlanBox() {
 
       {/* Period toggle + Plans grid */}
       <div className="px-5 pb-5">
-        <div className="flex justify-center mb-4">
-          <Tabs
-            value={isYearly ? "yearly" : "monthly"}
-            onValueChange={(value) => setIsYearly(value === "yearly")}
-          >
-            <TabsList>
-              <TabsTrigger value="monthly" className="w-[7rem] justify-center">{t("sub.month-plan")}</TabsTrigger>
-              <TabsTrigger value="yearly" className="relative w-[7rem] justify-center">
-                {t("sub.year-plan")}
-                {(() => {
-                  const firstPlan = subscriptionData.find((p) => p.level > 0);
-                  let discountPercent = 20;
-                  if (firstPlan && firstPlan.discounts && firstPlan.discounts["12"] !== undefined) {
-                    discountPercent = Math.round((1 - firstPlan.discounts["12"]) * 100);
-                  }
-                  return discountPercent > 0 ? (
-                    <span className="absolute -top-2 -right-2 text-[10px] font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200/60 dark:border-emerald-800/40 px-1 py-0 rounded-full leading-5">
-                      -{discountPercent}%
-                    </span>
-                  ) : null;
-                })()}
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </div>
+        {sellablePlans.length > 0 && (
+          <div className="flex justify-center mb-4">
+            <Tabs
+              value={isYearly ? "yearly" : "monthly"}
+              onValueChange={(value) => setIsYearly(value === "yearly")}
+            >
+              <TabsList>
+                <TabsTrigger
+                  value="monthly"
+                  className="w-[7rem] justify-center"
+                >
+                  {t("sub.month-plan")}
+                </TabsTrigger>
+                <TabsTrigger
+                  value="yearly"
+                  className="relative w-[7rem] justify-center"
+                >
+                  {t("sub.year-plan")}
+                  {(() => {
+                    const firstPlan = sellablePlans[0];
+                    let discountPercent = 20;
+                    if (
+                      firstPlan &&
+                      firstPlan.discounts &&
+                      firstPlan.discounts["12"] !== undefined
+                    ) {
+                      discountPercent = Math.round(
+                        (1 - firstPlan.discounts["12"]) * 100,
+                      );
+                    }
+                    return discountPercent > 0 ? (
+                      <span className="absolute -top-2 -right-2 text-[10px] font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200/60 dark:border-emerald-800/40 px-1 py-0 rounded-full leading-5">
+                        -{discountPercent}%
+                      </span>
+                    ) : null;
+                  })()}
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+        )}
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {subscriptionData.map((item, index) => (
-            <PlanItem key={index} level={item.level} isYearly={isYearly} />
-          ))}
-        </div>
+        {sellablePlans.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {sellablePlans.map((item, index) => (
+              <PlanItem key={index} level={item.level} isYearly={isYearly} />
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-lg border border-dashed py-8 text-center text-sm text-muted-foreground">
+            {t("sub.no-sellable-plans")}
+          </div>
+        )}
       </div>
     </motion.div>
   );

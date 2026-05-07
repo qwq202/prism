@@ -22,6 +22,7 @@ type PlanManager struct {
 type Plan struct {
 	Level         int        `json:"level" mapstructure:"level"`
 	Price         float32    `json:"price" mapstructure:"price"`
+	Sellable      *bool      `json:"sellable,omitempty" mapstructure:"sellable"`
 	Quota         float32    `json:"quota,omitempty" mapstructure:"quota"`
 	ResetInterval int64      `json:"reset_interval,omitempty" mapstructure:"reset_interval"`
 	WeeklyQuota   float32    `json:"weekly_quota,omitempty" mapstructure:"weekly_quota"`
@@ -135,6 +136,10 @@ func (c *PlanManager) GetRawPlans() []Plan {
 
 func (c *PlanManager) IsEnabled() bool {
 	return c.Enabled
+}
+
+func (p *Plan) IsSellable() bool {
+	return p.Sellable == nil || *p.Sellable
 }
 
 func getOffsetFormat(offset time.Time, usage int64) string {
@@ -367,6 +372,10 @@ func (p *Plan) IsWeeklyPoolInfinity() bool {
 }
 
 func (p *Plan) IncludesModel(model string) bool {
+	if p.HasPointPool() && len(p.Items) == 0 {
+		return true
+	}
+
 	for _, item := range p.Items {
 		if utils.Contains(model, item.Models) {
 			return true
