@@ -2,8 +2,6 @@ name: Release App
 
 on:
   workflow_dispatch:
-  release:
-    types: [published]
 
 jobs:
   create-release:
