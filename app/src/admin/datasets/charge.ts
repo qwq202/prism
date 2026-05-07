@@ -22,35 +22,6 @@ export type PricingDataset = PricingItem[];
 
 export const pricing: PricingDataset = [
   {
-    models: [
-      "gpt-3.5-turbo",
-      "gpt-3.5-turbo-0301",
-      "gpt-3.5-turbo-0613",
-      "gpt-3.5-turbo-instruct",
-    ],
-    input: 0.0015,
-    output: 0.002,
-  },
-  {
-    models: ["gpt-3.5-turbo-1106"],
-    input: 0.001,
-    output: 0.002,
-  },
-  {
-    models: ["gpt-3.5-turbo-0125"],
-    input: 0.0005,
-    output: 0.0015,
-  },
-  {
-    models: [
-      "gpt-3.5-turbo-16k",
-      "gpt-3.5-turbo-16k-0301",
-      "gpt-3.5-turbo-16k-0613",
-    ],
-    input: 0.003,
-    output: 0.004,
-  },
-  {
     models: ["gpt-4", "gpt-4-0314", "gpt-4-0613"],
     input: 0.03,
     output: 0.06,
@@ -133,20 +104,6 @@ export const pricing: PricingDataset = [
     models: ["claude-3-opus-20240229"],
     input: 0.015,
     output: 0.075,
-  },
-  {
-    models: ["chat-bison-001"], // free marked as $0.001
-    output: 0.001,
-  },
-  {
-    models: [
-      "gemini-pro",
-      "gemini-pro-vision",
-      "gemini-1.5-pro-latest",
-      "gemini-1.5-flash-latest",
-    ],
-    input: 0.000125,
-    output: 0.000375,
   },
   {
     models: ["deepseek-v4-flash"],

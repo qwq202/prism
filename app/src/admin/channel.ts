@@ -82,15 +82,6 @@ export const ChannelInfos: Record<string, ChannelInfo> = {
     endpoint: "https://api.openai.com",
     format: "<api-key>",
     models: [
-      "gpt-3.5-turbo",
-      "gpt-3.5-turbo-instruct",
-      "gpt-3.5-turbo-0613",
-      "gpt-3.5-turbo-0301",
-      "gpt-3.5-turbo-1106",
-      "gpt-3.5-turbo-0125",
-      "gpt-3.5-turbo-16k",
-      "gpt-3.5-turbo-16k-0613",
-      "gpt-3.5-turbo-16k-0301",
       "gpt-4",
       "gpt-4-0314",
       "gpt-4-0613",
@@ -167,15 +158,6 @@ export const ChannelInfos: Record<string, ChannelInfo> = {
       "> 接入点填 **API Version**，如 2023-12-01-preview。\n" +
       "Azure 模型名称忽略点号等问题内部已经进行适配，无需额外任何设置。",
     models: [
-      "gpt-3.5-turbo",
-      "gpt-3.5-turbo-instruct",
-      "gpt-3.5-turbo-0613",
-      "gpt-3.5-turbo-0301",
-      "gpt-3.5-turbo-1106",
-      "gpt-3.5-turbo-0125",
-      "gpt-3.5-turbo-16k",
-      "gpt-3.5-turbo-16k-0613",
-      "gpt-3.5-turbo-16k-0301",
       "gpt-4",
       "gpt-4-0314",
       "gpt-4-0613",
@@ -254,12 +236,6 @@ export const ChannelInfos: Record<string, ChannelInfo> = {
     endpoint: "https://generativelanguage.googleapis.com",
     format: "<api-key>",
     models: [
-      "chat-bison-001",
-      "gemini-1.5-pro-002",
-      "gemini-1.5-flash-002",
-      "gemini-2.0-flash",
-      "gemini-2.0-flash-001",
-      "gemini-2.0-flash-lite",
       "gemini-2.5-flash",
       "gemini-2.5-flash-preview-09-2025",
       "gemini-2.5-pro",
@@ -274,8 +250,6 @@ export const ChannelInfos: Record<string, ChannelInfo> = {
       "gemini-3.1-pro-preview-customtools",
       "gemini-3.1-flash-lite-preview",
       "gemini-3.1-flash-image-preview",
-      "gemini-1.5-pro-latest",
-      "gemini-1.5-flash-latest",
     ],
     description:
       "> Google Gemini 密钥格式为 **api-key**，接入点填写 *https://generativelanguage.googleapis.com* 或其反代地址。 \n" +

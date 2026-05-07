@@ -1,7 +1,5 @@
 export const modelColorMapper: Record<string, string> = {
   // OpenAI & Azure OpenAI
-  "gpt-3.5-turbo": "green-500",
-  "gpt-3.5-turbo-16k": "green-600",
   "gpt-4": "purple-600",
 
   dalle: "green-600",
@@ -26,7 +24,6 @@ export const modelColorMapper: Record<string, string> = {
   stability: "gray-400",
 
   // Google Gemini & Gemma
-  "chat-bison-001": "red-500",
   palm: "red-500",
   gemini: "red-500",
   gemma: "red-500",
