@@ -530,10 +530,6 @@ function PlanEditor({
 
       {/* ── Section 2: Pricing & Quotas ── */}
       <div className="space-y-3">
-        <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-          {t("admin.plan.price")}
-        </h3>
-
         <div className="space-y-3">
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground flex items-center gap-1">
