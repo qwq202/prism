@@ -435,6 +435,8 @@ function UserTable() {
   }
 
   const allChecked = data.data.length > 0 && data.data.every((u) => selected.has(u.id));
+  const batchActionClass = "h-10 w-24 px-3 text-sm shrink-0";
+  const batchQuotaInputClass = "h-10 w-24 text-sm shrink-0";
 
   function toggleAll() {
     if (allChecked) {
@@ -673,6 +675,7 @@ function UserTable() {
           <Button
             size="sm"
             variant="destructive"
+            className={batchActionClass}
             onClick={() => executeBatch("ban")}
           >
             <Ban className="h-3.5 w-3.5 mr-1" />
@@ -681,13 +684,14 @@ function UserTable() {
           <Button
             size="sm"
             variant="outline"
+            className={batchActionClass}
             onClick={() => executeBatch("unban")}
           >
             {t("admin.unban")}
           </Button>
           <div className="flex items-center gap-1">
             <Input
-              className="w-20 h-8 text-sm"
+              className={batchQuotaInputClass}
               value={batchQuota}
               onChange={(e) =>
                 setBatchQuota(e.target.value.replace(/[^\d.]/g, ""))
@@ -696,6 +700,7 @@ function UserTable() {
             <Button
               size="sm"
               variant="outline"
+              className={batchActionClass}
               onClick={() => executeBatch("add_quota", Number(batchQuota))}
             >
               <PlusCircle className="h-3.5 w-3.5 mr-1" />
@@ -705,6 +710,7 @@ function UserTable() {
           <Button
             size="sm"
             variant="ghost"
+            className={batchActionClass}
             onClick={() => setSelected(new Set())}
           >
             {t("cancel")}
