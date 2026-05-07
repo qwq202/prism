@@ -29,7 +29,7 @@ services:
       - chatnio-network
 
   chatnio:
-    image: qunqin45/prism:latest
+    image: qunqin45/prism:${PRISM_IMAGE_TAG:-latest}
     container_name: chatnio
     restart: always
     ports:

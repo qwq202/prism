@@ -91,11 +91,24 @@
 > [!NOTE]
 > 运行成功后, 宿主机映射地址为 `http://localhost:8000`
 
+正式版适合生产环境和长期使用，预览版包含最新修复与实验性改动，适合提前验证已知问题修复。
+
+**部署正式版**
+
 ```shell
 git clone --depth=1 --branch=main --single-branch https://github.com/qwq202/prism.git
 cd prism
 docker compose up -d # 运行服务
 # 如需使用 watchtower 自动更新, 请使用 docker compose -f docker-compose.watch.yaml up -d 替代
+```
+
+**部署预览版**
+
+```shell
+git clone --depth=1 --branch=Preview --single-branch https://github.com/qwq202/prism.git prism-preview
+cd prism-preview
+PRISM_IMAGE_TAG=preview docker compose up -d # 运行预览版服务
+# 如需使用 watchtower 自动更新, 请使用 PRISM_IMAGE_TAG=preview docker compose -f docker-compose.watch.yaml up -d 替代
 ```
 
 版本更新（_开启 Watchtower 自动更新的情况下, 无需手动更新_）：
@@ -105,6 +118,14 @@ docker compose pull
 docker compose up -d
 ```
 
+预览版更新时请保留镜像标签：
+
+```shell
+docker compose down
+PRISM_IMAGE_TAG=preview docker compose pull
+PRISM_IMAGE_TAG=preview docker compose up -d
+```
+
 > - MySQL 数据库挂载目录项目 ~/**db**
 > - Redis 数据库挂载目录项目 ~/**redis**
 > - 配置文件挂载目录项目 ~/**config**
@@ -112,6 +133,8 @@ docker compose up -d
 ### ⚡ Docker 安装 (轻量运行时, 常用于外置 _MYSQL/RDS_ 服务)
 > [!NOTE]
 > 运行成功后, 宿主机地址为 `http://localhost:8094`
+
+正式版镜像为 `qunqin45/prism:latest`，预览版镜像为 `qunqin45/prism:preview`。下方示例默认使用正式版，如需预览版请把最后一行镜像标签改为 `qunqin45/prism:preview`。
 
 ```shell
 docker run -d --name prism \
@@ -143,7 +166,7 @@ docker stop prism
 docker rm prism
 docker pull qunqin45/prism:latest
 ```
-然后按上方 `docker run` 命令重新启动容器。
+预览版请改为 `docker pull qunqin45/prism:preview`。拉取完成后按上方 `docker run` 命令重新启动容器。
 
 ## ❓ 常见问题 Q&A
 1. **为什么我部署后的站点可以访问页面, 可以登录注册, 但是无法使用聊天 (一直在转圈)？**
@@ -155,7 +178,7 @@ docker pull qunqin45/prism:latest
    - Redis: 存储用户快速鉴权信息, IP 速率限制, 订阅配额, 邮箱验证码等数据。
    - 环境未配置好的情况下, 会导致服务无法正常运行, 请确保你的 MySQL 和 Redis 服务已正常运行 (Docker 部署, 编译部署需自行搭建外部服务)。
 3. **我的机器为 ARM 架构, 该项目支持 ARM 架构吗？**
-   - 当前公开镜像 `qunqin45/prism:latest` 由 GitHub Actions 自动构建并发布 `linux/amd64` 版本。
+   - 当前公开镜像 `qunqin45/prism:latest` 和 `qunqin45/prism:preview` 由 GitHub Actions 自动构建并发布 `linux/amd64` 版本。
    - ARM 机器可在本机源码构建，或自行使用 BuildX 构建 `linux/arm64` 镜像；如果你使用 x86 机器编译, 请使用 `GOARCH=arm64 go build -o prism` 进行交叉编译并上传至 ARM 机器上运行。
 4. **如何修改 Root 默认密码？**
    - 请点击右上角头像或侧边栏底部用户框进入后台管理, 点击系统设置下常规设置操作栏的 修改 Root 密码 进行修改。或者选择在 用户管理 中选定 root 用户进行修改密码操作。
