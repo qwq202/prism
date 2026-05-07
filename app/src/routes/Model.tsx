@@ -236,7 +236,9 @@ function PriceColumn({
           transition={{ type: "spring", stiffness: 300 }}
         >
           <Cloud className={iconClassName} />
-          <span className="flex-grow">{t("tag.badges.non-billing")}</span>
+          <span className="min-w-0 flex-grow truncate">
+            {t("tag.badges.non-billing")}
+          </span>
           <span className="text-2xs ml-1 px-1.5 bg-input/40 select-none rounded-sm">
             FREE
           </span>
@@ -250,7 +252,7 @@ function PriceColumn({
           transition={{ type: "spring", stiffness: 300 }}
         >
           <Cloud className={iconClassName} />
-          <span className="flex-grow">
+          <span className="min-w-0 flex-grow truncate">
             {t("tag.badges.times-billing", { price: output })}
           </span>
           <span className="text-2xs ml-1 px-1.5 bg-input/40 select-none rounded-sm">
@@ -270,7 +272,7 @@ function PriceColumn({
             transition={{ type: "spring", stiffness: 300 }}
           >
             <ArrowUpFromDot className={iconClassName} />
-            <span className="flex-grow">{inputValue}</span>
+            <span className="min-w-0 flex-grow truncate">{inputValue}</span>
             <span className="text-2xs ml-1 px-1.5 bg-input/40 select-none rounded-sm">
               {unitName}
             </span>
@@ -281,7 +283,7 @@ function PriceColumn({
             transition={{ type: "spring", stiffness: 300 }}
           >
             <ArrowDownToDot className={iconClassName} />
-            <span className="flex-grow">{outputValue}</span>
+            <span className="min-w-0 flex-grow truncate">{outputValue}</span>
             <span className="text-2xs ml-1 px-1.5 bg-input/40 select-none rounded-sm">
               {unitName}
             </span>
@@ -352,8 +354,11 @@ function ModelItem({
           >
             <ModelAvatar className={`model-avatar`} model={model} size={24} />
           </motion.div>
-          <div className={"flex flex-row items-center model-name mr-2"}>
-            {model.name}
+          <div
+            className={"flex flex-row items-center model-name mr-2"}
+            title={model.name}
+          >
+            <span className="model-name-text">{model.name}</span>
           </div>
           {/* <Tips
             content={model.id}
@@ -406,18 +411,19 @@ function ModelItem({
             ))}
         </div>
       </motion.div>
-      <motion.p
+      <motion.div
         className={`model-description text-sm my-1.5 ml-1`}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3, delay: index * 0.1 + 0.5 }}
+        title={[model.id, model.description].filter(Boolean).join(" ")}
       >
-        <div className="px-1.5 py-0.5 bg-primary/5 border rounded-md inline-block mr-1 text-xs text-muted-foreground">
+        <div className="model-id-badge px-1.5 py-0.5 bg-primary/5 border rounded-md mr-1 text-xs text-muted-foreground">
           <Tag className={`w-3 h-3 scale-90 mr-1 inline`} />
-          {model.id}
+          <span className="model-id-text">{model.id}</span>
         </div>
-        {model.description}
-      </motion.p>
+        <span className="model-description-text">{model.description}</span>
+      </motion.div>
 
       <div className={`flex-grow`} />
       {showPricing && model.price && (
