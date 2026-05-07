@@ -24,8 +24,8 @@ type Plan struct {
 	Price         float32    `json:"price" mapstructure:"price"`
 	Sellable      *bool      `json:"sellable,omitempty" mapstructure:"sellable"`
 	Quota         float32    `json:"quota,omitempty" mapstructure:"quota"`
-	ResetInterval int64      `json:"reset_interval,omitempty" mapstructure:"reset_interval"`
-	WeeklyQuota   float32    `json:"weekly_quota,omitempty" mapstructure:"weekly_quota"`
+	ResetInterval int64      `json:"reset_interval,omitempty" mapstructure:"resetinterval"`
+	WeeklyQuota   float32    `json:"weekly_quota,omitempty" mapstructure:"weeklyquota"`
 	Items         []PlanItem `json:"items" mapstructure:"items"`
 }
 

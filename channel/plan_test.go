@@ -12,6 +12,7 @@ import (
 
 	"github.com/alicebob/miniredis/v2"
 	"github.com/go-redis/redis/v8"
+	"github.com/spf13/viper"
 )
 
 type planTestUser struct {
@@ -45,6 +46,41 @@ func openPlanTestCache(t *testing.T) (*miniredis.Miniredis, *redis.Client) {
 	})
 
 	return server, cache
+}
+
+func TestPlanConfigReadsSavedWindowQuotaKeys(t *testing.T) {
+	conf := viper.New()
+	conf.SetConfigType("yaml")
+
+	if err := conf.ReadConfig(strings.NewReader(`
+subscription:
+  enabled: true
+  plans:
+    - level: 1
+      price: 0
+      quota: 20
+      resetinterval: 18000
+      weeklyquota: 200
+      items: []
+`)); err != nil {
+		t.Fatalf("read config: %v", err)
+	}
+
+	var manager PlanManager
+	if err := conf.UnmarshalKey("subscription", &manager); err != nil {
+		t.Fatalf("unmarshal subscription: %v", err)
+	}
+
+	if len(manager.Plans) != 1 {
+		t.Fatalf("expected 1 plan, got %d", len(manager.Plans))
+	}
+	plan := manager.Plans[0]
+	if plan.ResetInterval != int64((5 * time.Hour).Seconds()) {
+		t.Fatalf("expected reset interval 18000, got %d", plan.ResetInterval)
+	}
+	if plan.WeeklyQuota != 200 {
+		t.Fatalf("expected weekly quota 200, got %f", plan.WeeklyQuota)
+	}
 }
 
 func TestValidatePlanConfigModels(t *testing.T) {
