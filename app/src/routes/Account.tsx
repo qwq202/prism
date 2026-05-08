@@ -439,7 +439,6 @@ function Account() {
                     <DialogTrigger asChild>
                       <Button
                         variant="outline"
-                        size="default-sm"
                         className="flex flex-row items-center"
                       >
                         <Mail className="h-4 w-4 mr-1.5" />
@@ -507,7 +506,6 @@ function Account() {
                     <DialogTrigger asChild>
                       <Button
                         variant="outline"
-                        size="default-sm"
                         className="flex flex-row items-center"
                       >
                         <KeyRound className="h-4 w-4 mr-1.5" />
