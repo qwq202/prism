@@ -125,8 +125,9 @@ function Login() {
         });
       }
 
-      validateToken(globalDispatch, resp.token);
-      await router.navigate("/");
+      validateToken(globalDispatch, resp.token, async () => {
+        await router.navigate("/");
+      });
     } catch (err) {
       console.debug(err);
       toast.error(t("server-error"), {

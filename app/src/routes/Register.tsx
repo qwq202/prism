@@ -156,8 +156,9 @@ function Verify({ form, dispatch, setNext }: CompProps) {
       description: t("auth.register-success-prompt"),
     });
 
-    validateToken(globalDispatch, resp.token);
-    await router.navigate("/");
+    validateToken(globalDispatch, resp.token, async () => {
+      await router.navigate("/");
+    });
   };
 
   const onVerify = async () => await sendCode(t, form.email, true);
