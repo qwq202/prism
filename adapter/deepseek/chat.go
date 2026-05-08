@@ -36,7 +36,7 @@ func (c *ChatInstance) GetHeader() map[string]string {
 
 func NewChatInstance(endpoint, apiKey string) *ChatInstance {
 	return &ChatInstance{
-		Endpoint:         endpoint,
+		Endpoint:         strings.TrimRight(strings.TrimSpace(endpoint), "/"),
 		ApiKey:           apiKey,
 		isFirstReasoning: true,
 	}
@@ -50,7 +50,12 @@ func NewChatInstanceFromConfig(conf globals.ChannelConfig) adaptercommon.Factory
 }
 
 func (c *ChatInstance) GetChatEndpoint() string {
-	return fmt.Sprintf("%s/chat/completions", c.GetEndpoint())
+	endpoint := c.GetEndpoint()
+	if strings.HasSuffix(endpoint, "/v1") || strings.Contains(endpoint, "api.deepseek.com") {
+		return fmt.Sprintf("%s/chat/completions", endpoint)
+	}
+
+	return fmt.Sprintf("%s/v1/chat/completions", endpoint)
 }
 
 func (c *ChatInstance) GetChatBody(props *adaptercommon.ChatProps, stream bool) interface{} {
@@ -290,12 +295,14 @@ func (c *ChatInstance) CreateChatRequest(props *adaptercommon.ChatProps) (string
 func (c *ChatInstance) CreateStreamChatRequest(props *adaptercommon.ChatProps, callback globals.Hook) error {
 	c.isFirstReasoning = true
 	c.isReasonOver = false
+	ticks := 0
 	err := utils.EventScanner(&utils.EventScannerProps{
 		Method:  "POST",
 		Uri:     c.GetChatEndpoint(),
 		Headers: c.GetHeader(),
 		Body:    c.GetChatBody(props, true),
 		Callback: func(data string) error {
+			ticks += 1
 			partial, err := c.ProcessLine(data)
 			if err != nil {
 				return err
@@ -312,6 +319,10 @@ func (c *ChatInstance) CreateStreamChatRequest(props *adaptercommon.ChatProps, c
 			return errors.New(fmt.Sprintf("deepseek error: %s (type: %s)", form.Error.Message, form.Error.Type))
 		}
 		return err.Error
+	}
+
+	if ticks == 0 {
+		return errors.New("no response")
 	}
 
 	return nil

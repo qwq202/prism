@@ -8,6 +8,30 @@ import (
 	"testing"
 )
 
+func TestGetChatEndpointNormalizesCustomRelay(t *testing.T) {
+	instance := NewChatInstance("https://api.example.com/", "secret")
+	if got := instance.GetChatEndpoint(); got != "https://api.example.com/v1/chat/completions" {
+		t.Fatalf("unexpected custom relay endpoint: %s", got)
+	}
+
+	instance = NewChatInstance("https://api.example.com/v1", "secret")
+	if got := instance.GetChatEndpoint(); got != "https://api.example.com/v1/chat/completions" {
+		t.Fatalf("unexpected custom v1 endpoint: %s", got)
+	}
+}
+
+func TestGetChatEndpointPreservesOfficialEndpoint(t *testing.T) {
+	instance := NewChatInstance("https://api.deepseek.com", "secret")
+	if got := instance.GetChatEndpoint(); got != "https://api.deepseek.com/chat/completions" {
+		t.Fatalf("unexpected official endpoint: %s", got)
+	}
+
+	instance = NewChatInstance("https://api.deepseek.com/v1", "secret")
+	if got := instance.GetChatEndpoint(); got != "https://api.deepseek.com/v1/chat/completions" {
+		t.Fatalf("unexpected official v1 endpoint: %s", got)
+	}
+}
+
 func TestGetChatBodyStripsUnsupportedParamsForDeepseekV4ThinkingByDefault(t *testing.T) {
 	instance := NewChatInstance("https://api.deepseek.com", "secret")
 	effort := "high"
