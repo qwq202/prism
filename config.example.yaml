@@ -27,6 +27,15 @@ system:
     username: ""
     password: ""
     from: ""
+  auth:
+    passkey:
+      enabled: false
+      rp_display_name: "Prism"
+      rp_id: ""
+      user_verification: preferred
+      authenticator_attachment: any
+      allow_insecure_origin: false
+      origins: ""
   search:
     api_key: ""
     max_results: 5

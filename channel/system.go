@@ -22,6 +22,7 @@ type ApiInfo struct {
 	Mail         bool     `json:"mail"`
 	Article      []string `json:"article"`
 	Generation   []string `json:"generation"`
+	CloseRelay   bool     `json:"close_relay"`
 	RelayPlan    bool     `json:"relay_plan"`
 	WebSearch    bool     `json:"web_search"`
 	HasTaskModel bool     `json:"has_task_model"`
@@ -78,6 +79,20 @@ type taskState struct {
 	Model string `json:"model" mapstructure:"model"`
 }
 
+type passkeyState struct {
+	Enabled                 bool   `json:"enabled" mapstructure:"enabled"`
+	RPDisplayName           string `json:"rp_display_name" mapstructure:"rp_display_name"`
+	RPID                    string `json:"rp_id" mapstructure:"rp_id"`
+	UserVerification        string `json:"user_verification" mapstructure:"user_verification"`
+	AuthenticatorAttachment string `json:"authenticator_attachment" mapstructure:"authenticator_attachment"`
+	AllowInsecureOrigin     bool   `json:"allow_insecure_origin" mapstructure:"allow_insecure_origin"`
+	Origins                 string `json:"origins" mapstructure:"origins"`
+}
+
+type authState struct {
+	Passkey passkeyState `json:"passkey" mapstructure:"passkey"`
+}
+
 type s3StorageState struct {
 	Endpoint       string `json:"endpoint" mapstructure:"endpoint"`
 	Region         string `json:"region" mapstructure:"region"`
@@ -116,6 +131,7 @@ type SystemConfig struct {
 	General generalState `json:"general" mapstructure:"general"`
 	Site    siteState    `json:"site" mapstructure:"site"`
 	Mail    mailState    `json:"mail" mapstructure:"mail"`
+	Auth    authState    `json:"auth" mapstructure:"auth"`
 	Search  SearchState  `json:"search" mapstructure:"search"`
 	Task    taskState    `json:"task" mapstructure:"task"`
 	Common  commonState  `json:"common" mapstructure:"common"`
@@ -195,6 +211,7 @@ func (c *SystemConfig) AsInfo() ApiInfo {
 		Mail:         c.IsMailValid(),
 		Article:      c.Common.Article,
 		Generation:   c.Common.Generation,
+		CloseRelay:   c.Site.CloseRelay,
 		RelayPlan:    c.Site.RelayPlan,
 		WebSearch:    strings.TrimSpace(globals.SearchApiKey) != "",
 		HasTaskModel: globals.GetTaskModel() != "",
@@ -205,6 +222,7 @@ func (c *SystemConfig) UpdateConfig(data *SystemConfig) error {
 	c.General = data.General
 	c.Site = data.Site
 	c.Mail = data.Mail
+	c.Auth = data.Auth
 	c.Search = data.Search
 	c.Task = data.Task
 	c.Common = data.Common
@@ -479,4 +497,56 @@ func (c *SystemConfig) AcceptImageStore() bool {
 
 func (c *SystemConfig) SupportRelayPlan() bool {
 	return c.Site.RelayPlan
+}
+
+func (c *SystemConfig) IsPasskeyEnabled() bool {
+	return c.Auth.Passkey.Enabled
+}
+
+func (c *SystemConfig) GetPasskeyRPDisplayName() string {
+	name := strings.TrimSpace(c.Auth.Passkey.RPDisplayName)
+	if name == "" {
+		return c.GetAppName()
+	}
+
+	return name
+}
+
+func (c *SystemConfig) GetPasskeyRPID() string {
+	return strings.TrimSpace(c.Auth.Passkey.RPID)
+}
+
+func (c *SystemConfig) GetPasskeyUserVerification() string {
+	switch strings.TrimSpace(c.Auth.Passkey.UserVerification) {
+	case "required", "preferred", "discouraged":
+		return c.Auth.Passkey.UserVerification
+	default:
+		return "preferred"
+	}
+}
+
+func (c *SystemConfig) GetPasskeyAuthenticatorAttachment() string {
+	switch strings.TrimSpace(c.Auth.Passkey.AuthenticatorAttachment) {
+	case "platform", "cross-platform":
+		return c.Auth.Passkey.AuthenticatorAttachment
+	default:
+		return "any"
+	}
+}
+
+func (c *SystemConfig) AllowPasskeyInsecureOrigin() bool {
+	return c.Auth.Passkey.AllowInsecureOrigin
+}
+
+func (c *SystemConfig) GetPasskeyOrigins() []string {
+	raw := strings.ReplaceAll(c.Auth.Passkey.Origins, ",", "\n")
+	lines := strings.Split(raw, "\n")
+	origins := make([]string, 0, len(lines))
+	for _, line := range lines {
+		if origin := strings.TrimSpace(line); origin != "" {
+			origins = append(origins, strings.TrimSuffix(origin, "/"))
+		}
+	}
+
+	return origins
 }

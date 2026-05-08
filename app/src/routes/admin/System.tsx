@@ -25,6 +25,7 @@ import { useMemo, useReducer, useState } from "react";
 import { formReducer } from "@/utils/form.ts";
 import { NumberInput } from "@/components/ui/number-input.tsx";
 import {
+  AuthenticationState,
   CommonState,
   commonWhiteList,
   GeneralState,
@@ -638,6 +639,172 @@ function Site({ data, dispatch, onChange }: CompProps<SiteState>) {
           onCheckedChange={(value) => {
             dispatch({ type: "update:site.auth_footer", value });
           }}
+        />
+      </ParagraphItem>
+      <ParagraphFooter>
+        <div className={`grow`} />
+        <Button
+          size={`sm`}
+          loading={true}
+          onClick={async () => await onChange()}
+        >
+          {t("admin.system.save")}
+        </Button>
+      </ParagraphFooter>
+    </Paragraph>
+  );
+}
+
+function Authentication({
+  data,
+  dispatch,
+  onChange,
+}: CompProps<AuthenticationState>) {
+  const { t } = useTranslation();
+  const passkey = data.passkey;
+
+  return (
+    <Paragraph
+      title={t("admin.system.authentication")}
+      configParagraph={true}
+      isCollapsed={true}
+    >
+      <ParagraphDescription border>
+        {t("admin.system.passkeyTip")}
+      </ParagraphDescription>
+      <ParagraphItem>
+        <Label>{t("admin.system.passkeyEnabled")}</Label>
+        <Switch
+          checked={passkey.enabled}
+          onCheckedChange={(value) => {
+            dispatch({ type: "update:auth.passkey.enabled", value });
+          }}
+        />
+      </ParagraphItem>
+      <ParagraphItem>
+        <Label>{t("admin.system.passkeyRpDisplayName")}</Label>
+        <Input
+          value={passkey.rp_display_name}
+          onChange={(e) =>
+            dispatch({
+              type: "update:auth.passkey.rp_display_name",
+              value: e.target.value,
+            })
+          }
+          placeholder={t("admin.system.passkeyRpDisplayNamePlaceholder")}
+        />
+      </ParagraphItem>
+      <ParagraphItem>
+        <Label>{t("admin.system.passkeyRpId")}</Label>
+        <Input
+          value={passkey.rp_id}
+          onChange={(e) =>
+            dispatch({
+              type: "update:auth.passkey.rp_id",
+              value: e.target.value,
+            })
+          }
+          placeholder={t("admin.system.passkeyRpIdPlaceholder")}
+        />
+      </ParagraphItem>
+      <ParagraphItem>
+        <Label className={`flex flex-row items-center`}>
+          {t("admin.system.passkeyUserVerification")}
+          <Tips content={t("admin.system.passkeyUserVerificationTip")} />
+        </Label>
+        <Select
+          value={passkey.user_verification}
+          onValueChange={(value) => {
+            dispatch({
+              type: "update:auth.passkey.user_verification",
+              value,
+            });
+          }}
+        >
+          <SelectTrigger className={`select`}>
+            <SelectValue
+              placeholder={t(
+                `admin.system.passkeyUserVerificationModes.${passkey.user_verification}`,
+              )}
+            />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="required">
+              {t("admin.system.passkeyUserVerificationModes.required")}
+            </SelectItem>
+            <SelectItem value="preferred">
+              {t("admin.system.passkeyUserVerificationModes.preferred")}
+            </SelectItem>
+            <SelectItem value="discouraged">
+              {t("admin.system.passkeyUserVerificationModes.discouraged")}
+            </SelectItem>
+          </SelectContent>
+        </Select>
+      </ParagraphItem>
+      <ParagraphItem>
+        <Label className={`flex flex-row items-center`}>
+          {t("admin.system.passkeyAuthenticatorAttachment")}
+          <Tips content={t("admin.system.passkeyAuthenticatorAttachmentTip")} />
+        </Label>
+        <Select
+          value={passkey.authenticator_attachment}
+          onValueChange={(value) => {
+            dispatch({
+              type: "update:auth.passkey.authenticator_attachment",
+              value,
+            });
+          }}
+        >
+          <SelectTrigger className={`select`}>
+            <SelectValue
+              placeholder={t(
+                `admin.system.passkeyAuthenticatorAttachments.${passkey.authenticator_attachment}`,
+              )}
+            />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="any">
+              {t("admin.system.passkeyAuthenticatorAttachments.any")}
+            </SelectItem>
+            <SelectItem value="platform">
+              {t("admin.system.passkeyAuthenticatorAttachments.platform")}
+            </SelectItem>
+            <SelectItem value="cross-platform">
+              {t("admin.system.passkeyAuthenticatorAttachments.cross-platform")}
+            </SelectItem>
+          </SelectContent>
+        </Select>
+      </ParagraphItem>
+      <ParagraphItem>
+        <Label className={`flex flex-row items-center`}>
+          {t("admin.system.passkeyAllowInsecureOrigin")}
+          <Tips content={t("admin.system.passkeyAllowInsecureOriginTip")} />
+        </Label>
+        <Switch
+          checked={passkey.allow_insecure_origin}
+          onCheckedChange={(value) => {
+            dispatch({
+              type: "update:auth.passkey.allow_insecure_origin",
+              value,
+            });
+          }}
+        />
+      </ParagraphItem>
+      <ParagraphItem rowLayout={true}>
+        <Label className={`flex flex-row items-center`}>
+          {t("admin.system.passkeyOrigins")}
+          <Tips content={t("admin.system.passkeyOriginsTip")} />
+        </Label>
+        <Textarea
+          rows={5}
+          value={passkey.origins}
+          onChange={(e) =>
+            dispatch({
+              type: "update:auth.passkey.origins",
+              value: e.target.value,
+            })
+          }
+          placeholder={t("admin.system.passkeyOriginsPlaceholder")}
         />
       </ParagraphItem>
       <ParagraphFooter>
@@ -1380,6 +1547,12 @@ function System() {
           <Site
             form={data}
             data={data.site}
+            dispatch={setData}
+            onChange={doSaving}
+          />
+          <Authentication
+            form={data}
+            data={data.auth}
             dispatch={setData}
             onChange={doSaving}
           />

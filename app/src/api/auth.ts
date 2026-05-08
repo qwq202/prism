@@ -60,6 +60,100 @@ export type ResetResponse = {
   error: string;
 };
 
+export type AccountEmailForm = {
+  email: string;
+  code: string;
+};
+
+export type AccountPasswordForm = {
+  old_password: string;
+  password: string;
+};
+
+export type PasskeyCredentialInfo = {
+  id: number;
+  name: string;
+  created_at: string;
+};
+
+export type PasskeyCredentialDescriptor = {
+  type: "public-key";
+  id: string;
+};
+
+export type PasskeyRegistrationOptions = {
+  publicKey: {
+    challenge: string;
+    rp: {
+      name: string;
+      id?: string;
+    };
+    user: {
+      id: string;
+      name: string;
+      displayName: string;
+    };
+    pubKeyCredParams: PublicKeyCredentialParameters[];
+    timeout: number;
+    authenticatorSelection: {
+      authenticatorAttachment?: AuthenticatorAttachment;
+      userVerification: UserVerificationRequirement;
+    };
+    attestation: AttestationConveyancePreference;
+    excludeCredentials: PasskeyCredentialDescriptor[];
+  };
+};
+
+export type PasskeyListResponse = VerifyResponse & {
+  enabled: boolean;
+  credentials: PasskeyCredentialInfo[];
+};
+
+export type PasskeyRegistrationOptionsResponse = VerifyResponse & {
+  data?: PasskeyRegistrationOptions;
+};
+
+export type PasskeyRegistrationForm = {
+  name?: string;
+  id: string;
+  raw_id: string;
+  type: string;
+  client_data_json: string;
+  attestation_object: string;
+  transports: string[];
+};
+
+export type PasskeyLoginOptionsForm = {
+  username: string;
+};
+
+export type PasskeyAuthenticationOptions = {
+  publicKey: {
+    challenge: string;
+    timeout: number;
+    rpId?: string;
+    allowCredentials: Array<PasskeyCredentialDescriptor & {
+      transports?: AuthenticatorTransport[];
+    }>;
+    userVerification: UserVerificationRequirement;
+  };
+};
+
+export type PasskeyLoginOptionsResponse = VerifyResponse & {
+  data?: PasskeyAuthenticationOptions;
+};
+
+export type PasskeyLoginForm = {
+  username: string;
+  id: string;
+  raw_id: string;
+  type: string;
+  authenticator_data: string;
+  client_data_json: string;
+  signature: string;
+  user_handle?: string;
+};
+
 export type UserInfo = {
   id: number;
   register_days: number;
@@ -79,6 +173,35 @@ export async function doLogin(
 ): Promise<LoginResponse> {
   const response = await axios.post("/login", data);
   return response.data as LoginResponse;
+}
+
+export async function createPasskeyLoginOptions(
+  data: PasskeyLoginOptionsForm,
+): Promise<PasskeyLoginOptionsResponse> {
+  try {
+    const response = await axios.post("/login/passkey/options", data);
+    return response.data as PasskeyLoginOptionsResponse;
+  } catch (e) {
+    return {
+      status: false,
+      error: getErrorMessage(e),
+    };
+  }
+}
+
+export async function verifyPasskeyLogin(
+  data: PasskeyLoginForm,
+): Promise<LoginResponse> {
+  try {
+    const response = await axios.post("/login/passkey/verify", data);
+    return response.data as LoginResponse;
+  } catch (e) {
+    return {
+      status: false,
+      error: getErrorMessage(e),
+      token: "",
+    };
+  }
 }
 
 export async function doState(): Promise<StateResponse> {
@@ -123,6 +246,86 @@ export async function doReset(data: ResetForm): Promise<ResetResponse> {
   try {
     const response = await axios.post("/reset", data);
     return response.data as ResetResponse;
+  } catch (e) {
+    return {
+      status: false,
+      error: getErrorMessage(e),
+    };
+  }
+}
+
+export async function updateAccountEmail(
+  data: AccountEmailForm,
+): Promise<VerifyResponse> {
+  try {
+    const response = await axios.post("/account/email", data);
+    return response.data as VerifyResponse;
+  } catch (e) {
+    return {
+      status: false,
+      error: getErrorMessage(e),
+    };
+  }
+}
+
+export async function updateAccountPassword(
+  data: AccountPasswordForm,
+): Promise<VerifyResponse> {
+  try {
+    const response = await axios.post("/account/password", data);
+    return response.data as VerifyResponse;
+  } catch (e) {
+    return {
+      status: false,
+      error: getErrorMessage(e),
+    };
+  }
+}
+
+export async function listPasskeys(): Promise<PasskeyListResponse> {
+  try {
+    const response = await axios.get("/account/passkeys");
+    return response.data as PasskeyListResponse;
+  } catch (e) {
+    return {
+      status: false,
+      error: getErrorMessage(e),
+      enabled: false,
+      credentials: [],
+    };
+  }
+}
+
+export async function createPasskeyRegistrationOptions(): Promise<PasskeyRegistrationOptionsResponse> {
+  try {
+    const response = await axios.post("/account/passkeys/options");
+    return response.data as PasskeyRegistrationOptionsResponse;
+  } catch (e) {
+    return {
+      status: false,
+      error: getErrorMessage(e),
+    };
+  }
+}
+
+export async function registerPasskey(
+  data: PasskeyRegistrationForm,
+): Promise<VerifyResponse> {
+  try {
+    const response = await axios.post("/account/passkeys/register", data);
+    return response.data as VerifyResponse;
+  } catch (e) {
+    return {
+      status: false,
+      error: getErrorMessage(e),
+    };
+  }
+}
+
+export async function deletePasskey(id: number): Promise<VerifyResponse> {
+  try {
+    const response = await axios.delete(`/account/passkeys/${id}`);
+    return response.data as VerifyResponse;
   } catch (e) {
     return {
       status: false,

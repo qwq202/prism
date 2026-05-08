@@ -37,6 +37,16 @@ type ResetForm struct {
 	Password string `form:"password" binding:"required"`
 }
 
+type AccountEmailForm struct {
+	Email string `form:"email" binding:"required"`
+	Code  string `form:"code" binding:"required"`
+}
+
+type AccountPasswordForm struct {
+	OldPassword string `form:"old_password" json:"old_password" binding:"required"`
+	Password    string `form:"password" json:"password" binding:"required"`
+}
+
 type BuyForm struct {
 	Quota int `json:"quota" binding:"required"`
 }
@@ -266,6 +276,73 @@ func ResetAPI(c *gin.Context) {
 	})
 }
 
+func UpdateAccountEmailAPI(c *gin.Context) {
+	user := RequireAuth(c)
+	if user == nil {
+		return
+	}
+
+	var form AccountEmailForm
+	if err := c.ShouldBind(&form); err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"status": false,
+			"error":  "bad request",
+		})
+		return
+	}
+
+	if err := user.UpdateEmail(
+		c,
+		utils.GetDBFromContext(c),
+		utils.GetCacheFromContext(c),
+		form.Email,
+		form.Code,
+	); err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"status": false,
+			"error":  err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status": true,
+	})
+}
+
+func UpdateAccountPasswordAPI(c *gin.Context) {
+	user := RequireAuth(c)
+	if user == nil {
+		return
+	}
+
+	var form AccountPasswordForm
+	if err := c.ShouldBind(&form); err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"status": false,
+			"error":  "bad request",
+		})
+		return
+	}
+
+	if err := user.UpdatePasswordWithOldPassword(
+		utils.GetDBFromContext(c),
+		utils.GetCacheFromContext(c),
+		form.OldPassword,
+		form.Password,
+	); err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"status": false,
+			"error":  err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status": true,
+	})
+}
+
 func StateAPI(c *gin.Context) {
 	username := utils.GetUserFromContext(c)
 	c.JSON(http.StatusOK, gin.H{
@@ -306,6 +383,14 @@ func IndexAPI(c *gin.Context) {
 }
 
 func KeyAPI(c *gin.Context) {
+	if globals.CloseRelay {
+		c.JSON(http.StatusOK, gin.H{
+			"status": false,
+			"error":  "relay api is disabled",
+		})
+		return
+	}
+
 	user := GetUser(c)
 	if user == nil {
 		c.JSON(http.StatusOK, gin.H{
@@ -322,6 +407,14 @@ func KeyAPI(c *gin.Context) {
 }
 
 func ResetKeyAPI(c *gin.Context) {
+	if globals.CloseRelay {
+		c.JSON(http.StatusOK, gin.H{
+			"status": false,
+			"error":  "relay api is disabled",
+		})
+		return
+	}
+
 	user := GetUser(c)
 	if user == nil {
 		c.JSON(http.StatusOK, gin.H{
