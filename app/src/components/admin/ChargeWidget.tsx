@@ -53,6 +53,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table.tsx";
+import { Skeleton } from "@/components/ui/skeleton.tsx";
 import OperationAction from "@/components/OperationAction.tsx";
 import { Badge } from "@/components/ui/badge.tsx";
 import {
@@ -707,12 +708,59 @@ type ChargeTableProps = {
   onRefresh: () => void;
   unitM: boolean;
   setUnitM: (v: boolean | ((prev: boolean) => boolean)) => void;
+  loading: boolean;
 };
 
-function ChargeTable({ data, dispatch, onRefresh, unitM, setUnitM }: ChargeTableProps) {
+function ChargeTableSkeleton() {
+  return (
+    <>
+      {Array.from({ length: 6 }).map((_, index) => (
+        <TableRow
+          key={index}
+          className="pointer-events-none hover:bg-transparent"
+        >
+          <TableCell>
+            <Skeleton className="h-5 w-10" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-7 w-32 rounded-full" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-5 w-40" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-5 w-16" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-5 w-16" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-5 w-8" />
+          </TableCell>
+          <TableCell>
+            <div className="inline-flex flex-row flex-wrap gap-2">
+              <Skeleton className="h-9 w-9" />
+              <Skeleton className="h-9 w-9" />
+            </div>
+          </TableCell>
+        </TableRow>
+      ))}
+    </>
+  );
+}
+
+function ChargeTable({
+  data,
+  dispatch,
+  onRefresh,
+  unitM,
+  setUnitM,
+  loading,
+}: ChargeTableProps) {
   const { t } = useTranslation();
   const copy = useClipboard();
   const multiplier = unitM ? 1000 : 1;
+  const initialLoading = loading && data.length === 0;
 
   return (
     <div className={`charge-table`}>
@@ -747,66 +795,74 @@ function ChargeTable({ data, dispatch, onRefresh, unitM, setUnitM }: ChargeTable
           </TableRow>
         </TableHeader>
         <TableBody>
-          {data.map((charge, idx) => (
-            <TableRow key={idx}>
-              <TableCell className={`charge-id`}>{charge.id}</TableCell>
-              <TableCell>
-                <Badge className={`whitespace-nowrap`}>
-                  {t(`admin.charge.${charge.type}`)}
-                </Badge>
-              </TableCell>
-              <TableCell>
-                {charge.models.map((model, index) => (
-                  <p
-                    key={index}
-                    className={`whitespace-nowrap cursor-pointer`}
-                    onClick={() => copy(model)}
-                  >
-                    {model}
-                    <Copy className={`inline w-3 h-3 ml-1`} />
-                  </p>
-                ))}
-              </TableCell>
-              <TableCell>
-                {formatDecimal(parseFloat((charge.input * multiplier).toPrecision(10)))}
-              </TableCell>
-              <TableCell>
-                {formatDecimal(parseFloat((charge.output * multiplier).toPrecision(10)))}
-              </TableCell>
-              <TableCell>{t(String(charge.anonymous))}</TableCell>
-              <TableCell>
-                <div className={`inline-flex flex-row flex-wrap gap-2`}>
-                  <OperationAction
-                    tooltip={t("admin.channels.edit")}
-                    onClick={async () => {
-                      const props: ChargeProps = { ...charge };
-                      dispatch({ type: "set", payload: props });
+          {initialLoading ? (
+            <ChargeTableSkeleton />
+          ) : (
+            data.map((charge, idx) => (
+              <TableRow key={idx}>
+                <TableCell className={`charge-id`}>{charge.id}</TableCell>
+                <TableCell>
+                  <Badge className={`whitespace-nowrap`}>
+                    {t(`admin.charge.${charge.type}`)}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  {charge.models.map((model, index) => (
+                    <p
+                      key={index}
+                      className={`whitespace-nowrap cursor-pointer`}
+                      onClick={() => copy(model)}
+                    >
+                      {model}
+                      <Copy className={`inline w-3 h-3 ml-1`} />
+                    </p>
+                  ))}
+                </TableCell>
+                <TableCell>
+                  {formatDecimal(
+                    parseFloat((charge.input * multiplier).toPrecision(10)),
+                  )}
+                </TableCell>
+                <TableCell>
+                  {formatDecimal(
+                    parseFloat((charge.output * multiplier).toPrecision(10)),
+                  )}
+                </TableCell>
+                <TableCell>{t(String(charge.anonymous))}</TableCell>
+                <TableCell>
+                  <div className={`inline-flex flex-row flex-wrap gap-2`}>
+                    <OperationAction
+                      tooltip={t("admin.channels.edit")}
+                      onClick={async () => {
+                        const props: ChargeProps = { ...charge };
+                        dispatch({ type: "set", payload: props });
 
-                      // scroll to top
-                      scrollUp(
-                        getQuerySelector(
-                          ".admin-content > .scrollarea-viewport",
-                        )!,
-                      );
-                    }}
-                  >
-                    <Settings2 className={`h-4 w-4`} />
-                  </OperationAction>
-                  <OperationAction
-                    tooltip={t("admin.channels.delete")}
-                    variant={`destructive`}
-                    onClick={async () => {
-                      const resp = await deleteCharge(charge.id);
-                      withNotify(t, resp, true);
-                      onRefresh();
-                    }}
-                  >
-                    <Trash className={`h-4 w-4`} />
-                  </OperationAction>
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
+                        // scroll to top
+                        scrollUp(
+                          getQuerySelector(
+                            ".admin-content > .scrollarea-viewport",
+                          )!,
+                        );
+                      }}
+                    >
+                      <Settings2 className={`h-4 w-4`} />
+                    </OperationAction>
+                    <OperationAction
+                      tooltip={t("admin.channels.delete")}
+                      variant={`destructive`}
+                      onClick={async () => {
+                        const resp = await deleteCharge(charge.id);
+                        withNotify(t, resp, true);
+                        onRefresh();
+                      }}
+                    >
+                      <Trash className={`h-4 w-4`} />
+                    </OperationAction>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))
+          )}
         </TableBody>
       </Table>
     </div>
@@ -869,7 +925,14 @@ function ChargeWidget() {
         unitM={unitM}
         setUnitM={setUnitM}
       />
-      <ChargeTable data={data} dispatch={dispatch} onRefresh={refresh} unitM={unitM} setUnitM={setUnitM} />
+      <ChargeTable
+        data={data}
+        dispatch={dispatch}
+        onRefresh={refresh}
+        unitM={unitM}
+        setUnitM={setUnitM}
+        loading={loading}
+      />
     </div>
   );
 }
