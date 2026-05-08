@@ -208,7 +208,7 @@ func openAIResponsesReasoningEfforts(model string) []string {
 func openAIResponsesSamplingRestriction(model string) SamplingRestriction {
 	switch {
 	case model == "gpt-5.5" || strings.HasPrefix(model, "gpt-5.5-"):
-		return SamplingRestrictionWithReasoning
+		return SamplingRestrictionAlways
 	case strings.HasPrefix(model, "gpt-5.4-pro"):
 		return SamplingRestrictionAlways
 	case model == "gpt-5.2-pro" || strings.HasPrefix(model, "gpt-5.2-pro-"):

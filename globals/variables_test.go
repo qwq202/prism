@@ -92,7 +92,7 @@ func TestCapabilitiesForOpenAIResponsesModels(t *testing.T) {
 			model:               "gpt-5.5",
 			nativeWebSearch:     true,
 			reasoningEfforts:    []string{"none", "low", "medium", "high", "xhigh"},
-			samplingRestriction: SamplingRestrictionWithReasoning,
+			samplingRestriction: SamplingRestrictionAlways,
 		},
 		{
 			name:                "gpt 5.4 reasoning model",

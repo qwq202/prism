@@ -149,7 +149,7 @@ func TestGetChatBodySupportsGPT54MiniReasoningAndWebSearch(t *testing.T) {
 	}
 }
 
-func TestGetChatBodyKeepsSamplingForGPT55NoReasoning(t *testing.T) {
+func TestGetChatBodyDropsSamplingForGPT55NoReasoning(t *testing.T) {
 	instance := &ChatInstance{}
 	temperature := float32(0.2)
 	topP := float32(0.8)
@@ -164,8 +164,8 @@ func TestGetChatBodyKeepsSamplingForGPT55NoReasoning(t *testing.T) {
 	}
 
 	body := instance.GetChatBody(props, false)
-	if body.Temperature == nil || *body.Temperature != temperature || body.TopP == nil || *body.TopP != topP {
-		t.Fatalf("expected sampling params to be kept when gpt-5.5 reasoning is none, got temp=%#v topP=%#v", body.Temperature, body.TopP)
+	if body.Temperature != nil || body.TopP != nil {
+		t.Fatalf("expected sampling params to be stripped when gpt-5.5 reasoning is none, got temp=%#v topP=%#v", body.Temperature, body.TopP)
 	}
 }
 
