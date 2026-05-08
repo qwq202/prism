@@ -114,6 +114,7 @@ export type ConnectionEvent = {
 
 type initialStateType = {
   history: ConversationInstance[];
+  messages: Message[];
   conversations: Record<number, ConversationSerialized>;
   model: string;
   web: boolean;
@@ -137,6 +138,15 @@ type initialStateType = {
 };
 
 const defaultConversation: ConversationSerialized = { messages: [] };
+
+function resetLocalConversationState(state: initialStateType) {
+  state.history = [];
+  state.messages = [];
+  state.conversations = { [-1]: { ...defaultConversation } };
+  state.current = -1;
+  state.mask_item = null;
+  setNumberMemory("history_conversation", -1);
+}
 
 export function inModel(supportModels: Model[], model: string): boolean {
   return (
@@ -769,10 +779,7 @@ const chatSlice = createSlice({
       delete state.conversations[id];
     },
     deleteAllConversation: (state) => {
-      state.history = [];
-
-      state.conversations = { [-1]: { ...defaultConversation } };
-      state.current = -1;
+      resetLocalConversationState(state);
     },
     setHistory: (state, action) => {
       state.history = action.payload as ConversationInstance[];
@@ -946,6 +953,11 @@ const chatSlice = createSlice({
 
       setOfflineModels(models);
     },
+  },
+  extraReducers: (builder) => {
+    builder.addCase("auth/logout", (state) => {
+      resetLocalConversationState(state);
+    });
   },
 });
 

@@ -55,8 +55,6 @@ export const authSlice = createSlice({
       state.username = "";
       axios.defaults.headers.common["Authorization"] = "";
       forgetMemory(tokenField);
-
-      location.reload();
     },
   },
 });
