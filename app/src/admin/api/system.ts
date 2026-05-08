@@ -55,6 +55,30 @@ export type TaskState = {
   model: string;
 };
 
+export type PasskeyUserVerification =
+  | "required"
+  | "preferred"
+  | "discouraged";
+
+export type PasskeyAuthenticatorAttachment =
+  | "any"
+  | "platform"
+  | "cross-platform";
+
+export type PasskeyState = {
+  enabled: boolean;
+  rp_display_name: string;
+  rp_id: string;
+  user_verification: PasskeyUserVerification;
+  authenticator_attachment: PasskeyAuthenticatorAttachment;
+  allow_insecure_origin: boolean;
+  origins: string;
+};
+
+export type AuthenticationState = {
+  passkey: PasskeyState;
+};
+
 export type SecurityState = {
   check_type: string;
   check_models?: string[];
@@ -187,6 +211,7 @@ export type SystemProps = {
   general: GeneralState;
   site: SiteState;
   mail: MailState;
+  auth: AuthenticationState;
   search: SearchState;
   task: TaskState;
   common: CommonState;
@@ -243,6 +268,17 @@ export const initialSystemState: SystemProps = {
       enabled: false,
       custom: "",
       white_list: [],
+    },
+  },
+  auth: {
+    passkey: {
+      enabled: false,
+      rp_display_name: "Prism",
+      rp_id: "",
+      user_verification: "preferred",
+      authenticator_attachment: "any",
+      allow_insecure_origin: false,
+      origins: "",
     },
   },
   search: {
@@ -394,6 +430,46 @@ export async function getConfig(): Promise<SystemResponse> {
           : "basic";
 
       data.data.site.currency = data.data.site.currency || "cny";
+      const auth = (data.data.auth = data.data.auth || {
+        passkey: {
+          enabled: false,
+          rp_display_name: "Prism",
+          rp_id: "",
+          user_verification: "preferred",
+          authenticator_attachment: "any",
+          allow_insecure_origin: false,
+          origins: "",
+        },
+      });
+      const passkey = (auth.passkey = auth.passkey || {
+        enabled: false,
+        rp_display_name: "Prism",
+        rp_id: "",
+        user_verification: "preferred",
+        authenticator_attachment: "any",
+        allow_insecure_origin: false,
+        origins: "",
+      });
+      passkey.enabled = !!passkey.enabled;
+      passkey.rp_display_name = passkey.rp_display_name || "Prism";
+      passkey.rp_id = passkey.rp_id || "";
+      passkey.user_verification = [
+        "required",
+        "preferred",
+        "discouraged",
+      ].includes(passkey.user_verification)
+        ? passkey.user_verification
+        : "preferred";
+      passkey.authenticator_attachment = [
+        "any",
+        "platform",
+        "cross-platform",
+      ].includes(passkey.authenticator_attachment)
+        ? passkey.authenticator_attachment
+        : "any";
+      passkey.allow_insecure_origin = !!passkey.allow_insecure_origin;
+      passkey.origins = passkey.origins || "";
+
       data.data.common.storage_mode =
         data.data.common.storage_mode === "s3"
           ? "s3"

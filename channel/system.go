@@ -78,6 +78,20 @@ type taskState struct {
 	Model string `json:"model" mapstructure:"model"`
 }
 
+type passkeyState struct {
+	Enabled                 bool   `json:"enabled" mapstructure:"enabled"`
+	RPDisplayName           string `json:"rp_display_name" mapstructure:"rp_display_name"`
+	RPID                    string `json:"rp_id" mapstructure:"rp_id"`
+	UserVerification        string `json:"user_verification" mapstructure:"user_verification"`
+	AuthenticatorAttachment string `json:"authenticator_attachment" mapstructure:"authenticator_attachment"`
+	AllowInsecureOrigin     bool   `json:"allow_insecure_origin" mapstructure:"allow_insecure_origin"`
+	Origins                 string `json:"origins" mapstructure:"origins"`
+}
+
+type authState struct {
+	Passkey passkeyState `json:"passkey" mapstructure:"passkey"`
+}
+
 type s3StorageState struct {
 	Endpoint       string `json:"endpoint" mapstructure:"endpoint"`
 	Region         string `json:"region" mapstructure:"region"`
@@ -116,6 +130,7 @@ type SystemConfig struct {
 	General generalState `json:"general" mapstructure:"general"`
 	Site    siteState    `json:"site" mapstructure:"site"`
 	Mail    mailState    `json:"mail" mapstructure:"mail"`
+	Auth    authState    `json:"auth" mapstructure:"auth"`
 	Search  SearchState  `json:"search" mapstructure:"search"`
 	Task    taskState    `json:"task" mapstructure:"task"`
 	Common  commonState  `json:"common" mapstructure:"common"`
@@ -205,6 +220,7 @@ func (c *SystemConfig) UpdateConfig(data *SystemConfig) error {
 	c.General = data.General
 	c.Site = data.Site
 	c.Mail = data.Mail
+	c.Auth = data.Auth
 	c.Search = data.Search
 	c.Task = data.Task
 	c.Common = data.Common
