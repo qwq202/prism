@@ -209,13 +209,21 @@ func openAIResponsesSamplingRestriction(model string) SamplingRestriction {
 	switch {
 	case model == "gpt-5.5" || strings.HasPrefix(model, "gpt-5.5-"):
 		return SamplingRestrictionAlways
-	case strings.HasPrefix(model, "gpt-5.4-pro"):
+	case strings.HasPrefix(model, "gpt-5.4"):
 		return SamplingRestrictionAlways
 	case model == "gpt-5.2-pro" || strings.HasPrefix(model, "gpt-5.2-pro-"):
 		return SamplingRestrictionAlways
-	case isOpenAIGPT54Model(model), strings.HasPrefix(model, "gpt-5.2"):
+	case strings.HasPrefix(model, "gpt-5.2"):
+		return SamplingRestrictionAlways
+	case strings.HasPrefix(model, "gpt-5.1"):
 		return SamplingRestrictionWithReasoning
-	case model == "gpt-5" || model == "gpt-5-pro" || strings.HasPrefix(model, "gpt-5-pro-"):
+	case model == "gpt-5" || strings.HasPrefix(model, "gpt-5-"):
+		return SamplingRestrictionAlways
+	case model == "o3" || strings.HasPrefix(model, "o3-"):
+		return SamplingRestrictionAlways
+	case model == "o1" || strings.HasPrefix(model, "o1-"):
+		return SamplingRestrictionAlways
+	case model == "o4-mini" || strings.HasPrefix(model, "o4-mini-"):
 		return SamplingRestrictionAlways
 	default:
 		return SamplingRestrictionNone

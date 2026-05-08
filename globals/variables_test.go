@@ -99,13 +99,27 @@ func TestCapabilitiesForOpenAIResponsesModels(t *testing.T) {
 			model:               "gpt-5.4",
 			nativeWebSearch:     true,
 			reasoningEfforts:    []string{"none", "low", "medium", "high", "xhigh"},
-			samplingRestriction: SamplingRestrictionWithReasoning,
+			samplingRestriction: SamplingRestrictionAlways,
 		},
 		{
 			name:                "gpt 5.4 mini reasoning model",
 			model:               "gpt-5.4-mini",
 			nativeWebSearch:     true,
 			reasoningEfforts:    []string{"none", "low", "medium", "high", "xhigh"},
+			samplingRestriction: SamplingRestrictionAlways,
+		},
+		{
+			name:                "gpt 5.2 reasoning model",
+			model:               "gpt-5.2",
+			nativeWebSearch:     true,
+			reasoningEfforts:    []string{"none", "low", "medium", "high", "xhigh"},
+			samplingRestriction: SamplingRestrictionAlways,
+		},
+		{
+			name:                "gpt 5.1 reasoning model",
+			model:               "gpt-5.1",
+			nativeWebSearch:     true,
+			reasoningEfforts:    []string{"none", "low", "medium", "high"},
 			samplingRestriction: SamplingRestrictionWithReasoning,
 		},
 		{
@@ -127,7 +141,7 @@ func TestCapabilitiesForOpenAIResponsesModels(t *testing.T) {
 			model:               "o3",
 			nativeWebSearch:     true,
 			reasoningEfforts:    []string{"low", "medium", "high"},
-			samplingRestriction: SamplingRestrictionNone,
+			samplingRestriction: SamplingRestrictionAlways,
 		},
 	}
 
@@ -195,9 +209,12 @@ func TestReasoningEffortNormalizationUsesCapabilities(t *testing.T) {
 }
 
 func TestSamplingRestrictionUsesCapabilities(t *testing.T) {
-	conditional := CapabilitiesFor(OpenAIResponsesChannelType, "gpt-5.4")
+	conditional := CapabilitiesFor(OpenAIResponsesChannelType, "gpt-5.1")
+	if ShouldRestrictSampling(conditional, "") {
+		t.Fatalf("expected sampling to be allowed for default gpt-5.1 none reasoning")
+	}
 	if ShouldRestrictSampling(conditional, "none") {
-		t.Fatalf("expected sampling to be allowed without reasoning")
+		t.Fatalf("expected sampling to be allowed with gpt-5.1 none reasoning")
 	}
 	if !ShouldRestrictSampling(conditional, "high") {
 		t.Fatalf("expected sampling to be restricted with reasoning")

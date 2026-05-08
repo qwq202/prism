@@ -149,6 +149,26 @@ func TestGetChatBodySupportsGPT54MiniReasoningAndWebSearch(t *testing.T) {
 	}
 }
 
+func TestGetChatBodyDropsSamplingForGPT54NoReasoning(t *testing.T) {
+	instance := &ChatInstance{}
+	temperature := float32(0.2)
+	topP := float32(0.8)
+	props := &adaptercommon.ChatProps{
+		Model:       "gpt-5.4",
+		Temperature: &temperature,
+		TopP:        &topP,
+		Thinking:    map[string]interface{}{"effort": "none"},
+		Message: []globals.Message{
+			{Role: globals.User, Content: "你好"},
+		},
+	}
+
+	body := instance.GetChatBody(props, false)
+	if body.Temperature != nil || body.TopP != nil {
+		t.Fatalf("expected sampling params to be stripped when gpt-5.4 reasoning is none, got temp=%#v topP=%#v", body.Temperature, body.TopP)
+	}
+}
+
 func TestGetChatBodyDropsSamplingForGPT55NoReasoning(t *testing.T) {
 	instance := &ChatInstance{}
 	temperature := float32(0.2)
@@ -166,6 +186,52 @@ func TestGetChatBodyDropsSamplingForGPT55NoReasoning(t *testing.T) {
 	body := instance.GetChatBody(props, false)
 	if body.Temperature != nil || body.TopP != nil {
 		t.Fatalf("expected sampling params to be stripped when gpt-5.5 reasoning is none, got temp=%#v topP=%#v", body.Temperature, body.TopP)
+	}
+}
+
+func TestGetChatBodyDropsSamplingForGPT52NoReasoning(t *testing.T) {
+	instance := &ChatInstance{}
+	temperature := float32(0.2)
+	topP := float32(0.8)
+	props := &adaptercommon.ChatProps{
+		Model:       "gpt-5.2",
+		Temperature: &temperature,
+		TopP:        &topP,
+		Thinking:    map[string]interface{}{"effort": "none"},
+		Message: []globals.Message{
+			{Role: globals.User, Content: "你好"},
+		},
+	}
+
+	body := instance.GetChatBody(props, false)
+	if body.Temperature != nil || body.TopP != nil {
+		t.Fatalf("expected sampling params to be stripped when gpt-5.2 reasoning is none, got temp=%#v topP=%#v", body.Temperature, body.TopP)
+	}
+}
+
+func TestGetChatBodyOnlyKeepsSamplingForGPT51NoneReasoning(t *testing.T) {
+	instance := &ChatInstance{}
+	temperature := float32(0.2)
+	topP := float32(0.8)
+	props := &adaptercommon.ChatProps{
+		Model:       "gpt-5.1",
+		Temperature: &temperature,
+		TopP:        &topP,
+		Thinking:    map[string]interface{}{"effort": "none"},
+		Message: []globals.Message{
+			{Role: globals.User, Content: "你好"},
+		},
+	}
+
+	body := instance.GetChatBody(props, false)
+	if body.Temperature != &temperature || body.TopP != &topP {
+		t.Fatalf("expected sampling params to be preserved for gpt-5.1 none reasoning, got temp=%#v topP=%#v", body.Temperature, body.TopP)
+	}
+
+	props.Thinking = map[string]interface{}{"effort": "high"}
+	body = instance.GetChatBody(props, false)
+	if body.Temperature != nil || body.TopP != nil {
+		t.Fatalf("expected sampling params to be stripped for gpt-5.1 high reasoning, got temp=%#v topP=%#v", body.Temperature, body.TopP)
 	}
 }
 
