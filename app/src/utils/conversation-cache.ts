@@ -1,6 +1,5 @@
 import type { ConversationInstance } from "@/api/types.tsx";
 import { apiEndpoint, tokenField } from "@/conf/bootstrap.ts";
-import { isDesktopRuntime } from "@/conf/env.ts";
 import { getDesktopCache, setDesktopCache } from "@/utils/desktop-cache.ts";
 
 type ConversationSerializedCache = {
@@ -34,7 +33,6 @@ function getConversationCacheKey(id: number): string {
 export async function getCachedConversationList(): Promise<
   ConversationInstance[] | undefined
 > {
-  if (!isDesktopRuntime()) return undefined;
   return await getDesktopCache<ConversationInstance[]>(
     getConversationListCacheKey(),
   );
@@ -43,14 +41,13 @@ export async function getCachedConversationList(): Promise<
 export async function setCachedConversationList(
   conversations: ConversationInstance[],
 ): Promise<void> {
-  if (!isDesktopRuntime()) return;
   await setDesktopCache(getConversationListCacheKey(), conversations);
 }
 
 export async function getCachedConversation(
   id: number,
 ): Promise<ConversationSerializedCache | undefined> {
-  if (!isDesktopRuntime() || id === -1) return undefined;
+  if (id === -1) return undefined;
   return await getDesktopCache<ConversationSerializedCache>(
     getConversationCacheKey(id),
   );
@@ -60,6 +57,6 @@ export async function setCachedConversation(
   id: number,
   conversation: ConversationSerializedCache,
 ): Promise<void> {
-  if (!isDesktopRuntime() || id === -1) return;
+  if (id === -1) return;
   await setDesktopCache(getConversationCacheKey(id), conversation);
 }
