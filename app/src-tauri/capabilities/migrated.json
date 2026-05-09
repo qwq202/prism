@@ -6,6 +6,10 @@
     "main"
   ],
   "permissions": [
-    "core:default"
+    "core:default",
+    "dialog:default",
+    "log:default",
+    "opener:default",
+    "window-state:default"
   ]
 }
