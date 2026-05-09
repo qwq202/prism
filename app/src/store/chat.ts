@@ -30,6 +30,10 @@ import {
   loadConversation,
   getConversationList,
 } from "@/api/history.ts";
+import {
+  getCachedConversation,
+  getCachedConversationList,
+} from "@/utils/conversation-cache.ts";
 import { CustomMask, Mask } from "@/masks/types.ts";
 import { listMasks } from "@/api/mask.ts";
 import { useDispatch, useSelector } from "react-redux";
@@ -208,7 +212,10 @@ function emptyOpenAIResponsesCapabilities(): OpenAIResponsesCapabilities {
 }
 
 function isXiaomiMiMoModel(model: string): boolean {
-  const normalized = model.trim().toLowerCase().replace(/^xiaomi\//, "");
+  const normalized = model
+    .trim()
+    .toLowerCase()
+    .replace(/^xiaomi\//, "");
   return normalized.startsWith("mimo-v2") && !normalized.includes("tts");
 }
 
@@ -766,6 +773,14 @@ const chatSlice = createSlice({
       if (state.conversations[id]) return;
       state.conversations[id] = conversation;
     },
+    setConversation: (state, action) => {
+      const { conversation, id } = action.payload as {
+        conversation: ConversationSerialized;
+        id: number;
+      };
+
+      state.conversations[id] = conversation;
+    },
     deleteConversation: (state, action) => {
       const id = action.payload as number;
 
@@ -995,6 +1010,7 @@ export const {
   stopMessage,
   raiseConversation,
   importConversation,
+  setConversation,
   deleteConversation,
   deleteAllConversation,
   preflightHistory,
@@ -1062,30 +1078,68 @@ export function useConversationActions() {
   const current = useSelector(selectCurrent);
   const mask = useSelector(selectMaskItem);
 
-  return {
-    toggle: async (id: number) => {
-      const conversation = conversations[id];
-      setNumberMemory("history_conversation", id);
-      if (!conversation) {
-        const data = await loadConversation(id);
-        const props: ConversationSerialized = {
-          model: data.model,
-          messages: data.message,
-        };
+  const showConversation = async (
+    id: number,
+    options?: { refreshRemote?: boolean; useCache?: boolean },
+  ) => {
+    const refreshRemote = options?.refreshRemote ?? true;
+    setNumberMemory("history_conversation", id);
+
+    if (id === -1) {
+      if (current === -1 && conversations[-1].messages.length === 0) {
+        mask && dispatch(clearMaskItem());
+      }
+      dispatch(setCurrent(id));
+      return;
+    }
+
+    let restored = Boolean(conversations[id]);
+    if (!restored && options?.useCache) {
+      const cached = await getCachedConversation(id);
+      if (cached) {
         dispatch(
-          importConversation({
-            conversation: props,
+          setConversation({
+            conversation: {
+              model: cached.model,
+              messages: cached.messages,
+            },
             id,
           }),
         );
+        restored = true;
       }
+    }
 
-      if (current === -1 && conversations[-1].messages.length === 0) {
-        // current is mask, clear mask
-        mask && dispatch(clearMaskItem());
-      }
+    if (current === -1 && conversations[-1].messages.length === 0) {
+      mask && dispatch(clearMaskItem());
+    }
 
+    if (restored) {
       dispatch(setCurrent(id));
+    }
+
+    if (!refreshRemote) return;
+
+    const data = await loadConversation(id);
+    const hasRemoteConversation =
+      data.name.length > 0 || data.message.length > 0 || Boolean(data.model);
+    if (!hasRemoteConversation) return;
+
+    dispatch(
+      setConversation({
+        conversation: {
+          model: data.model,
+          messages: data.message,
+        },
+        id,
+      }),
+    );
+    dispatch(setCurrent(id));
+  };
+
+  return {
+    toggle: async (id: number) => {
+      await showConversation(id, { useCache: true });
     },
     rename: async (id: number, name: string) => {
       const resp = await doRenameConversation(id, name);
@@ -1119,8 +1173,39 @@ export function useConversationActions() {
       return state;
     },
     refresh: async () => {
+      const cached = await getCachedConversationList();
+      if (cached) {
+        dispatch(setHistory(cached));
+      }
+
       const resp = await getConversationList();
       dispatch(setHistory(resp));
+
+      return resp;
+    },
+    restore: async () => {
+      const cached = await getCachedConversationList();
+      const stored = getNumberMemory("history_conversation", -1);
+      if (cached) {
+        dispatch(setHistory(cached));
+        if (
+          stored !== -1 &&
+          current !== stored &&
+          cached.some((item) => item.id === stored)
+        ) {
+          void showConversation(stored, {
+            refreshRemote: false,
+            useCache: true,
+          });
+        }
+      }
+
+      const resp = await getConversationList();
+      dispatch(setHistory(resp));
+
+      if (stored !== -1 && resp.some((item) => item.id === stored)) {
+        await showConversation(stored, { useCache: true });
+      }
 
       return resp;
     },
@@ -1213,16 +1298,14 @@ export function useMessageActions() {
       const enableOpenAINativeWeb = openAIReasoningCapabilities.nativeWeb;
       const enableOpenAIReasoningControl =
         openAIReasoningCapabilities.reasoningEfforts.length > 0;
-      const targetDeepSeekThinkingEnabled =
-        getDeepSeekThinkingEnabledForModel(
-          deepseek_thinking_enabled_by_model,
-          targetModel,
-        );
-      const targetDeepSeekReasoningEffort =
-        getDeepSeekReasoningEffortForModel(
-          deepseek_reasoning_effort_by_model,
-          targetModel,
-        );
+      const targetDeepSeekThinkingEnabled = getDeepSeekThinkingEnabledForModel(
+        deepseek_thinking_enabled_by_model,
+        targetModel,
+      );
+      const targetDeepSeekReasoningEffort = getDeepSeekReasoningEffortForModel(
+        deepseek_reasoning_effort_by_model,
+        targetModel,
+      );
       const openAIReasoningEffortForRequest =
         resolveOpenAIReasoningEffortForRequest(
           support_models,
@@ -1326,16 +1409,14 @@ export function useMessageActions() {
       const enableOpenAINativeWeb = openAIReasoningCapabilities.nativeWeb;
       const enableOpenAIReasoningControl =
         openAIReasoningCapabilities.reasoningEfforts.length > 0;
-      const currentDeepSeekThinkingEnabled =
-        getDeepSeekThinkingEnabledForModel(
-          deepseek_thinking_enabled_by_model,
-          model,
-        );
-      const currentDeepSeekReasoningEffort =
-        getDeepSeekReasoningEffortForModel(
-          deepseek_reasoning_effort_by_model,
-          model,
-        );
+      const currentDeepSeekThinkingEnabled = getDeepSeekThinkingEnabledForModel(
+        deepseek_thinking_enabled_by_model,
+        model,
+      );
+      const currentDeepSeekReasoningEffort = getDeepSeekReasoningEffortForModel(
+        deepseek_reasoning_effort_by_model,
+        model,
+      );
       const openAIReasoningEffortForRequest =
         resolveOpenAIReasoningEffortForRequest(
           support_models,

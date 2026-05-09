@@ -6,16 +6,23 @@ import { CommonResponse } from "@/api/common.ts";
 import { getErrorMessage } from "@/utils/base.ts";
 import { VirtualWebSearchRole, VirtualRolePrefix, Message } from "./types.tsx";
 import { formatToolCallResult } from "@/api/plugin.ts";
+import {
+  getCachedConversationList,
+  setCachedConversation,
+  setCachedConversationList,
+} from "@/utils/conversation-cache.ts";
 
 export async function getConversationList(): Promise<ConversationInstance[]> {
   try {
     const resp = await axios.get("/conversation/list");
-    return (
+    const conversations = (
       resp.data.status ? resp.data.data || [] : []
     ) as ConversationInstance[];
+    void setCachedConversationList(conversations);
+    return conversations;
   } catch (e) {
     console.warn(e);
-    return [];
+    return (await getCachedConversationList()) ?? [];
   }
 }
 
@@ -118,6 +125,11 @@ export async function loadConversation(
 
         conversation.message = processedMessages;
       }
+
+      void setCachedConversation(id, {
+        model: conversation.model,
+        messages: conversation.message,
+      });
 
       return conversation;
     }
