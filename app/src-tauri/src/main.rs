@@ -1,8 +1,9 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use tauri::Manager;
+use tauri::{Manager, WindowEvent};
 use tauri_plugin_log::{Target, TargetKind};
+use tauri_plugin_window_state::{AppHandleExt, StateFlags};
 
 fn main() {
     tauri::Builder::default()
@@ -26,6 +27,11 @@ fn main() {
                 .build(),
         )
         .plugin(tauri_plugin_window_state::Builder::new().build())
+        .on_window_event(|window, event| {
+            if matches!(event, WindowEvent::CloseRequested { .. }) {
+                let _ = window.app_handle().save_window_state(StateFlags::all());
+            }
+        })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
