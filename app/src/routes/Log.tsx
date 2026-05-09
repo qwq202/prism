@@ -28,6 +28,7 @@ import {
 } from "@/api/record.ts";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
+import DatePicker from "@/components/ui/date-picker.tsx";
 import { Input } from "@/components/ui/input.tsx";
 import { PaginationAction } from "@/components/ui/pagination.tsx";
 import { ScrollArea } from "@/components/ui/scroll-area.tsx";
@@ -113,22 +114,22 @@ function MetricCard({
   children,
 }: MetricCardProps) {
   return (
-    <div className="rounded-md border bg-card px-7 py-5 shadow-sm">
-      <div className="flex items-start justify-between gap-5">
+    <div className="rounded-md border bg-card px-5 py-4 shadow-sm">
+      <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <p className="text-sm font-medium text-foreground">{title}</p>
-          <div className="mt-4 flex min-h-8 items-center gap-2">
+          <div className="mt-2 flex min-h-7 items-center gap-1.5">
             {loading ? (
-              <Skeleton className="h-8 w-24" />
+              <Skeleton className="h-7 w-20" />
             ) : (
-              <span className="text-3xl font-medium leading-none tracking-normal">
+              <span className="text-2xl font-semibold leading-none tracking-normal">
                 {value}
               </span>
             )}
             {children}
           </div>
         </div>
-        <div className="mt-1 text-foreground [&_svg]:h-8 [&_svg]:w-8 [&_svg]:stroke-[1.6]">
+        <div className="mt-1 text-foreground [&_svg]:h-6 [&_svg]:w-6 [&_svg]:stroke-[1.8]">
           {icon}
         </div>
       </div>
@@ -144,7 +145,7 @@ function FieldLabel({
   children: ReactNode;
 }) {
   return (
-    <div className="flex h-12 items-center gap-2 whitespace-nowrap text-sm font-medium text-foreground">
+    <div className="flex h-10 items-center gap-2 whitespace-nowrap text-sm font-medium text-foreground">
       <span className="text-foreground [&_svg]:h-4 [&_svg]:w-4 [&_svg]:stroke-[1.8]">
         {icon}
       </span>
@@ -298,15 +299,15 @@ function Log() {
 
   return (
     <ScrollArea className="h-full w-full bg-muted/25">
-      <div className="mx-auto flex w-full max-w-none flex-col gap-7 px-6 py-7">
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
+      <div className="mx-auto flex w-full max-w-none flex-col gap-5 px-5 py-5">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
           <MetricCard
             title={t("record.billing-today")}
             value={stats.billing_today.toFixed(2)}
             icon={<CircleDollarSign />}
             loading={statsLoading}
           >
-            <Cloud className="h-4 w-4 stroke-[1.8]" />
+            <Cloud className="h-3.5 w-3.5 stroke-[1.8]" />
           </MetricCard>
           <MetricCard
             title={t("record.billing-month")}
@@ -314,7 +315,7 @@ function Log() {
             icon={<CalendarDays />}
             loading={statsLoading}
           >
-            <Cloud className="h-4 w-4 stroke-[1.8]" />
+            <Cloud className="h-3.5 w-3.5 stroke-[1.8]" />
           </MetricCard>
           <MetricCard
             title={t("record.request-today")}
@@ -322,7 +323,7 @@ function Log() {
             icon={<Activity />}
             loading={statsLoading}
           >
-            <Clock3 className="h-4 w-4 stroke-[1.8]" />
+            <Clock3 className="h-3.5 w-3.5 stroke-[1.8]" />
             <span className="flex gap-1">{requestBadges}</span>
           </MetricCard>
           <MetricCard
@@ -331,12 +332,12 @@ function Log() {
             icon={<BadgeCheck />}
             loading={statsLoading}
           >
-            <Clock3 className="h-4 w-4 stroke-[1.8]" />
+            <Clock3 className="h-3.5 w-3.5 stroke-[1.8]" />
           </MetricCard>
         </div>
 
         <div className="overflow-hidden rounded-md border bg-card shadow-sm">
-          <div className="grid gap-x-4 gap-y-3 px-5 py-7 lg:grid-cols-[auto_minmax(0,1fr)_auto_minmax(0,1fr)]">
+          <div className="grid gap-x-4 gap-y-3 px-5 py-5 lg:grid-cols-[auto_minmax(0,1fr)_auto_minmax(0,1fr)]">
             <FieldLabel icon={<FileText />}>{t("record.cond.type")}</FieldLabel>
             <Select
               value={filters.type}
@@ -344,7 +345,7 @@ function Log() {
                 setFilters({ ...filters, type: value as RecordType })
               }
             >
-              <SelectTrigger className="h-12">
+              <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -358,7 +359,6 @@ function Log() {
 
             <FieldLabel icon={<Box />}>{t("record.cond.model")}</FieldLabel>
             <Input
-              className="h-12"
               placeholder={t("record.cond.model-placeholder")}
               value={filters.model}
               onChange={(event) =>
@@ -370,34 +370,29 @@ function Log() {
             <FieldLabel icon={<Compass />}>
               {t("record.cond.start_time")}
             </FieldLabel>
-            <Input
-              className="h-12"
-              type="date"
+            <DatePicker
+              classNameTrigger="h-10 w-full"
               value={filters.start_time}
-              onChange={(event) =>
-                setFilters({ ...filters, start_time: event.target.value })
+              onValueChange={(value) =>
+                setFilters({ ...filters, start_time: value })
               }
-              onKeyDown={handleEnterSearch}
             />
 
             <FieldLabel icon={<Compass />}>
               {t("record.cond.end_time")}
             </FieldLabel>
-            <Input
-              className="h-12"
-              type="date"
+            <DatePicker
+              classNameTrigger="h-10 w-full"
               value={filters.end_time}
-              onChange={(event) =>
-                setFilters({ ...filters, end_time: event.target.value })
+              onValueChange={(value) =>
+                setFilters({ ...filters, end_time: value })
               }
-              onKeyDown={handleEnterSearch}
             />
 
             <FieldLabel icon={<KeySquare />}>
               {t("record.cond.token-name")}
             </FieldLabel>
             <Input
-              className="h-12"
               placeholder={t("record.cond.token-name-placeholder")}
               value={filters.token_name}
               onChange={(event) =>
@@ -410,9 +405,10 @@ function Log() {
 
             <div className="lg:col-span-4">
               <Button
-                className="h-12 px-6"
+                className="px-5"
                 disabled={loading}
                 onClick={handleSearch}
+                unClickable
               >
                 <Search className="mr-2 h-4 w-4" />
                 {t("record.query")}
