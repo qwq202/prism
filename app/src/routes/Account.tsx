@@ -39,6 +39,7 @@ import {
 import { Button } from "@/components/ui/button.tsx";
 import { useEffectAsync } from "@/utils/hook.ts";
 import {
+  getCachedUserInfo,
   getUserInfo,
   initialUserInfo,
   createPasskeyRegistrationOptions,
@@ -346,9 +347,16 @@ function Account() {
       return;
     }
 
+    const cached = await getCachedUserInfo();
+    if (cached) {
+      setInfo(cached);
+    }
+
     const resp = await getUserInfo();
     console.log(`[account api] get user info:`, resp);
-    withNotify(t, resp);
+    if (!cached || !resp.status) {
+      withNotify(t, resp);
+    }
 
     if (resp.status) {
       setInfo(resp.data);
