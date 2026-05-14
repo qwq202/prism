@@ -12,6 +12,10 @@ import sharingReducer from "./sharing";
 import settingsReducer from "./settings";
 import recordReducer from "./record";
 import avatarReducer from "./avatar";
+import {
+  setCachedConversation,
+  setCachedConversationList,
+} from "@/utils/conversation-cache.ts";
 
 const store = configureStore({
   reducer: {
@@ -29,6 +33,36 @@ const store = configureStore({
     record: recordReducer,
     avatar: avatarReducer,
   },
+});
+
+let chatCacheTimer: ReturnType<typeof setTimeout> | undefined;
+let lastChatCacheSignature = "";
+
+store.subscribe(() => {
+  if (chatCacheTimer) clearTimeout(chatCacheTimer);
+
+  chatCacheTimer = setTimeout(() => {
+    const { history, current, conversations } = store.getState().chat;
+    const currentConversation = current !== -1 ? conversations[current] : null;
+    const signature = JSON.stringify({
+      history: history.map((item) => ({
+        id: item.id,
+        name: item.name,
+        model: item.model,
+        shared: item.shared,
+      })),
+      current,
+      currentConversation,
+    });
+
+    if (signature === lastChatCacheSignature) return;
+    lastChatCacheSignature = signature;
+
+    void setCachedConversationList(history);
+    if (current !== -1 && currentConversation) {
+      void setCachedConversation(current, currentConversation);
+    }
+  }, 500);
 });
 
 type RootState = ReturnType<typeof store.getState>;

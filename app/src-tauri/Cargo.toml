@@ -12,12 +12,18 @@ rust-version = "1.60"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [build-dependencies]
-tauri-build = { version = "1.5.0", features = [] }
+tauri-build = { version = "2", features = [] }
 
 [dependencies]
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
-tauri = { version = "1.5.2", features = [ "system-tray"] }
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-dialog = "2"
+tauri-plugin-log = "2"
+tauri-plugin-opener = "2.5.4"
+tauri-plugin-single-instance = "2"
+tauri-plugin-store = "2.4.3"
+tauri-plugin-window-state = "2"
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem and the built-in dev server is disabled.

@@ -8,6 +8,13 @@ import {
 import { infoEvent } from "@/events/info.ts";
 import { initGoogleAnalytics } from "@/utils/analytics.ts";
 import { BroadcastEvent, getBroadcast } from "@/api/broadcast";
+import { getDesktopCache, setDesktopCache } from "@/utils/desktop-cache.ts";
+
+const siteInfoCacheKey = "site-info";
+
+function getSiteInfoCacheKey(): string {
+  return `${siteInfoCacheKey}:${axios.defaults.baseURL || "default"}`;
+}
 
 export type SiteInfo = {
   title: string;
@@ -35,9 +42,14 @@ export type SiteInfo = {
 export async function getSiteInfo(): Promise<SiteInfo> {
   try {
     const response = await axios.get("/info");
-    return response.data as SiteInfo;
+    const info = response.data as SiteInfo;
+    void setDesktopCache(getSiteInfoCacheKey(), info);
+    return info;
   } catch (e) {
     console.warn(e);
+    const cached = await getCachedSiteInfo();
+    if (cached) return cached;
+
     return {
       title: "",
       logo: "",
@@ -66,17 +78,30 @@ export async function getSiteInfo(): Promise<SiteInfo> {
   }
 }
 
+export async function getCachedSiteInfo(): Promise<SiteInfo | undefined> {
+  return await getDesktopCache<SiteInfo>(getSiteInfoCacheKey());
+}
+
+function applySiteInfo(info: SiteInfo) {
+  setAppName(info.title);
+  setAppLogo(info.logo);
+  setDocsUrl(info.docs);
+  setBuyLink(info.buy_link);
+  initGoogleAnalytics(info.ga_tracking_id);
+
+  infoEvent.emit(info);
+}
+
 export function syncSiteInfo() {
+  void getCachedSiteInfo().then((info) => {
+    if (info) applySiteInfo(info);
+  });
+
   setTimeout(async () => {
     const info = await getSiteInfo();
     info.broadcast = await getBroadcast();
+    void setDesktopCache(getSiteInfoCacheKey(), info);
 
-    setAppName(info.title);
-    setAppLogo(info.logo);
-    setDocsUrl(info.docs);
-    setBuyLink(info.buy_link);
-    initGoogleAnalytics(info.ga_tracking_id);
-
-    infoEvent.emit(info);
+    applySiteInfo(info);
   }, 25);
 }

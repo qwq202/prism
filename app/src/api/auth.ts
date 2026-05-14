@@ -4,6 +4,22 @@ import { localizeError } from "@/utils/error.ts";
 import { isEmailValid } from "@/utils/form.ts";
 import { toast } from "sonner";
 import type { TFunction } from "i18next";
+import { getDesktopCache, setDesktopCache } from "@/utils/desktop-cache.ts";
+
+const userInfoCacheKey = "user-info";
+
+function hashCacheScope(value: string): string {
+  let hash = 5381;
+  for (let index = 0; index < value.length; index += 1) {
+    hash = (hash * 33) ^ value.charCodeAt(index);
+  }
+  return (hash >>> 0).toString(36);
+}
+
+function getUserInfoCacheKey(): string {
+  const token = String(axios.defaults.headers.common["Authorization"] ?? "");
+  return `${userInfoCacheKey}:${hashCacheScope(token)}`;
+}
 
 export type LoginForm = {
   username: string;
@@ -368,12 +384,19 @@ export const initialUserInfo: UserInfo = {
 export async function getUserInfo(): Promise<UserInfoResponse> {
   try {
     const response = await axios.get("/userinfo");
-    return response.data as UserInfoResponse;
+    const data = response.data as UserInfoResponse;
+    if (data.status) void setDesktopCache(getUserInfoCacheKey(), data.data);
+    return data;
   } catch (e) {
+    const cached = await getCachedUserInfo();
     return {
-      status: false,
+      status: Boolean(cached),
       error: getErrorMessage(e),
-      data: { ...initialUserInfo },
+      data: cached ?? { ...initialUserInfo },
     };
   }
+}
+
+export async function getCachedUserInfo(): Promise<UserInfo | undefined> {
+  return await getDesktopCache<UserInfo>(getUserInfoCacheKey());
 }
