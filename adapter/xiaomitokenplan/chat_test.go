@@ -114,6 +114,130 @@ func TestProcessLineStreamsReasoningContent(t *testing.T) {
 	}
 }
 
+func requireSingleToolCall(t *testing.T, calls *globals.ToolCalls) globals.ToolCall {
+	t.Helper()
+	if calls == nil || len(*calls) != 1 {
+		t.Fatalf("expected one tool call, got %#v", calls)
+	}
+	return (*calls)[0]
+}
+
+func requireToolArguments(t *testing.T, call globals.ToolCall) map[string]string {
+	t.Helper()
+	args := map[string]string{}
+	if err := json.Unmarshal([]byte(call.Function.Arguments), &args); err != nil {
+		t.Fatalf("expected JSON tool arguments, got %q: %v", call.Function.Arguments, err)
+	}
+	return args
+}
+
+func TestProcessLineExtractsTextToolCallFromReasoningContent(t *testing.T) {
+	instance := NewChatInstance("", "tp-test")
+
+	chunk, err := instance.ProcessLine(`{"choices":[{"delta":{"reasoning_content":"<tool_call>\n<function=webfetch>\n<parameter=url>https://www.weather.com.cn/weather/101280901.shtml</parameter>\n<parameter=format>text</parameter>\n</function>\n</tool_call>"},"index":0}]}`)
+	if err != nil {
+		t.Fatalf("unexpected text tool call chunk error: %v", err)
+	}
+
+	if chunk.Content != "" {
+		t.Fatalf("expected text tool call markup to be hidden, got %q", chunk.Content)
+	}
+	if chunk.ReasoningContent != nil {
+		t.Fatalf("expected text tool call markup to be stripped from reasoning, got %#v", chunk.ReasoningContent)
+	}
+
+	call := requireSingleToolCall(t, chunk.ToolCall)
+	if call.Type != "function" || call.Id == "" || call.Index == nil {
+		t.Fatalf("unexpected text tool call metadata: %#v", call)
+	}
+	if call.Function.Name != "fetch_webpage" {
+		t.Fatalf("expected webfetch alias to map to fetch_webpage, got %q", call.Function.Name)
+	}
+	args := requireToolArguments(t, call)
+	if args["url"] != "https://www.weather.com.cn/weather/101280901.shtml" {
+		t.Fatalf("unexpected url argument: %#v", args)
+	}
+	if args["format"] != "text" {
+		t.Fatalf("unexpected format argument: %#v", args)
+	}
+}
+
+func TestProcessLineStripsTextToolCallFromMixedReasoningContent(t *testing.T) {
+	instance := NewChatInstance("", "tp-test")
+
+	reasoning := "先抓取网页。\n<tool_call>\n<function=fetch_webpage>\n<parameter=url>https://example.com</parameter>\n</function>\n</tool_call>\n拿到内容后再总结。"
+	raw, err := json.Marshal(map[string]interface{}{
+		"choices": []map[string]interface{}{
+			{
+				"delta": map[string]string{
+					"reasoning_content": reasoning,
+				},
+				"index": 0,
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("marshal test payload: %v", err)
+	}
+
+	chunk, err := instance.ProcessLine(string(raw))
+	if err != nil {
+		t.Fatalf("unexpected mixed reasoning chunk error: %v", err)
+	}
+
+	if chunk.Content != "<think>\n先抓取网页。\n拿到内容后再总结。" {
+		t.Fatalf("expected clean reasoning content chunk, got %q", chunk.Content)
+	}
+	if chunk.ReasoningContent == nil || *chunk.ReasoningContent != "先抓取网页。\n拿到内容后再总结。" {
+		t.Fatalf("expected clean reasoning content, got %#v", chunk.ReasoningContent)
+	}
+
+	call := requireSingleToolCall(t, chunk.ToolCall)
+	if call.Function.Name != "fetch_webpage" {
+		t.Fatalf("expected fetch_webpage tool name, got %q", call.Function.Name)
+	}
+	args := requireToolArguments(t, call)
+	if args["url"] != "https://example.com" {
+		t.Fatalf("unexpected url argument: %#v", args)
+	}
+}
+
+func TestCollectResponseExtractsTextToolCallFromReasoningContent(t *testing.T) {
+	reasoning := "<tool_call>\n<function=fetch_webpage>\n<parameter=url>https://example.com</parameter>\n</function>\n</tool_call>"
+	chunk, err := collectResponse(ChatStreamResponse{
+		Choices: []struct {
+			Delta        ResponseMessage `json:"delta"`
+			Index        int             `json:"index"`
+			FinishReason string          `json:"finish_reason"`
+		}{
+			{
+				Delta: ResponseMessage{
+					ReasoningContent: &reasoning,
+				},
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("unexpected collect response error: %v", err)
+	}
+
+	if chunk.Content != "" {
+		t.Fatalf("expected hidden text tool call markup, got %q", chunk.Content)
+	}
+	if chunk.ReasoningContent != nil {
+		t.Fatalf("expected stripped reasoning content, got %#v", chunk.ReasoningContent)
+	}
+
+	call := requireSingleToolCall(t, chunk.ToolCall)
+	if call.Function.Name != "fetch_webpage" {
+		t.Fatalf("expected fetch_webpage tool name, got %q", call.Function.Name)
+	}
+	args := requireToolArguments(t, call)
+	if args["url"] != "https://example.com" {
+		t.Fatalf("unexpected url argument: %#v", args)
+	}
+}
+
 func findToolCallByID(calls globals.ToolCalls, id string) *globals.ToolCall {
 	for i := range calls {
 		if calls[i].Id == id {

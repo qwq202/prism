@@ -4,8 +4,18 @@ import (
 	adaptercommon "chat/adapter/common"
 	"chat/globals"
 	"chat/utils"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"html"
+	"regexp"
+	"strings"
+)
+
+var (
+	textToolCallPattern      = regexp.MustCompile(`(?s)<tool_call>\s*<function=([A-Za-z0-9_.:-]+)>\s*(.*?)\s*</function>\s*</tool_call>`)
+	textToolCallParamPattern = regexp.MustCompile(`(?s)<parameter=([A-Za-z0-9_.:-]+)>(.*?)</parameter>`)
+	textToolCallGapPattern   = regexp.MustCompile(`[ \t]*\n[ \t]*\n[ \t]*`)
 )
 
 func formatMessages(props *adaptercommon.ChatProps) interface{} {
@@ -72,6 +82,108 @@ func formatReasoningContent(reasoning *string, content string) string {
 	return fmt.Sprintf("<think>\n%s\n</think>\n\n%s", *reasoning, content)
 }
 
+func normalizeTextToolName(name string) string {
+	switch strings.TrimSpace(name) {
+	case "webfetch":
+		return "fetch_webpage"
+	default:
+		return strings.TrimSpace(name)
+	}
+}
+
+func cleanExtractedText(content string) *string {
+	cleaned := strings.TrimSpace(content)
+	if cleaned == "" {
+		return nil
+	}
+	return &cleaned
+}
+
+func parseTextToolCalls(content string, startIndex int) (*string, *globals.ToolCalls, int) {
+	if !strings.Contains(content, "<tool_call>") {
+		return &content, nil, startIndex
+	}
+
+	matches := textToolCallPattern.FindAllStringSubmatch(content, -1)
+	if len(matches) == 0 {
+		return &content, nil, startIndex
+	}
+
+	calls := make(globals.ToolCalls, 0, len(matches))
+	for _, match := range matches {
+		if len(match) < 3 {
+			continue
+		}
+
+		name := normalizeTextToolName(html.UnescapeString(match[1]))
+		if name == "" {
+			continue
+		}
+
+		params := map[string]string{}
+		for _, param := range textToolCallParamPattern.FindAllStringSubmatch(match[2], -1) {
+			if len(param) < 3 {
+				continue
+			}
+
+			key := strings.TrimSpace(html.UnescapeString(param[1]))
+			if key == "" {
+				continue
+			}
+			params[key] = strings.TrimSpace(html.UnescapeString(param[2]))
+		}
+
+		rawArguments, err := json.Marshal(params)
+		if err != nil {
+			continue
+		}
+
+		index := startIndex
+		calls = append(calls, globals.ToolCall{
+			Index: utils.ToPtr(index),
+			Type:  "function",
+			Id:    fmt.Sprintf("call_mimo_text_%d", index),
+			Function: globals.ToolCallFunction{
+				Name:      name,
+				Arguments: string(rawArguments),
+			},
+		})
+		startIndex++
+	}
+
+	cleaned := textToolCallPattern.ReplaceAllString(content, "")
+	cleaned = textToolCallGapPattern.ReplaceAllString(cleaned, "\n")
+	if len(calls) == 0 {
+		return &content, nil, startIndex
+	}
+
+	return cleanExtractedText(cleaned), &calls, startIndex
+}
+
+func mergeToolCalls(left *globals.ToolCalls, right *globals.ToolCalls) *globals.ToolCalls {
+	if left == nil {
+		return right
+	}
+	if right == nil {
+		return left
+	}
+
+	merged := make(globals.ToolCalls, 0, len(*left)+len(*right))
+	merged = append(merged, (*left)...)
+	merged = append(merged, (*right)...)
+	return &merged
+}
+
+func (c *ChatInstance) extractTextToolCalls(content *string) (*string, *globals.ToolCalls) {
+	if content == nil {
+		return nil, nil
+	}
+
+	cleaned, calls, nextIndex := parseTextToolCalls(*content, c.textToolCallSeq)
+	c.textToolCallSeq = nextIndex
+	return cleaned, calls
+}
+
 func (c *ChatInstance) normalizeToolCalls(toolCalls *globals.ToolCalls) *globals.ToolCalls {
 	if toolCalls == nil || len(*toolCalls) == 0 {
 		return nil
@@ -120,12 +232,22 @@ func (c *ChatInstance) getChoices(form *ChatStreamResponse) *globals.Chunk {
 	choice := form.Choices[0].Delta
 	reasoning := choice.ReasoningContent
 	toolCalls := c.normalizeToolCalls(choice.ToolCalls)
+	cleanReasoning, reasoningTextToolCalls := c.extractTextToolCalls(reasoning)
+	toolCalls = mergeToolCalls(toolCalls, reasoningTextToolCalls)
 
-	if !c.isFirstReasoning && !c.isReasonOver && reasoning == nil {
+	contentPtr := utils.ToPtr(choice.Content)
+	cleanContent, contentTextToolCalls := c.extractTextToolCalls(contentPtr)
+	toolCalls = mergeToolCalls(toolCalls, contentTextToolCalls)
+	content := ""
+	if cleanContent != nil {
+		content = *cleanContent
+	}
+
+	if !c.isFirstReasoning && !c.isReasonOver && cleanReasoning == nil {
 		c.isReasonOver = true
-		if choice.Content != "" {
+		if content != "" {
 			return &globals.Chunk{
-				Content:      fmt.Sprintf("\n</think>\n\n%s", choice.Content),
+				Content:      fmt.Sprintf("\n</think>\n\n%s", content),
 				ToolCall:     toolCalls,
 				FunctionCall: choice.FunctionCall,
 			}
@@ -138,13 +260,12 @@ func (c *ChatInstance) getChoices(form *ChatStreamResponse) *globals.Chunk {
 		}
 	}
 
-	content := choice.Content
-	if reasoning != nil {
+	if cleanReasoning != nil {
 		if c.isFirstReasoning {
 			c.isFirstReasoning = false
-			content = fmt.Sprintf("<think>\n%s", *reasoning)
+			content = fmt.Sprintf("<think>\n%s", *cleanReasoning)
 		} else {
-			content = *reasoning
+			content = *cleanReasoning
 		}
 	}
 
@@ -152,7 +273,7 @@ func (c *ChatInstance) getChoices(form *ChatStreamResponse) *globals.Chunk {
 		Content:          content,
 		ToolCall:         toolCalls,
 		FunctionCall:     choice.FunctionCall,
-		ReasoningContent: reasoning,
+		ReasoningContent: cleanReasoning,
 	}
 }
 
@@ -175,10 +296,25 @@ func collectResponse(form ChatStreamResponse) (*globals.Chunk, error) {
 	}
 
 	message := form.Choices[0].Delta
+	var cleanReasoning *string
+	var reasoningToolCalls *globals.ToolCalls
+	nextIndex := 0
+	if message.ReasoningContent != nil {
+		cleanReasoning, reasoningToolCalls, nextIndex = parseTextToolCalls(*message.ReasoningContent, 0)
+	}
+	cleanContent, contentToolCalls, _ := parseTextToolCalls(message.Content, nextIndex)
+	toolCalls := mergeToolCalls(message.ToolCalls, reasoningToolCalls)
+	toolCalls = mergeToolCalls(toolCalls, contentToolCalls)
+
+	content := ""
+	if cleanContent != nil {
+		content = *cleanContent
+	}
+
 	return &globals.Chunk{
-		Content:          formatReasoningContent(message.ReasoningContent, message.Content),
-		ToolCall:         message.ToolCalls,
+		Content:          formatReasoningContent(cleanReasoning, content),
+		ToolCall:         toolCalls,
 		FunctionCall:     message.FunctionCall,
-		ReasoningContent: message.ReasoningContent,
+		ReasoningContent: cleanReasoning,
 	}, nil
 }
