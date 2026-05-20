@@ -1,26 +1,12 @@
 package xiaomitokenplan
 
 import (
-	"bytes"
 	adaptercommon "chat/adapter/common"
 	"chat/globals"
 	"chat/utils"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"html"
-	"regexp"
-	"strings"
 )
-
-var (
-	textToolCallPattern         = regexp.MustCompile(`(?s)<tool_call>\s*<function=([A-Za-z0-9_.:-]+)[>)]\s*(.*?)(?:</function>\s*)?</tool_call>`)
-	textToolCallFunctionPattern = regexp.MustCompile(`(?s)<function=([A-Za-z0-9_.:-]+)[>)]`)
-	textToolCallParamPattern    = regexp.MustCompile(`(?s)<parameter=([A-Za-z0-9_.:-]+)>(.*?)</parameter>`)
-	textToolCallGapPattern      = regexp.MustCompile(`[ \t]*\n[ \t]*\n[ \t]*`)
-)
-
-const maxTextToolBufferBytes = 64 * 1024
 
 func formatMessages(props *adaptercommon.ChatProps) interface{} {
 	return utils.Each[globals.Message, Message](props.Message, func(message globals.Message) Message {
@@ -86,247 +72,6 @@ func formatReasoningContent(reasoning *string, content string) string {
 	return fmt.Sprintf("<think>\n%s\n</think>\n\n%s", *reasoning, content)
 }
 
-func normalizeTextToolName(name string) string {
-	switch strings.TrimSpace(name) {
-	case "webfetch":
-		return "fetch_webpage"
-	default:
-		return strings.TrimSpace(name)
-	}
-}
-
-func cleanExtractedText(content string) *string {
-	cleaned := strings.TrimSpace(content)
-	if cleaned == "" {
-		return nil
-	}
-	return &cleaned
-}
-
-func cleanTextToolVisibleText(content string) *string {
-	cleaned := textToolCallGapPattern.ReplaceAllString(content, "\n")
-	return cleanExtractedText(cleaned)
-}
-
-func compactJSONArguments(content string) (string, bool) {
-	content = strings.TrimSpace(html.UnescapeString(content))
-	if content == "" {
-		return "", false
-	}
-
-	start := strings.Index(content, "{")
-	end := strings.LastIndex(content, "}")
-	if start < 0 || end < start {
-		return "", false
-	}
-
-	raw := strings.TrimSpace(content[start : end+1])
-	if !json.Valid([]byte(raw)) {
-		return "", false
-	}
-
-	var compacted bytes.Buffer
-	if err := json.Compact(&compacted, []byte(raw)); err != nil {
-		return "", false
-	}
-	return compacted.String(), true
-}
-
-func textToolArgumentsFromBody(body string) (string, bool) {
-	params := map[string]string{}
-	for _, param := range textToolCallParamPattern.FindAllStringSubmatch(body, -1) {
-		if len(param) < 3 {
-			continue
-		}
-
-		key := strings.TrimSpace(html.UnescapeString(param[1]))
-		if key == "" {
-			continue
-		}
-		params[key] = strings.TrimSpace(html.UnescapeString(param[2]))
-	}
-	if len(params) > 0 {
-		rawArguments, err := json.Marshal(params)
-		if err != nil {
-			return "", false
-		}
-		return string(rawArguments), true
-	}
-
-	return compactJSONArguments(body)
-}
-
-func buildTextToolCall(name string, body string, index int) (*globals.ToolCall, bool) {
-	name = normalizeTextToolName(html.UnescapeString(name))
-	if name == "" {
-		return nil, false
-	}
-
-	arguments, ok := textToolArgumentsFromBody(body)
-	if !ok {
-		return nil, false
-	}
-
-	return &globals.ToolCall{
-		Index: utils.ToPtr(index),
-		Type:  "function",
-		Id:    fmt.Sprintf("call_mimo_text_%d", index),
-		Function: globals.ToolCallFunction{
-			Name:      name,
-			Arguments: arguments,
-		},
-	}, true
-}
-
-func parseTextToolCalls(content string, startIndex int) (*string, *globals.ToolCalls, int) {
-	if !strings.Contains(content, "<tool_call>") {
-		return &content, nil, startIndex
-	}
-
-	matches := textToolCallPattern.FindAllStringSubmatch(content, -1)
-	if len(matches) == 0 {
-		return &content, nil, startIndex
-	}
-
-	calls := make(globals.ToolCalls, 0, len(matches))
-	for _, match := range matches {
-		if len(match) < 3 {
-			continue
-		}
-
-		index := startIndex
-		call, ok := buildTextToolCall(match[1], match[2], index)
-		if !ok {
-			continue
-		}
-
-		calls = append(calls, *call)
-		startIndex++
-	}
-
-	cleaned := textToolCallPattern.ReplaceAllString(content, "")
-	cleaned = textToolCallGapPattern.ReplaceAllString(cleaned, "\n")
-	if len(calls) == 0 {
-		return &content, nil, startIndex
-	}
-
-	return cleanExtractedText(cleaned), &calls, startIndex
-}
-
-func parseTextToolCallBlock(block string, startIndex int) (*globals.ToolCalls, int, bool) {
-	_, calls, nextIndex := parseTextToolCalls(block, startIndex)
-	return calls, nextIndex, calls != nil && len(*calls) > 0
-}
-
-func parsePartialTextToolCallBlock(block string, startIndex int) (*globals.ToolCalls, int, bool) {
-	functionStart := textToolCallFunctionPattern.FindStringSubmatchIndex(block)
-	if len(functionStart) < 4 {
-		return nil, startIndex, false
-	}
-
-	body := block[functionStart[1]:]
-	if end := strings.Index(body, "</function>"); end >= 0 {
-		body = body[:end]
-	}
-	if end := strings.Index(body, "</tool_call>"); end >= 0 {
-		body = body[:end]
-	}
-
-	call, ok := buildTextToolCall(block[functionStart[2]:functionStart[3]], body, startIndex)
-	if !ok {
-		return nil, startIndex, false
-	}
-
-	calls := globals.ToolCalls{*call}
-
-	return &calls, startIndex + 1, true
-}
-
-func parseStreamingTextToolCalls(content string, pending string, startIndex int) (*string, *globals.ToolCalls, int, string) {
-	if pending == "" && !strings.Contains(content, "<tool_call>") {
-		return &content, nil, startIndex, ""
-	}
-
-	source := pending + content
-	if len(source) > maxTextToolBufferBytes {
-		return &source, nil, startIndex, ""
-	}
-
-	var visible strings.Builder
-	var calls *globals.ToolCalls
-	cursor := 0
-	for {
-		startRelative := strings.Index(source[cursor:], "<tool_call>")
-		if startRelative < 0 {
-			visible.WriteString(source[cursor:])
-			break
-		}
-
-		start := cursor + startRelative
-		visible.WriteString(source[cursor:start])
-
-		endRelative := strings.Index(source[start:], "</tool_call>")
-		if endRelative < 0 {
-			return cleanTextToolVisibleText(visible.String()), calls, startIndex, source[start:]
-		}
-
-		end := start + endRelative + len("</tool_call>")
-		block := source[start:end]
-		blockCalls, nextIndex, ok := parseTextToolCallBlock(block, startIndex)
-		if !ok {
-			visible.WriteString(block)
-		} else {
-			calls = mergeToolCalls(calls, blockCalls)
-			startIndex = nextIndex
-		}
-		cursor = end
-	}
-
-	return cleanTextToolVisibleText(visible.String()), calls, startIndex, ""
-}
-
-func mergeToolCalls(left *globals.ToolCalls, right *globals.ToolCalls) *globals.ToolCalls {
-	if left == nil {
-		return right
-	}
-	if right == nil {
-		return left
-	}
-
-	merged := make(globals.ToolCalls, 0, len(*left)+len(*right))
-	merged = append(merged, (*left)...)
-	merged = append(merged, (*right)...)
-	return &merged
-}
-
-func (c *ChatInstance) extractTextToolCalls(content *string) (*string, *globals.ToolCalls) {
-	if content == nil {
-		return nil, nil
-	}
-
-	cleaned, calls, nextIndex, pending := parseStreamingTextToolCalls(*content, c.textToolBuffer, c.textToolCallSeq)
-	c.textToolCallSeq = nextIndex
-	c.textToolBuffer = pending
-	return cleaned, calls
-}
-
-func (c *ChatInstance) flushTextToolBuffer() *globals.Chunk {
-	if c.textToolBuffer == "" {
-		return nil
-	}
-
-	pending := c.textToolBuffer
-	c.textToolBuffer = ""
-
-	calls, nextIndex, ok := parsePartialTextToolCallBlock(pending, c.textToolCallSeq)
-	c.textToolCallSeq = nextIndex
-	if ok {
-		return &globals.Chunk{ToolCall: calls}
-	}
-
-	return &globals.Chunk{Content: pending, ReasoningContent: cleanExtractedText(pending)}
-}
-
 func (c *ChatInstance) normalizeToolCalls(toolCalls *globals.ToolCalls) *globals.ToolCalls {
 	if toolCalls == nil || len(*toolCalls) == 0 {
 		return nil
@@ -375,22 +120,12 @@ func (c *ChatInstance) getChoices(form *ChatStreamResponse) *globals.Chunk {
 	choice := form.Choices[0].Delta
 	reasoning := choice.ReasoningContent
 	toolCalls := c.normalizeToolCalls(choice.ToolCalls)
-	cleanReasoning, reasoningTextToolCalls := c.extractTextToolCalls(reasoning)
-	toolCalls = mergeToolCalls(toolCalls, reasoningTextToolCalls)
 
-	contentPtr := utils.ToPtr(choice.Content)
-	cleanContent, contentTextToolCalls := c.extractTextToolCalls(contentPtr)
-	toolCalls = mergeToolCalls(toolCalls, contentTextToolCalls)
-	content := ""
-	if cleanContent != nil {
-		content = *cleanContent
-	}
-
-	if !c.isFirstReasoning && !c.isReasonOver && cleanReasoning == nil {
+	if !c.isFirstReasoning && !c.isReasonOver && reasoning == nil {
 		c.isReasonOver = true
-		if content != "" {
+		if choice.Content != "" {
 			return &globals.Chunk{
-				Content:      fmt.Sprintf("\n</think>\n\n%s", content),
+				Content:      fmt.Sprintf("\n</think>\n\n%s", choice.Content),
 				ToolCall:     toolCalls,
 				FunctionCall: choice.FunctionCall,
 			}
@@ -403,12 +138,13 @@ func (c *ChatInstance) getChoices(form *ChatStreamResponse) *globals.Chunk {
 		}
 	}
 
-	if cleanReasoning != nil {
+	content := choice.Content
+	if reasoning != nil {
 		if c.isFirstReasoning {
 			c.isFirstReasoning = false
-			content = fmt.Sprintf("<think>\n%s", *cleanReasoning)
+			content = fmt.Sprintf("<think>\n%s", *reasoning)
 		} else {
-			content = *cleanReasoning
+			content = *reasoning
 		}
 	}
 
@@ -416,7 +152,7 @@ func (c *ChatInstance) getChoices(form *ChatStreamResponse) *globals.Chunk {
 		Content:          content,
 		ToolCall:         toolCalls,
 		FunctionCall:     choice.FunctionCall,
-		ReasoningContent: cleanReasoning,
+		ReasoningContent: reasoning,
 	}
 }
 
@@ -439,25 +175,10 @@ func collectResponse(form ChatStreamResponse) (*globals.Chunk, error) {
 	}
 
 	message := form.Choices[0].Delta
-	var cleanReasoning *string
-	var reasoningToolCalls *globals.ToolCalls
-	nextIndex := 0
-	if message.ReasoningContent != nil {
-		cleanReasoning, reasoningToolCalls, nextIndex = parseTextToolCalls(*message.ReasoningContent, 0)
-	}
-	cleanContent, contentToolCalls, _ := parseTextToolCalls(message.Content, nextIndex)
-	toolCalls := mergeToolCalls(message.ToolCalls, reasoningToolCalls)
-	toolCalls = mergeToolCalls(toolCalls, contentToolCalls)
-
-	content := ""
-	if cleanContent != nil {
-		content = *cleanContent
-	}
-
 	return &globals.Chunk{
-		Content:          formatReasoningContent(cleanReasoning, content),
-		ToolCall:         toolCalls,
+		Content:          formatReasoningContent(message.ReasoningContent, message.Content),
+		ToolCall:         message.ToolCalls,
 		FunctionCall:     message.FunctionCall,
-		ReasoningContent: cleanReasoning,
+		ReasoningContent: message.ReasoningContent,
 	}, nil
 }

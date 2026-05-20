@@ -561,19 +561,6 @@ func unsupportedToolResult(call globals.ToolCall) globals.Message {
 	}
 }
 
-func unavailableSearchToolResult(call globals.ToolCall) globals.Message {
-	return globals.Message{
-		Role: globals.Tool,
-		Content: utils.Marshal(map[string]string{
-			"status": "error",
-			"action": call.Function.Name,
-			"error":  "search tool is not available; webpage fetch only supports fetching a provided public http/https URL",
-			"hint":   "Ask the user for a URL, or call fetch_webpage with a url argument if the user already provided one.",
-		}),
-		ToolCallId: utils.ToPtr(call.Id),
-	}
-}
-
 func executeAvailableToolCall(db *sql.DB, user *auth.User, call globals.ToolCall) globals.Message {
 	switch call.Function.Name {
 	case memory.MemoryToolName:
@@ -583,8 +570,6 @@ func executeAvailableToolCall(db *sql.DB, user *auth.User, call globals.ToolCall
 		}
 	case fetch.ToolName:
 		return fetch.ExecuteToolCall(call)
-	case "search":
-		return unavailableSearchToolResult(call)
 	}
 
 	return unsupportedToolResult(call)

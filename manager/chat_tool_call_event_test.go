@@ -2,8 +2,6 @@ package manager
 
 import (
 	"chat/globals"
-	"chat/utils"
-	"strings"
 	"testing"
 )
 
@@ -61,29 +59,5 @@ func TestBuildToolResultEventMarksErrors(t *testing.T) {
 
 	if event.Error != "reason is required" {
 		t.Fatalf("expected parsed error message, got %#v", event)
-	}
-}
-
-func TestUnavailableSearchToolResultDoesNotSearch(t *testing.T) {
-	call := globals.ToolCall{
-		Id:   "call_search",
-		Type: "function",
-		Function: globals.ToolCallFunction{
-			Name:      "search",
-			Arguments: `{"query":"江门今天天气","type":"web"}`,
-		},
-	}
-
-	message := unavailableSearchToolResult(call)
-	if message.Role != globals.Tool || message.ToolCallId == nil || *message.ToolCallId != "call_search" {
-		t.Fatalf("unexpected search tool message metadata: %#v", message)
-	}
-
-	payload, err := utils.UnmarshalString[map[string]string](message.Content)
-	if err != nil || payload == nil {
-		t.Fatalf("expected JSON search tool payload, got %q: %v", message.Content, err)
-	}
-	if payload["status"] != "error" || !strings.Contains(payload["error"], "webpage fetch only supports") {
-		t.Fatalf("unexpected search tool error payload: %#v", payload)
 	}
 }

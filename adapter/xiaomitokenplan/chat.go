@@ -45,8 +45,6 @@ func (c *ChatInstance) resetStreamState() {
 	c.isFirstReasoning = true
 	c.isReasonOver = false
 	c.toolCalls = make(map[int]globals.ToolCall)
-	c.textToolCallSeq = 0
-	c.textToolBuffer = ""
 }
 
 func (c *ChatInstance) CreateStreamChatRequest(props *adaptercommon.ChatProps, callback globals.Hook) error {
@@ -82,12 +80,6 @@ func (c *ChatInstance) CreateStreamChatRequest(props *adaptercommon.ChatProps, c
 
 	if ticks == 0 {
 		return errors.New("no response")
-	}
-
-	if chunk := c.flushTextToolBuffer(); chunk != nil {
-		if err := callback(chunk); err != nil {
-			return err
-		}
 	}
 
 	return nil
