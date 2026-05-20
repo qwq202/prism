@@ -172,6 +172,62 @@ func parseTextToolCallBlock(block string, startIndex int) (*globals.ToolCalls, i
 	return calls, nextIndex, calls != nil && len(*calls) > 0
 }
 
+func parsePartialTextToolCallBlock(block string, startIndex int) (*globals.ToolCalls, int, bool) {
+	functionStart := regexp.MustCompile(`(?s)<function=([A-Za-z0-9_.:-]+)>`).FindStringSubmatchIndex(block)
+	if len(functionStart) < 4 {
+		return nil, startIndex, false
+	}
+
+	name := normalizeTextToolName(html.UnescapeString(block[functionStart[2]:functionStart[3]]))
+	if name == "" {
+		return nil, startIndex, false
+	}
+
+	body := block[functionStart[1]:]
+	if end := strings.Index(body, "</function>"); end >= 0 {
+		body = body[:end]
+	}
+	if end := strings.Index(body, "</tool_call>"); end >= 0 {
+		body = body[:end]
+	}
+
+	params := map[string]string{}
+	for _, param := range textToolCallParamPattern.FindAllStringSubmatch(body, -1) {
+		if len(param) < 3 {
+			continue
+		}
+
+		key := strings.TrimSpace(html.UnescapeString(param[1]))
+		if key == "" {
+			continue
+		}
+		params[key] = strings.TrimSpace(html.UnescapeString(param[2]))
+	}
+	if len(params) == 0 {
+		return nil, startIndex, false
+	}
+
+	rawArguments, err := json.Marshal(params)
+	if err != nil {
+		return nil, startIndex, false
+	}
+
+	index := startIndex
+	calls := globals.ToolCalls{
+		{
+			Index: utils.ToPtr(index),
+			Type:  "function",
+			Id:    fmt.Sprintf("call_mimo_text_%d", index),
+			Function: globals.ToolCallFunction{
+				Name:      name,
+				Arguments: string(rawArguments),
+			},
+		},
+	}
+
+	return &calls, startIndex + 1, true
+}
+
 func parseStreamingTextToolCalls(content string, pending string, startIndex int) (*string, *globals.ToolCalls, int, string) {
 	if pending == "" && !strings.Contains(content, "<tool_call>") {
 		return &content, nil, startIndex, ""
@@ -238,6 +294,23 @@ func (c *ChatInstance) extractTextToolCalls(content *string) (*string, *globals.
 	c.textToolCallSeq = nextIndex
 	c.textToolBuffer = pending
 	return cleaned, calls
+}
+
+func (c *ChatInstance) flushTextToolBuffer() *globals.Chunk {
+	if c.textToolBuffer == "" {
+		return nil
+	}
+
+	pending := c.textToolBuffer
+	c.textToolBuffer = ""
+
+	calls, nextIndex, ok := parsePartialTextToolCallBlock(pending, c.textToolCallSeq)
+	c.textToolCallSeq = nextIndex
+	if ok {
+		return &globals.Chunk{ToolCall: calls}
+	}
+
+	return &globals.Chunk{Content: pending, ReasoningContent: cleanExtractedText(pending)}
 }
 
 func (c *ChatInstance) normalizeToolCalls(toolCalls *globals.ToolCalls) *globals.ToolCalls {

@@ -245,6 +245,45 @@ func TestProcessLineBuffersSplitTextToolCallFromReasoningContent(t *testing.T) {
 	}
 }
 
+func TestFlushTextToolBufferExtractsUnclosedTextToolCall(t *testing.T) {
+	instance := NewChatInstance("", "tp-test")
+
+	lines := []string{
+		`{"choices":[{"delta":{"reasoning_content":"<tool_call>\n"},"index":0}]}`,
+		`{"choices":[{"delta":{"reasoning_content":"<function=search>\n<parameter=query>江门天气 2026年5月20日</parameter>\n<parameter=search_lang>zh</parameter>\n"},"index":0}]}`,
+	}
+
+	for _, line := range lines {
+		chunk, err := instance.ProcessLine(line)
+		if err != nil {
+			t.Fatalf("unexpected split text tool chunk error: %v", err)
+		}
+		if chunk.Content != "" || chunk.ReasoningContent != nil || chunk.ToolCall != nil {
+			t.Fatalf("expected incomplete text tool chunk to be buffered, got %#v", chunk)
+		}
+	}
+
+	chunk := instance.flushTextToolBuffer()
+	if chunk == nil {
+		t.Fatalf("expected pending text tool buffer to flush")
+	}
+	if chunk.Content != "" || chunk.ReasoningContent != nil {
+		t.Fatalf("expected flushed text tool call to stay hidden, got %#v", chunk)
+	}
+
+	call := requireSingleToolCall(t, chunk.ToolCall)
+	if call.Function.Name != "search" {
+		t.Fatalf("expected search tool name, got %q", call.Function.Name)
+	}
+	args := requireToolArguments(t, call)
+	if args["query"] != "江门天气 2026年5月20日" {
+		t.Fatalf("unexpected query argument: %#v", args)
+	}
+	if args["search_lang"] != "zh" {
+		t.Fatalf("unexpected search_lang argument: %#v", args)
+	}
+}
+
 func TestCollectResponseExtractsTextToolCallFromReasoningContent(t *testing.T) {
 	reasoning := "<tool_call>\n<function=fetch_webpage>\n<parameter=url>https://example.com</parameter>\n</function>\n</tool_call>"
 	chunk, err := collectResponse(ChatStreamResponse{

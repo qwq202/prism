@@ -84,5 +84,11 @@ func (c *ChatInstance) CreateStreamChatRequest(props *adaptercommon.ChatProps, c
 		return errors.New("no response")
 	}
 
+	if chunk := c.flushTextToolBuffer(); chunk != nil {
+		if err := callback(chunk); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
