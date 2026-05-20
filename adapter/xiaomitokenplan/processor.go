@@ -1,6 +1,7 @@
 package xiaomitokenplan
 
 import (
+	"bytes"
 	adaptercommon "chat/adapter/common"
 	"chat/globals"
 	"chat/utils"
@@ -13,9 +14,10 @@ import (
 )
 
 var (
-	textToolCallPattern      = regexp.MustCompile(`(?s)<tool_call>\s*<function=([A-Za-z0-9_.:-]+)>\s*(.*?)\s*</function>\s*</tool_call>`)
-	textToolCallParamPattern = regexp.MustCompile(`(?s)<parameter=([A-Za-z0-9_.:-]+)>(.*?)</parameter>`)
-	textToolCallGapPattern   = regexp.MustCompile(`[ \t]*\n[ \t]*\n[ \t]*`)
+	textToolCallPattern         = regexp.MustCompile(`(?s)<tool_call>\s*<function=([A-Za-z0-9_.:-]+)[>)]\s*(.*?)(?:</function>\s*)?</tool_call>`)
+	textToolCallFunctionPattern = regexp.MustCompile(`(?s)<function=([A-Za-z0-9_.:-]+)[>)]`)
+	textToolCallParamPattern    = regexp.MustCompile(`(?s)<parameter=([A-Za-z0-9_.:-]+)>(.*?)</parameter>`)
+	textToolCallGapPattern      = regexp.MustCompile(`[ \t]*\n[ \t]*\n[ \t]*`)
 )
 
 const maxTextToolBufferBytes = 64 * 1024
@@ -106,6 +108,76 @@ func cleanTextToolVisibleText(content string) *string {
 	return cleanExtractedText(cleaned)
 }
 
+func compactJSONArguments(content string) (string, bool) {
+	content = strings.TrimSpace(html.UnescapeString(content))
+	if content == "" {
+		return "", false
+	}
+
+	start := strings.Index(content, "{")
+	end := strings.LastIndex(content, "}")
+	if start < 0 || end < start {
+		return "", false
+	}
+
+	raw := strings.TrimSpace(content[start : end+1])
+	if !json.Valid([]byte(raw)) {
+		return "", false
+	}
+
+	var compacted bytes.Buffer
+	if err := json.Compact(&compacted, []byte(raw)); err != nil {
+		return "", false
+	}
+	return compacted.String(), true
+}
+
+func textToolArgumentsFromBody(body string) (string, bool) {
+	params := map[string]string{}
+	for _, param := range textToolCallParamPattern.FindAllStringSubmatch(body, -1) {
+		if len(param) < 3 {
+			continue
+		}
+
+		key := strings.TrimSpace(html.UnescapeString(param[1]))
+		if key == "" {
+			continue
+		}
+		params[key] = strings.TrimSpace(html.UnescapeString(param[2]))
+	}
+	if len(params) > 0 {
+		rawArguments, err := json.Marshal(params)
+		if err != nil {
+			return "", false
+		}
+		return string(rawArguments), true
+	}
+
+	return compactJSONArguments(body)
+}
+
+func buildTextToolCall(name string, body string, index int) (*globals.ToolCall, bool) {
+	name = normalizeTextToolName(html.UnescapeString(name))
+	if name == "" {
+		return nil, false
+	}
+
+	arguments, ok := textToolArgumentsFromBody(body)
+	if !ok {
+		return nil, false
+	}
+
+	return &globals.ToolCall{
+		Index: utils.ToPtr(index),
+		Type:  "function",
+		Id:    fmt.Sprintf("call_mimo_text_%d", index),
+		Function: globals.ToolCallFunction{
+			Name:      name,
+			Arguments: arguments,
+		},
+	}, true
+}
+
 func parseTextToolCalls(content string, startIndex int) (*string, *globals.ToolCalls, int) {
 	if !strings.Contains(content, "<tool_call>") {
 		return &content, nil, startIndex
@@ -122,39 +194,13 @@ func parseTextToolCalls(content string, startIndex int) (*string, *globals.ToolC
 			continue
 		}
 
-		name := normalizeTextToolName(html.UnescapeString(match[1]))
-		if name == "" {
-			continue
-		}
-
-		params := map[string]string{}
-		for _, param := range textToolCallParamPattern.FindAllStringSubmatch(match[2], -1) {
-			if len(param) < 3 {
-				continue
-			}
-
-			key := strings.TrimSpace(html.UnescapeString(param[1]))
-			if key == "" {
-				continue
-			}
-			params[key] = strings.TrimSpace(html.UnescapeString(param[2]))
-		}
-
-		rawArguments, err := json.Marshal(params)
-		if err != nil {
-			continue
-		}
-
 		index := startIndex
-		calls = append(calls, globals.ToolCall{
-			Index: utils.ToPtr(index),
-			Type:  "function",
-			Id:    fmt.Sprintf("call_mimo_text_%d", index),
-			Function: globals.ToolCallFunction{
-				Name:      name,
-				Arguments: string(rawArguments),
-			},
-		})
+		call, ok := buildTextToolCall(match[1], match[2], index)
+		if !ok {
+			continue
+		}
+
+		calls = append(calls, *call)
 		startIndex++
 	}
 
@@ -173,13 +219,8 @@ func parseTextToolCallBlock(block string, startIndex int) (*globals.ToolCalls, i
 }
 
 func parsePartialTextToolCallBlock(block string, startIndex int) (*globals.ToolCalls, int, bool) {
-	functionStart := regexp.MustCompile(`(?s)<function=([A-Za-z0-9_.:-]+)>`).FindStringSubmatchIndex(block)
+	functionStart := textToolCallFunctionPattern.FindStringSubmatchIndex(block)
 	if len(functionStart) < 4 {
-		return nil, startIndex, false
-	}
-
-	name := normalizeTextToolName(html.UnescapeString(block[functionStart[2]:functionStart[3]]))
-	if name == "" {
 		return nil, startIndex, false
 	}
 
@@ -191,39 +232,12 @@ func parsePartialTextToolCallBlock(block string, startIndex int) (*globals.ToolC
 		body = body[:end]
 	}
 
-	params := map[string]string{}
-	for _, param := range textToolCallParamPattern.FindAllStringSubmatch(body, -1) {
-		if len(param) < 3 {
-			continue
-		}
-
-		key := strings.TrimSpace(html.UnescapeString(param[1]))
-		if key == "" {
-			continue
-		}
-		params[key] = strings.TrimSpace(html.UnescapeString(param[2]))
-	}
-	if len(params) == 0 {
+	call, ok := buildTextToolCall(block[functionStart[2]:functionStart[3]], body, startIndex)
+	if !ok {
 		return nil, startIndex, false
 	}
 
-	rawArguments, err := json.Marshal(params)
-	if err != nil {
-		return nil, startIndex, false
-	}
-
-	index := startIndex
-	calls := globals.ToolCalls{
-		{
-			Index: utils.ToPtr(index),
-			Type:  "function",
-			Id:    fmt.Sprintf("call_mimo_text_%d", index),
-			Function: globals.ToolCallFunction{
-				Name:      name,
-				Arguments: string(rawArguments),
-			},
-		},
-	}
+	calls := globals.ToolCalls{*call}
 
 	return &calls, startIndex + 1, true
 }

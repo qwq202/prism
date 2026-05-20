@@ -3,6 +3,7 @@ package manager
 import (
 	"chat/globals"
 	"chat/utils"
+	"strings"
 	"testing"
 )
 
@@ -63,17 +64,17 @@ func TestBuildToolResultEventMarksErrors(t *testing.T) {
 	}
 }
 
-func TestExecuteSearchToolCallRequiresQuery(t *testing.T) {
+func TestUnavailableSearchToolResultDoesNotSearch(t *testing.T) {
 	call := globals.ToolCall{
 		Id:   "call_search",
 		Type: "function",
 		Function: globals.ToolCallFunction{
 			Name:      "search",
-			Arguments: `{"type":"web"}`,
+			Arguments: `{"query":"江门今天天气","type":"web"}`,
 		},
 	}
 
-	message := executeSearchToolCall(call)
+	message := unavailableSearchToolResult(call)
 	if message.Role != globals.Tool || message.ToolCallId == nil || *message.ToolCallId != "call_search" {
 		t.Fatalf("unexpected search tool message metadata: %#v", message)
 	}
@@ -82,7 +83,7 @@ func TestExecuteSearchToolCallRequiresQuery(t *testing.T) {
 	if err != nil || payload == nil {
 		t.Fatalf("expected JSON search tool payload, got %q: %v", message.Content, err)
 	}
-	if payload["status"] != "error" || payload["error"] != "query is required" {
+	if payload["status"] != "error" || !strings.Contains(payload["error"], "webpage fetch only supports") {
 		t.Fatalf("unexpected search tool error payload: %#v", payload)
 	}
 }

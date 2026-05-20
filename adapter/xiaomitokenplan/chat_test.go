@@ -284,6 +284,37 @@ func TestFlushTextToolBufferExtractsUnclosedTextToolCall(t *testing.T) {
 	}
 }
 
+func TestProcessLineExtractsJsonTextToolCallVariant(t *testing.T) {
+	instance := NewChatInstance("", "tp-test")
+
+	chunk, err := instance.ProcessLine(`{"choices":[{"delta":{"reasoning_content":"<tool_call>\n<function=search)\n{\"query\":\"江门今天天气 2026年5月20日\",\"freshness\":\"day\",\"type\":\"web\"}\n</tool_call>"},"index":0}]}`)
+	if err != nil {
+		t.Fatalf("unexpected JSON text tool call chunk error: %v", err)
+	}
+
+	if chunk.Content != "" {
+		t.Fatalf("expected JSON text tool call markup to be hidden, got %q", chunk.Content)
+	}
+	if chunk.ReasoningContent != nil {
+		t.Fatalf("expected JSON text tool call markup to be stripped from reasoning, got %#v", chunk.ReasoningContent)
+	}
+
+	call := requireSingleToolCall(t, chunk.ToolCall)
+	if call.Function.Name != "search" {
+		t.Fatalf("expected search tool name, got %q", call.Function.Name)
+	}
+	args := requireToolArguments(t, call)
+	if args["query"] != "江门今天天气 2026年5月20日" {
+		t.Fatalf("unexpected query argument: %#v", args)
+	}
+	if args["freshness"] != "day" {
+		t.Fatalf("unexpected freshness argument: %#v", args)
+	}
+	if args["type"] != "web" {
+		t.Fatalf("unexpected type argument: %#v", args)
+	}
+}
+
 func TestCollectResponseExtractsTextToolCallFromReasoningContent(t *testing.T) {
 	reasoning := "<tool_call>\n<function=fetch_webpage>\n<parameter=url>https://example.com</parameter>\n</function>\n</tool_call>"
 	chunk, err := collectResponse(ChatStreamResponse{
